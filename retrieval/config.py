@@ -89,6 +89,17 @@ class RetrievalConfig:
         ("trials", 0.85),
         ("europepmc", 0.8),
     )
+    # Evidence Mixer: share of the fused pool taken from the verified pool,
+    # per question type (unknown types fall back to the generic ratio).
+    # 4.3.2: guideline 0.90, latest_trial 0.85, therapy 0.80, generic 0.65.
+    verified_ratio_base: tuple[tuple[str, float], ...] = (
+        ("guideline", 0.90),
+        ("latest_trial", 0.85),
+        ("therapy", 0.80),
+        ("generic", 0.65),
+    )
+    verified_ratio_freshness_bump: float = 0.05
+    verified_ratio_max: float = 0.95
     latest_window_days: int = 1826
     feature_weights: FeatureWeights = field(default_factory=FeatureWeights)
     index_version: str = "v1"
@@ -123,6 +134,25 @@ class RetrievalConfig:
             for pair in self.source_quality_table
         ):
             raise ValueError("source_quality_table must be a tuple of (source_type, score) pairs")
+        if not isinstance(self.verified_ratio_base, tuple) or not self.verified_ratio_base:
+            raise ValueError("verified_ratio_base must be a non-empty tuple of (question_type, ratio) pairs")
+        if any(
+            not isinstance(pair, tuple) or len(pair) != 2
+            or not isinstance(pair[0], str) or not pair[0].strip()
+            or not _is_float_representable_finite(pair[1]) or not 0 <= pair[1] <= 1
+            for pair in self.verified_ratio_base
+        ):
+            raise ValueError("verified_ratio_base must be a tuple of (question_type, ratio) pairs with ratios in [0, 1]")
+        if (
+            not _is_float_representable_finite(self.verified_ratio_freshness_bump)
+            or self.verified_ratio_freshness_bump < 0
+        ):
+            raise ValueError("verified_ratio_freshness_bump must be a finite nonnegative number")
+        if (
+            not _is_float_representable_finite(self.verified_ratio_max)
+            or not 0 < self.verified_ratio_max <= 1
+        ):
+            raise ValueError("verified_ratio_max must be a finite number in (0, 1]")
         if not isinstance(self.feature_weights, FeatureWeights):
             raise ValueError("feature_weights must be a FeatureWeights instance")
         self.feature_weights.validate()

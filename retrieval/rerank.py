@@ -650,6 +650,9 @@ def _snapshot_config(config: RetrievalConfig) -> RetrievalConfig:
         cross_encoder_alpha=config.cross_encoder_alpha,
         freshness_weight_latest_trial=config.freshness_weight_latest_trial,
         source_quality_table=config.source_quality_table,
+        verified_ratio_base=config.verified_ratio_base,
+        verified_ratio_freshness_bump=config.verified_ratio_freshness_bump,
+        verified_ratio_max=config.verified_ratio_max,
         feature_weights=FeatureWeights(
             semantic=weights.semantic,
             lexical=weights.lexical,

@@ -147,6 +147,16 @@ class EvidenceChunk:
     guideline_name: str = ""
     fetched_at: str | None = None
     is_tombstoned: bool = False
+    # --- Evidence Mixer trust tier (4.3 可信池) ---
+    # How far this chunk was verified, never inferred from source_type: a web
+    # page can carry a PMID and a PubMed row can be unverified.  "discovery"
+    # means search-discovered candidate; "verified" means confirmed against an
+    # authoritative source (PubMed/guideline/ClinicalTrials/Europe PMC), either
+    # at ingestion or after promotion (PMID/DOI/NCT resolution).  Promotion is
+    # an action, not a third tier: ``replace(trust_tier="verified")`` keeps the
+    # same content hash because verification state is not content.
+    trust_tier: str = "discovery"
+    verification_method: str = ""
     index_version: str = "v1"
     corpus_version: str = "v1"
 
@@ -176,6 +186,10 @@ class EvidenceChunk:
         for field_name in ("pmid", "doi", "nct_id", "guideline_name"):
             if not isinstance(getattr(self, field_name), str):
                 raise ValueError(f"{field_name} must be a string")
+        if self.trust_tier not in {"verified", "discovery"}:
+            raise ValueError("trust_tier must be 'verified' or 'discovery'")
+        if not isinstance(self.verification_method, str):
+            raise ValueError("verification_method must be a string")
         object.__setattr__(self, "authors", _normalize_terms(self.authors, "authors"))
         if self.fetched_at is not None and not isinstance(self.fetched_at, str):
             raise ValueError("fetched_at must be a string or None")
@@ -208,6 +222,10 @@ class EvidenceChunk:
     @property
     def tombstone(self) -> bool:
         return self.is_tombstoned
+
+    @property
+    def verified(self) -> bool:
+        return self.trust_tier == "verified"
 
 
 _CONTENT_SEPARATOR = "\x1f"

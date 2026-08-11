@@ -11,6 +11,39 @@ from .config import RetrievalConfig
 from .models import Query
 
 
+_DEFAULT_VERIFIED_RATIO = 0.65
+
+
+def compute_verified_ratio(
+    query: Query,
+    config: RetrievalConfig,
+) -> tuple[float, tuple[str, ...]]:
+    """Return ``(verified_ratio, actions)`` for the Evidence Mixer (4.3 可信池).
+
+    The ratio is driven by question type and freshness only, never by claim
+    criticality: A5's Claim objects do not exist when retrieval runs.  Claim
+    criticality instead gates Gate5's use of discovery evidence (A5 side).
+    """
+    if not isinstance(query, Query):
+        raise ValueError("query must be a Query")
+    if not isinstance(config, RetrievalConfig):
+        raise ValueError("config must be a RetrievalConfig")
+
+    actions: list[str] = []
+    base = dict(config.verified_ratio_base)
+    ratio = base.get(query.question_type, _DEFAULT_VERIFIED_RATIO)
+    actions.append(f"verified_ratio_base_{query.question_type}={ratio:.2f}")
+
+    if query.freshness in {"current", "latest"}:
+        ratio += config.verified_ratio_freshness_bump
+        actions.append(f"verified_ratio_freshness_{query.freshness}_bump")
+
+    capped = min(ratio, config.verified_ratio_max)
+    if capped != ratio:
+        actions.append(f"verified_ratio_capped={capped:.2f}")
+    return capped, tuple(actions)
+
+
 def adapt_k(query: Query, config: RetrievalConfig) -> tuple[int, int, tuple[str, ...]]:
     """Return (k1, k2, actions) adjusted by deterministic question rules."""
     if not isinstance(query, Query):
