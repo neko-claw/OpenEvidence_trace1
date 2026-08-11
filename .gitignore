@@ -1,0 +1,19 @@
+# Python
+__pycache__/
+*.py[cod]
+.pytest_cache/
+
+# Local environments
+.conda-env/
+.venv/
+
+# Secrets
+.env
+
+# Local databases / generated indexes
+data/sqlite/*.db
+data/chroma/
+data/bm25/
+
+# Generated artifacts
+artifacts/
