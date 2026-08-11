@@ -10,7 +10,7 @@
   budget and Gate2 corrective retry/early stop;
 - fail-closed Gate0 and Gate6;
 - Gate2 quality metrics and Gate5 mechanical whitelist/span/PICO/time/conflict/
-  exact-span checks with extension ports;
+  exact-span and critical-claim verified-trust checks with extension ports;
 - PASS/WARN/REFUSE publication policy using criticality and uncertainty;
 - serializable AgentRun/config snapshot and terminal/JSON demo traces;
 - behavior, contract, config, architecture and artifact tests.

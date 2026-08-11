@@ -35,5 +35,5 @@ def test_readable_demo_trace_contains_gate_and_skill_versions() -> None:
     assert "Gate0@0.2.0" in text
     assert "evidence_research@0.2.0" in text
     assert "citation_audit@0.2.0" in text
-    assert "Gate5@0.2.0" in text
+    assert "Gate5@0.3.0" in text
     assert "Gate6@0.2.0" in text

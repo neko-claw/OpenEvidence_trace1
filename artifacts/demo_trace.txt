@@ -1,18 +1,18 @@
-AgentRun RUN-f0fee4be24bc agent=0.2.0 gate_config=0.2.0
-START                  event=state at=2026-08-11T04:52:59.186632+00:00 latency_ms=0.00
-GATE0                  event=gate at=2026-08-11T04:52:59.186632+00:00 gate=Gate0@0.2.0 decision=ALLOW latency_ms=0.02
-CLASSIFY               event=state at=2026-08-11T04:52:59.186632+00:00 latency_ms=0.01
-SELECT_SKILL           event=skill at=2026-08-11T04:52:59.186632+00:00 skill=evidence_research@0.2.0 latency_ms=0.01
-PLAN                   event=skill at=2026-08-11T04:52:59.186632+00:00 skill=evidence_research@0.2.0 input=question_type=treatment_evidence latency_ms=0.04
-RETRIEVE               event=tool at=2026-08-11T04:52:59.186632+00:00 skill=evidence_research@0.2.0 tool=mock_search call=1 budget_remaining=2 count=1 input=source_type=guideline,query_count=1 evidence=E1 latency_ms=0.02
-GATE2                  event=gate at=2026-08-11T04:52:59.186632+00:00 gate=Gate2@0.2.0 budget_remaining=2 decision=INSUFFICIENT evidence=E1 latency_ms=0.04
-RETRIEVE               event=tool at=2026-08-11T04:52:59.186632+00:00 skill=evidence_research@0.2.0 tool=mock_search call=2 budget_remaining=1 count=1 input=source_type=systematic_review,query_count=1 evidence=E2 latency_ms=0.01
-GATE2                  event=gate at=2026-08-11T04:52:59.186632+00:00 gate=Gate2@0.2.0 budget_remaining=1 decision=SUFFICIENT evidence=E1,E2 latency_ms=0.02
-SUMMARIZE_EVIDENCE     event=skill at=2026-08-11T04:52:59.186632+00:00 skill=evidence_research@0.2.0 count=2 evidence=E1,E2 latency_ms=0.02
-GENERATE_CLAIMS        event=generation at=2026-08-11T04:52:59.186632+00:00 skill=claim_generation@0.2.0 count=2 claims=C1,C2 latency_ms=0.02
-CLAIM_SPLITTER         event=skill at=2026-08-11T04:52:59.186632+00:00 skill=citation_audit@0.2.0 count=2 claims=C1,C2 latency_ms=0.03
-AUDIT_CITATIONS        event=skill at=2026-08-11T04:52:59.186632+00:00 skill=citation_audit@0.2.0 decision=PASS claims=C1,C2 latency_ms=0.19
-GATE5                  event=gate at=2026-08-11T04:52:59.186632+00:00 gate=Gate5@0.2.0 skill=citation_audit@0.2.0 claims=C1,C2 latency_ms=0.04
-GATE6                  event=decision at=2026-08-11T04:52:59.186632+00:00 gate=Gate6@0.2.0 decision=PASS latency_ms=0.00
-FINALIZE               event=decision at=2026-08-11T04:52:59.187632+00:00 decision=PASS evidence=E1,E2 claims=C1,C2 latency_ms=0.28
-END                    event=state at=2026-08-11T04:52:59.187632+00:00 decision=PASS latency_ms=0.00
+AgentRun RUN-62388fbae6f8 agent=0.2.0 gate_config=0.2.0
+START                  event=state at=2026-08-11T15:46:53.413876+00:00 latency_ms=0.00
+GATE0                  event=gate at=2026-08-11T15:46:53.413928+00:00 gate=Gate0@0.2.0 decision=ALLOW latency_ms=0.03
+CLASSIFY               event=state at=2026-08-11T15:46:53.413946+00:00 latency_ms=0.01
+SELECT_SKILL           event=skill at=2026-08-11T15:46:53.413961+00:00 skill=evidence_research@0.2.0 latency_ms=0.01
+PLAN                   event=skill at=2026-08-11T15:46:53.414018+00:00 skill=evidence_research@0.2.0 input=question_type=treatment_evidence latency_ms=0.05
+RETRIEVE               event=tool at=2026-08-11T15:46:53.414059+00:00 skill=evidence_research@0.2.0 tool=mock_search call=1 budget_remaining=2 count=1 input=source_type=guideline,query_count=1 evidence=E1 latency_ms=0.02
+GATE2                  event=gate at=2026-08-11T15:46:53.414124+00:00 gate=Gate2@0.2.0 budget_remaining=2 decision=INSUFFICIENT evidence=E1 latency_ms=0.06
+RETRIEVE               event=tool at=2026-08-11T15:46:53.414152+00:00 skill=evidence_research@0.2.0 tool=mock_search call=2 budget_remaining=1 count=1 input=source_type=systematic_review,query_count=1 evidence=E2 latency_ms=0.01
+GATE2                  event=gate at=2026-08-11T15:46:53.414185+00:00 gate=Gate2@0.2.0 budget_remaining=1 decision=SUFFICIENT evidence=E1,E2 latency_ms=0.03
+SUMMARIZE_EVIDENCE     event=skill at=2026-08-11T15:46:53.414221+00:00 skill=evidence_research@0.2.0 count=2 evidence=E1,E2 latency_ms=0.03
+GENERATE_CLAIMS        event=generation at=2026-08-11T15:46:53.414316+00:00 skill=claim_generation@0.2.0 count=2 claims=C1,C2 latency_ms=0.09
+CLAIM_SPLITTER         event=skill at=2026-08-11T15:46:53.414376+00:00 skill=citation_audit@0.2.0 count=2 claims=C1,C2 latency_ms=0.05
+AUDIT_CITATIONS        event=skill at=2026-08-11T15:46:53.414737+00:00 skill=citation_audit@0.2.0 decision=PASS claims=C1,C2 latency_ms=0.26
+GATE5                  event=gate at=2026-08-11T15:46:53.414807+00:00 gate=Gate5@0.3.0 skill=citation_audit@0.2.0 claims=C1,C2 latency_ms=0.06
+GATE6                  event=decision at=2026-08-11T15:46:53.414835+00:00 gate=Gate6@0.2.0 decision=PASS latency_ms=0.00
+FINALIZE               event=decision at=2026-08-11T15:46:53.414863+00:00 decision=PASS evidence=E1,E2 claims=C1,C2 latency_ms=0.02
+END                    event=state at=2026-08-11T15:46:53.414881+00:00 decision=PASS latency_ms=0.00

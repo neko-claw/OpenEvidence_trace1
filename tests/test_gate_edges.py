@@ -1,4 +1,5 @@
 from datetime import date
+from typing import Any
 
 from a5.adapters.default_safety_policy import DefaultFailClosedSafetyPolicy, FixtureSafetyPolicy
 from a5.adapters.rule_based_claim_verifier import RuleBasedClaimVerifier
@@ -33,7 +34,11 @@ def evidence(
     published: str | None = "2026-07-01T00:00:00Z",
     span_text: str = "Artificial fact is supported.",
     conflicts: list[str] | None = None,
+    trust: str | None = "verified",
 ) -> EvidenceRecord:
+    metadata: dict[str, Any] = {}
+    if trust is not None:
+        metadata["trust_tier"] = trust
     return EvidenceRecord(
         id=evidence_id,
         content=span_text,
@@ -44,6 +49,7 @@ def evidence(
         published_at=published,
         spans=[EvidenceSpan(span_id=f"S-{evidence_id}", text=span_text)],
         conflicts_with_ids=conflicts or [],
+        source_metadata=metadata,
         mock=True,
     )
 
@@ -197,3 +203,34 @@ def test_gate5_textual_support_is_replaceable_and_contradiction_blocks() -> None
     )
     assert result.status is VerificationStatus.CONTRADICTED
     assert result.verification_method == "test-contradiction"
+
+
+def test_gate5_critical_claim_requires_verified_evidence() -> None:
+    verifier = RuleBasedClaimVerifier()
+    blocked = verifier.verify(
+        claim(), [evidence(trust="discovery")], VerificationContext()
+    )
+    missing = verifier.verify(claim(), [evidence(trust=None)], VerificationContext())
+    assert blocked.status is VerificationStatus.INSUFFICIENT
+    assert "unverified_critical" in blocked.reason
+    assert missing.status is VerificationStatus.INSUFFICIENT
+    assert "unverified_critical" in missing.reason
+
+
+def test_gate5_discovery_evidence_ok_for_non_critical_claims() -> None:
+    result = RuleBasedClaimVerifier().verify(
+        claim(criticality=ClaimCriticality.IMPORTANT),
+        [evidence(trust="discovery")],
+        VerificationContext(),
+    )
+    assert result.status is VerificationStatus.SUPPORTED
+
+
+def test_gate5_trust_check_is_config_driven() -> None:
+    config = load_runtime_config().gates.gate5.model_copy(
+        update={"require_verified_for_critical": False}
+    )
+    result = RuleBasedClaimVerifier(config=config).verify(
+        claim(), [evidence(trust="discovery")], VerificationContext()
+    )
+    assert result.status is VerificationStatus.SUPPORTED
