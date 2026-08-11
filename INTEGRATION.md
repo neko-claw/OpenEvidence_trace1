@@ -131,3 +131,28 @@ For each upstream delivery record:
 - tests added or updated;
 - temporary assumption removed;
 - remaining owner and TODO.
+
+## A4 integration record (fix/a4-contract-integration)
+
+- **A4 core**: `retrieval/` implements BM25/vector/RRF/feature-rerank/MMR as a
+  stdlib-only package with its own native dataclass models
+  (`retrieval/models.py`).  It does not import `a5.*` and does not redefine A5
+  public contracts.
+- **Adapter**: `a5/adapters/a4_evidence_retriever.A4EvidenceRetrieverAdapter`
+  satisfies `a5.ports.EvidenceRetriever` (three-argument
+  `retrieve(question, plan, request) -> a5.domain.models.RetrievalResult`)
+  using A5's real Pydantic types.  `request.source_type` restricts the tool
+  call, `request.tool_call_index` flows into `diagnostics`, and
+  partial/empty/failed SearchResults are never upgraded.
+- **Diagnostics**: status, versions (index/corpus/rerank/reason-code),
+  rank log, warning, degradation reasons+codes, latency, config snapshot +
+  hash, run hash, alignment hints, span status (`UNKNOWN_A3_PENDING`).
+- **Provenance**: A3 `content_hash`/`evidence_content_hash` are preserved
+  verbatim; A4 derives its own run hash and only falls back to its own content
+  hash when the upstream field is absent (flagged UNKNOWN).
+- **Smoke evaluation**: `data/dev/*` are `mock=true` synthetic fixtures
+  (MOCK-A4-* ids, no fabricated PMID/DOI/NCT/URL/guideline ids);
+  `scripts/run_dev_eval.py` produces pipeline smoke metrics only.
+- **Pending upstream**: A1 frozen question types/dev split; A2 real Evidence
+  schema/fixtures; A3 Chunk/Span/PICO/hash/index manifest; B2 human qrels;
+  A5 Gate5 remains the only SUPPORTED authority.

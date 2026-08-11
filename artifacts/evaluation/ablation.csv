@@ -1,0 +1,4 @@
+condition,recall_at_k0,ndcg_at_k1,mrr,source_diversity,duplicate_rate,citation_proxy_precision,citation_proxy_coverage,claim_alignment_proxy_rate,conflict_rate,context_tokens,estimated_cost_usd,latency_ms
+R0,0.8333333333333334,0.8347107351850909,1.0,0.0,0.0,0.0,0.6875,0.0,0.07291666666666666,11278,0.022556,2.25
+R1,0.8333333333333334,0.8347107351850909,1.0,0.0,0.0,0.0,0.6875,0.0,0.06696428571428571,11284,0.022568,2.375
+R3,0.4166666666666667,0.5331803098593991,0.875,0.0,0.0,0.0,0.6875,0.0,0.0,2956,0.005912,2.25
