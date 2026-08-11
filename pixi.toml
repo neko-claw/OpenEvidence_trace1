@@ -10,3 +10,17 @@ pytest = ">=8.2,<9"
 [tasks]
 demo = "python main.py"
 test = "pytest"
+a3-test = "pytest tests/test_a3_*.py"
+a3-build = "python -m a3.cli.build_all"
+a3-build-offline = "python -m a3.cli.build_all --offline-smoke"
+a3-build-wiki = "python -m a3.cli.build_wiki --offline-smoke"
+a3-smoke-bm25 = "python -m a3.cli.search_bm25 hypertension --top-k 3"
+a3-smoke-vector = "python -m a3.cli.search_vector hypertension --top-k 3"
+a3-embedding-smoke = "python -m a3.cli.embedding_smoke"
+
+[pypi-dependencies]
+rank-bm25 = ">=0.2.2, <0.3"
+chromadb = ">=1.5.9, <2"
+flagembedding = ">=1.4.0, <2"
+modelscope-hub = ">=0.2.0, <0.3"
+pyyaml = ">=6.0.3, <7"

@@ -146,13 +146,89 @@ For each upstream delivery record:
   partial/empty/failed SearchResults are never upgraded.
 - **Diagnostics**: status, versions (index/corpus/rerank/reason-code),
   rank log, warning, degradation reasons+codes, latency, config snapshot +
-  hash, run hash, alignment hints, span status (`UNKNOWN_A3_PENDING`).
+  hash, run hash, alignment hints, span status (`UNKNOWN_A3_PENDING` until an
+  A3 span provider is wired, then `A3_AVAILABLE`).
 - **Provenance**: A3 `content_hash`/`evidence_content_hash` are preserved
   verbatim; A4 derives its own run hash and only falls back to its own content
   hash when the upstream field is absent (flagged UNKNOWN).
 - **Smoke evaluation**: `data/dev/*` are `mock=true` synthetic fixtures
   (MOCK-A4-* ids, no fabricated PMID/DOI/NCT/URL/guideline ids);
   `scripts/run_dev_eval.py` produces pipeline smoke metrics only.
+- **A3 span handoff (2026-08-11, A3 v0.2 landed on origin/main)**: A4 does not
+  define a span schema.  The adapter accepts an optional A3 span provider
+  (`chunk_id -> Sequence[a3.domain.models.EvidenceSpan]`) and maps real A3
+  spans (span_id/text/chunk_id/page/section/offset hashes) onto A5
+  `EvidenceRecord.spans`; without a provider, spans stay empty and
+  `span_status=UNKNOWN_A3_PENDING`.  Real span-level recall uses A3 span IDs
+  (`evaluation.span_recall_at_k`); `span_proxy_*` metrics remain chunk-level
+  smoke proxies.
 - **Pending upstream**: A1 frozen question types/dev split; A2 real Evidence
-  schema/fixtures; A3 Chunk/Span/PICO/hash/index manifest; B2 human qrels;
-  A5 Gate5 remains the only SUPPORTED authority.
+  schema/fixtures; B2 human qrels; A5 Gate5 remains the only SUPPORTED
+  authority. A3 Chunk/Span/PICO/hash/index manifest: LANDED (v0.2).
+## A3 Integration Diff — a3-schema/index v0.2
+
+- Upstream: `a3.domain.models` is authoritative for A3 Evidence, PICO, Chunk,
+  EvidenceSpan, SearchHit, and IndexManifest. No formal A2 schema or sample was
+  present on `origin/main`; the checked-in A3 sample is explicitly mock/offline.
+- A5 models affected: `EvidenceRecord` and `EvidenceSpan` through
+  `a5.adapters.a3_evidence_adapter.adapt_a3_evidence`; `Claim`,
+  `VerificationResult`, and `RuleBasedClaimVerifier` are exercised unchanged.
+- Classification: direct mapping for identity/text/source/title/PICO/date/level;
+  adapter required for selected chunk content, page conversion, spans, and
+  provenance; no core schema conflict.
+- Mapped: A3 `id`, selected exact Chunk `text`, `source_type`, `title`, explicit
+  PICO, parseable `published_at`, explicit `evidence_level`, exact spans, and
+  `mock`.
+- Retained in `source_metadata`: stable ID, content hash, raw page, only-present
+  identifiers, guideline name, chunk IDs, corpus/index versions, and provenance.
+- Dropped: none. Non-numeric pages map to A5 `page=None` while the original is
+  retained as `raw_page`. A3 raw BM25 score/vector distance is deliberately not
+  converted into A5's normalized `retrieval_score`.
+- Core A5 changes: none. The workflow, gates, FSM, and public
+  `answer(question, workflow=...) -> AgentRun` API are unchanged.
+- Tests: `test_a3_a5_adapter.py` and `test_a3_gate5_integration.py` cover legal
+  span, illegal Evidence ID, illegal/wrong span, missing span, PICO
+  match/mismatch/UNKNOWN, time match/mismatch/UNKNOWN, exact textual support,
+  and paraphrase remaining INSUFFICIENT using the real rule-based verifier.
+- Missing/remaining owner: A2 final schema and importer semantics (A2), A4
+  normalized retrieval score and BM25/vector fusion/rerank/MMR (A4), semantic
+  medical verification (A5 owner), and source-card/Wiki presentation (A6).
+
+- Frozen downstream artifacts are checked in under `contracts/a3/v0.2/`; they
+  contain Pydantic-generated schemas and a versioned mock fixture, not an A2
+  final Evidence declaration. Field and provenance semantics are documented in
+  `docs/A3_CONTRACT.md`.
+- Chunk offsets are document-relative. Span offsets are chunk-relative and also
+  carry explicit document-relative offsets. Both carry current content hashes;
+  non-numeric locators such as `S12` and `appendix-A` remain in `raw_page`.
+- `config/a3.yaml` is validated strictly and controls every A3 build path and
+  semantic version input. Its effective values are persisted in IndexManifest.
+- Wiki lexical hits are marked `document_kind=wiki_navigation`; only configured
+  title/synonym/MeSH terms enter BM25, never Chroma or the raw evidence corpus.
+
+### A4 remote contract observation (2026-08-11)
+
+- `origin/A4` exposes lexical `search(query: str, k: int)` and vector
+  `search(query_vector, k)` ports producing A4 `ScoredChunk` objects; A4 retains
+  ownership of RRF, feature reranking, and MMR.
+- A3's `SearchHit` carries the required raw channel/rank/score-or-distance,
+  evidence/chunk identity, PICO, locator, and frozen index version needed by a
+  future A4 adapter.
+- The observed A4 branch is not based on current `origin/main` and its branch
+  diff removes the A5 tree. It was therefore treated as a read-only contract
+  reference and was not merged into this branch.
+
+### BGE-M3 local source handoff
+
+- The semantic model identity remains `BAAI/bge-m3` at frozen revision
+  `5617a9f61b028005a4858fdac845db406aefb181`.
+- `A3_BGE_M3_MODEL_PATH` may point to a verified local snapshot. The provider
+  validates required files and loads FlagEmbedding from that directory while
+  keeping the logical model ID/revision—and therefore index semantics—stable.
+- Local absolute paths are never included in corpus/index version hashes or
+  persisted index metadata. If the variable is absent, the provider retains
+  the official Hub fallback.
+- `modelscope-hub` is a downloader-only Pixi dependency used to retrieve the
+  official `BAAI/bge-m3` snapshot when the Hugging Face large-file CDN is not
+  reachable; it is not part of A3's runtime API.
+
