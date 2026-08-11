@@ -20,4 +20,4 @@ def export_schemas(output: str | Path) -> list[Path]:
 
 
 if __name__ == "__main__":
-    export_schemas(Path(__file__).resolve().parents[2] / "contracts/a3/v0.2/schemas")
+    export_schemas(Path(__file__).resolve().parents[2] / "contracts/a3/v0.3/schemas")

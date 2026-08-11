@@ -1,0 +1,21 @@
+name: A3 offline contracts
+
+on:
+  pull_request:
+  push:
+    branches: [feature/a3-data-wiki]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+      - run: python -m pip install --upgrade pip
+      - run: python -m pip install -e ".[retrieval]" pytest
+      - run: pytest
+      - run: python -m a3.cli.build_all --offline-smoke

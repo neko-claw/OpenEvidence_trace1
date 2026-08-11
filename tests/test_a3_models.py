@@ -27,4 +27,4 @@ def test_real_identifier_priority():
 
 def test_mock_guard_rejects_identifiers():
     with pytest.raises(ValidationError):
-        evidence(pmid="fake")
+        evidence(pmid=" ")

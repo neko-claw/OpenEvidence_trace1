@@ -4,20 +4,27 @@ import pytest
 
 from a3.domain.models import Evidence
 from a3.indexing.chunking import ChunkPolicy, chunk_evidence
-from a5.adapters.a3_evidence_adapter import adapt_a3_evidence
+from a5.adapters.a3 import adapt_a3_selection
 from a5.adapters.rule_based_claim_verifier import RuleBasedClaimVerifier
+from a5.adapters.default_safety_policy import FixtureSafetyPolicy
+from a5.adapters.mock_claim_generator import MockClaimGenerator
+from a5.agent.workflow import A5Workflow
 from a5.domain.enums import ClaimCriticality, MatchStatus, VerificationStatus
-from a5.domain.models import Claim, VerificationContext
+from a5.domain.models import Claim, Question, RetrievalResult, VerificationContext
+from a5.runtime_config import load_runtime_config
+from tests.a3_support import make_manifest
 
 
 def record(**updates):
     data=dict(id="E1",source_type="trial",title="Mock",abstract_or_chunk="Exact synthetic outcome is stable.",
         population="synthetic adults",intervention="synthetic A",comparator="synthetic B",outcome="synthetic outcome",
-        published_at=datetime(2025,1,1,tzinfo=timezone.utc),mock=True)
+        published_at=datetime(2025,1,1,tzinfo=timezone.utc),mock=True,provenance={"fixture":"gate5"})
     data.update(updates); e=Evidence(**data)
     policy=ChunkPolicy(version="test",max_chars=1200,overlap_chars=150,natural_boundary_ratio=.6)
     c,s=chunk_evidence(e,policy)
-    return adapt_a3_evidence(e,c,s,index_version="i",corpus_version="c")
+    manifest=make_manifest([e])
+    return adapt_a3_selection(e,c,s,manifest,index_version=manifest.index_version,
+        corpus_version=manifest.corpus_version).evidence
 
 
 def claim(rec, **updates):
@@ -71,3 +78,29 @@ def test_time_match_mismatch_and_unknown():
 def test_paraphrase_remains_insufficient():
     r=record(); result=verify(claim(r,text="A similar but non-exact semantic paraphrase"),[r])
     assert result.status is VerificationStatus.INSUFFICIENT
+
+
+def test_adapter_diagnostics_reach_trace_and_unknown_score_cannot_pass_gate2():
+    evidence=Evidence(id="E-TRACE",source_type="trial",title="Mock",
+        abstract_or_chunk="Exact synthetic trace sentence.",mock=True,
+        provenance={"fixture":"trace"})
+    chunks,spans=chunk_evidence(evidence,ChunkPolicy(version="trace",max_chars=1200,
+        overlap_chars=0,natural_boundary_ratio=.6)); manifest=make_manifest([evidence])
+    adapted=adapt_a3_selection(evidence,chunks,spans,manifest,index_version=manifest.index_version,
+        corpus_version=manifest.corpus_version)
+
+    class A4SelectionFixtureRetriever:
+        def retrieve(self, question, plan, request):
+            del question,plan,request
+            return RetrievalResult(evidence=[adapted.evidence],tool_name="a4-selection-fixture",
+                diagnostics=adapted.diagnostics.model_dump(mode="json"))
+
+    config=load_runtime_config(); workflow=A5Workflow(retriever=A4SelectionFixtureRetriever(),
+        claim_generator=MockClaimGenerator(),claim_verifier=RuleBasedClaimVerifier(config.gates.gate5),
+        safety_policy=FixtureSafetyPolicy(),runtime_config=config)
+    run=workflow.answer(Question(text="Synthetic trace test.",metadata={"mock_safety_decision":"ALLOW"}))
+    retrieve=next(event for event in run.trace if event.tool == "a4-selection-fixture")
+    assert retrieve.details["diagnostics"]["a3_contract_version"] == "a3-compat-v0.3"
+    assert retrieve.details["diagnostics"]["selected_span_ids"] == [spans[0].span_id]
+    assert run.evidence_sufficiency.metrics.top_score is None
+    assert run.decision.value == "REFUSE"

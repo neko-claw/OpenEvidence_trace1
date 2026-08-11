@@ -2,6 +2,7 @@ import hashlib
 import math
 import sys
 import types
+import json
 from datetime import datetime, timezone
 
 from a3.domain.models import Evidence
@@ -12,11 +13,13 @@ from a3.indexing.embeddings import (
     resolve_bge_m3_source,
 )
 from a3.indexing.vector import ChromaVectorIndex
+from tests.a3_support import make_manifest
 
 
 class FakeEmbeddingProvider:
     model_id = "fake-v1"
     revision = "test"
+    source_kind = "test-fixture"
 
     @staticmethod
     def _one(text):
@@ -100,23 +103,40 @@ def test_local_source_does_not_change_logical_model_id(monkeypatch, tmp_path):
     assert "revision" not in calls["kwargs"]
 
 
+def test_local_source_accepts_complete_safetensors_shards(monkeypatch, tmp_path):
+    complete = tmp_path / "sharded"; complete.mkdir()
+    for name in ("config.json", "tokenizer_config.json", "model-00001-of-00002.safetensors",
+                 "model-00002-of-00002.safetensors"):
+        (complete / name).write_text("fixture", encoding="utf-8")
+    (complete / "model.safetensors.index.json").write_text(json.dumps({"weight_map": {
+        "a": "model-00001-of-00002.safetensors", "b": "model-00002-of-00002.safetensors"}}),
+        encoding="utf-8")
+    monkeypatch.setenv("A3_BGE_M3_MODEL_PATH", str(complete))
+    assert resolve_bge_m3_source() == str(complete.resolve())
+
+
 def test_vector_explicit_embeddings_idempotence_persistence_and_metadata(tmp_path):
     evidence = [Evidence(id="M1", source_type="review", title="Pressure mock",
         abstract_or_chunk="pressure pressure synthetic", published_at=datetime(2024,1,1,tzinfo=timezone.utc), mock=True),
         Evidence(id="M2", source_type="trial", title="Lipids mock",
         abstract_or_chunk="lipids cholesterol synthetic", published_at=datetime(2026,1,1,tzinfo=timezone.utc), mock=True)]
-    chunks = sum((chunk_evidence(e, POLICY)[0] for e in evidence), [])
+    chunked = [chunk_evidence(item, POLICY) for item in evidence]
+    chunks = sum((item[0] for item in chunked), [])
+    spans = sum((item[1] for item in chunked), [])
+    manifest = make_manifest(evidence, provider="flagembedding", model="fake-v1",
+        revision="test", source_kind="test-fixture")
     root = tmp_path / "chroma"
-    index = ChromaVectorIndex(root, "abc123", FakeEmbeddingProvider())
-    assert index.sync(evidence, chunks) == 2
-    assert index.sync(evidence, chunks) == 2
+    index = ChromaVectorIndex(root, manifest, FakeEmbeddingProvider())
+    assert index.sync(evidence, chunks, spans) == 2
+    assert index.sync(evidence, chunks, spans) == 2
     hit = index.search("cholesterol", 9)[0]
     assert hit.evidence_id == "M2" and hit.distance is not None
-    reopened = ChromaVectorIndex(root, "abc123", FakeEmbeddingProvider())
+    reopened = ChromaVectorIndex(root, manifest, FakeEmbeddingProvider())
     assert reopened.collection.count() == 2
     assert all(value is not None for value in hit.metadata.values())
     dated = reopened.search("synthetic", 5, {"date_to":"2024-12-31"})
     assert [item.evidence_id for item in dated] == ["M1"]
     current_chunks = [chunk for chunk in chunks if chunk.evidence_id == "M1"]
-    assert reopened.sync([evidence[0]], current_chunks) == 1
+    current_spans = [span for span in spans if span.chunk_id in {chunk.chunk_id for chunk in current_chunks}]
+    assert reopened.sync([evidence[0]], current_chunks, current_spans) == 1
     assert all(hit.evidence_id != "M2" for hit in reopened.search("cholesterol", 5))

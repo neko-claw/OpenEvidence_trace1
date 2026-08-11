@@ -42,6 +42,6 @@ Next topic: [Dyslipidemia](dyslipidemia.md)
 ## Provenance
 
 - corpus version: `dca4b3636abc7566e5e4028a1652f475710ac26c7b2f3e33a916f8d62cedde18`
-- index version: `bc7ba6caeefe1bcdb9fdb2a89fa9098d4067a1c368eaf484135600d61e1476d5`
+- index version: `ef80da099202cb8e7c2a2fd298c6a77c7e643d5adb56f0d2bb551cd4722111f8`
 - generation/builder version: `deterministic-offline-wiki@a3-wiki-v0.1`
 - review status: `MOCK / UNREVIEWED`

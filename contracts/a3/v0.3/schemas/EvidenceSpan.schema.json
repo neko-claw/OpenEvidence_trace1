@@ -1,0 +1,111 @@
+{
+  "additionalProperties": false,
+  "properties": {
+    "char_end": {
+      "minimum": 0,
+      "title": "Char End",
+      "type": "integer"
+    },
+    "char_start": {
+      "minimum": 0,
+      "title": "Char Start",
+      "type": "integer"
+    },
+    "chunk_content_hash": {
+      "title": "Chunk Content Hash",
+      "type": "string"
+    },
+    "chunk_id": {
+      "title": "Chunk Id",
+      "type": "string"
+    },
+    "content_hash": {
+      "title": "Content Hash",
+      "type": "string"
+    },
+    "document_char_end": {
+      "minimum": 0,
+      "title": "Document Char End",
+      "type": "integer"
+    },
+    "document_char_start": {
+      "minimum": 0,
+      "title": "Document Char Start",
+      "type": "integer"
+    },
+    "evidence_content_hash": {
+      "title": "Evidence Content Hash",
+      "type": "string"
+    },
+    "evidence_id": {
+      "title": "Evidence Id",
+      "type": "string"
+    },
+    "offset_scope": {
+      "const": "chunk",
+      "default": "chunk",
+      "title": "Offset Scope",
+      "type": "string"
+    },
+    "page": {
+      "anyOf": [
+        {
+          "minimum": 1,
+          "type": "integer"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Page"
+    },
+    "raw_page": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Raw Page"
+    },
+    "section": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Section"
+    },
+    "span_id": {
+      "title": "Span Id",
+      "type": "string"
+    },
+    "text": {
+      "title": "Text",
+      "type": "string"
+    }
+  },
+  "required": [
+    "span_id",
+    "evidence_id",
+    "chunk_id",
+    "text",
+    "char_start",
+    "char_end",
+    "document_char_start",
+    "document_char_end",
+    "chunk_content_hash",
+    "evidence_content_hash",
+    "content_hash"
+  ],
+  "title": "EvidenceSpan",
+  "type": "object"
+}
