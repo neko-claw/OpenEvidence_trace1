@@ -19,6 +19,7 @@ class DeterministicSmokeEmbedding:
     """Offline fixture embedder; never presented as the production BGE index."""
     model_id = "a3-deterministic-smoke-v0.1"
     revision = "offline-fixture"
+    source_kind = "offline-fixture"
 
     @staticmethod
     def _encode(text: str) -> list[float]:

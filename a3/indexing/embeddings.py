@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import os
+import json
 from collections.abc import Sequence
 from pathlib import Path
 from typing import Protocol
@@ -8,7 +9,13 @@ from typing import Protocol
 DEFAULT_BGE_M3_MODEL_ID = "BAAI/bge-m3"
 DEFAULT_BGE_M3_REVISION = "5617a9f61b028005a4858fdac845db406aefb181"
 LOCAL_MODEL_ENV = "A3_BGE_M3_MODEL_PATH"
-_LOCAL_REQUIRED_FILES = ("config.json", "pytorch_model.bin", "tokenizer_config.json")
+_LOCAL_REQUIRED_FILES = ("config.json", "tokenizer_config.json")
+_WEIGHT_FILES = ("model.safetensors", "pytorch_model.bin")
+_WEIGHT_INDEX_FILES = ("model.safetensors.index.json", "pytorch_model.bin.index.json")
+
+
+class EmbeddingDependencyError(RuntimeError):
+    """Stable packaging error when the optional embedding runtime is absent."""
 
 
 def resolve_bge_m3_source(model_id: str = DEFAULT_BGE_M3_MODEL_ID,
@@ -24,6 +31,18 @@ def resolve_bge_m3_source(model_id: str = DEFAULT_BGE_M3_MODEL_ID,
     missing = [name for name in _LOCAL_REQUIRED_FILES if not (path / name).is_file()]
     if missing:
         raise RuntimeError(f"Incomplete local BGE-M3 model directory. Missing: {missing}")
+    direct_weights = [name for name in _WEIGHT_FILES if (path / name).is_file()]
+    indexes = [name for name in _WEIGHT_INDEX_FILES if (path / name).is_file()]
+    if not direct_weights and not indexes:
+        raise RuntimeError("Incomplete local BGE-M3 model directory. Missing model weights "
+                           "(safetensors/bin file or shard index)")
+    for index_name in indexes:
+        payload = json.loads((path / index_name).read_text(encoding="utf-8"))
+        shards = set(payload.get("weight_map", {}).values())
+        missing_shards = sorted(name for name in shards if not (path / name).is_file())
+        if not shards or missing_shards:
+            raise RuntimeError(f"Incomplete local BGE-M3 shard index {index_name}; "
+                               f"missing shards: {missing_shards or 'weight_map empty'}")
     return str(path.resolve())
 
 
@@ -32,6 +51,8 @@ class EmbeddingProvider(Protocol):
     def model_id(self) -> str: ...
     @property
     def revision(self) -> str | None: ...
+    @property
+    def source_kind(self) -> str: ...
     def encode_documents(self, texts: Sequence[str]) -> list[list[float]]: ...
     def encode_queries(self, texts: Sequence[str]) -> list[list[float]]: ...
 
@@ -41,7 +62,12 @@ class BgeM3EmbeddingProvider:
                  revision: str | None = DEFAULT_BGE_M3_REVISION,
                  *, use_fp16: bool = False, local_path_env: str = LOCAL_MODEL_ENV,
                  normalize: bool = True) -> None:
-        from FlagEmbedding import BGEM3FlagModel
+        try:
+            from FlagEmbedding import BGEM3FlagModel
+        except ModuleNotFoundError as exc:
+            raise EmbeddingDependencyError(
+                "BGE-M3 support is optional; install with `pip install -e .[embedding]` "
+                "or use the Pixi environment") from exc
         self._model_id = model_id
         self._revision = revision
         source = resolve_bge_m3_source(model_id, local_path_env)

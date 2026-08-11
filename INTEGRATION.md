@@ -132,13 +132,14 @@ For each upstream delivery record:
 - temporary assumption removed;
 - remaining owner and TODO.
 
-## A3 Integration Diff — a3-schema/index v0.2
+## A3 Integration Diff — a3 compatibility schema/index v0.3
 
-- Upstream: `a3.domain.models` is authoritative for A3 Evidence, PICO, Chunk,
-  EvidenceSpan, SearchHit, and IndexManifest. No formal A2 schema or sample was
-  present on `origin/main`; the checked-in A3 sample is explicitly mock/offline.
+- Upstream: `a3.domain.models` is authoritative only for the provisional A3
+  Evidence/PICO/Chunk/Span/SearchHit/Manifest compatibility surface. It does
+  not replace A2's final production Evidence ownership; the checked-in A3
+  sample is explicitly mock/offline.
 - A5 models affected: `EvidenceRecord` and `EvidenceSpan` through
-  `a5.adapters.a3_evidence_adapter.adapt_a3_evidence`; `Claim`,
+  `a5.adapters.a3.adapt_a3_selection`; `Claim`,
   `VerificationResult`, and `RuleBasedClaimVerifier` are exercised unchanged.
 - Classification: direct mapping for identity/text/source/title/PICO/date/level;
   adapter required for selected chunk content, page conversion, spans, and
@@ -161,7 +162,7 @@ For each upstream delivery record:
   normalized retrieval score and BM25/vector fusion/rerank/MMR (A4), semantic
   medical verification (A5 owner), and source-card/Wiki presentation (A6).
 
-- Frozen downstream artifacts are checked in under `contracts/a3/v0.2/`; they
+- Versioned downstream artifacts are checked in under `contracts/a3/v0.3/`; they
   contain Pydantic-generated schemas and a versioned mock fixture, not an A2
   final Evidence declaration. Field and provenance semantics are documented in
   `docs/A3_CONTRACT.md`.
@@ -172,6 +173,18 @@ For each upstream delivery record:
   semantic version input. Its effective values are persisted in IndexManifest.
 - Wiki lexical hits are marked `document_kind=wiki_navigation`; only configured
   title/synonym/MeSH terms enter BM25, never Chroma or the raw evidence corpus.
+- BM25 and Vector now return the same typed SearchHit provenance: live/mock
+  state, Chunk/Evidence hashes, Span refs/locators, corpus/index/chunk/tokenizer,
+  embedding source, Wiki builder and config versions. Wiki navigation cannot be
+  adapted into A5 Evidence.
+- `a5.adapters.a3.adapt_a3_selection` is the only canonical A3→A5 mapper. It
+  consumes only A4-selected Chunks, validates Evidence/Chunk/Span/hash/offset/
+  version/tombstone/provenance invariants, keeps `retrieval_score=None`, and
+  emits structured diagnostics that a retriever can place in Trace. The A5
+  Workflow/FSM/Gates/public API do not import A3.
+- IndexManifest distinguishes requested YAML from the actual runtime-effective
+  snapshot. Offline smoke identity is never mixed with the requested BGE
+  identity in the runtime snapshot or semantic index hash.
 
 ### A4 remote contract observation (2026-08-11)
 

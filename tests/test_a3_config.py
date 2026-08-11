@@ -10,6 +10,14 @@ from a3.config import ConfigLoader
 ROOT = Path(__file__).resolve().parents[1]
 
 
+class FakeConfiguredEmbedding:
+    model_id = "BAAI/bge-m3"
+    revision = "5617a9f61b028005a4858fdac845db406aefb181"
+    source_kind = "test-local-snapshot"
+    def encode_documents(self, texts): return [[1.0, 0.0] for _ in texts]
+    def encode_queries(self, texts): return [[1.0, 0.0] for _ in texts]
+
+
 def _temporary_config(tmp_path: Path, max_chars: int) -> Path:
     raw = yaml.safe_load((ROOT / "config/a3.yaml").read_text(encoding="utf-8"))
     shutil.copyfile(ROOT / "data/fixtures/a3_mock_evidence.jsonl", tmp_path / "fixture.jsonl")
@@ -34,7 +42,11 @@ def test_config_changes_paths_topic_and_real_build_chunking(tmp_path):
     assert "Configured Topic" in (tmp_path / "runtime/wiki-pages/_index.md").read_text(encoding="utf-8")
     assert list((tmp_path / "runtime/lexical").glob("*/manifest.json"))
     assert first["manifest"]["chunk_policy"]["max_chars"] == 90
-    assert first["manifest"]["effective_config"]["wiki"]["topics"][0]["slug"] == "configured-topic"
+    assert first["manifest"]["runtime_effective_config"]["wiki"]["topics"][0]["slug"] == "configured-topic"
+    assert first["manifest"]["runtime_effective_config"]["embedding"] == {
+        **first["manifest"]["requested_config"]["embedding"],
+        "provider": "offline-smoke", "model": "a3-deterministic-smoke-v0.1",
+        "revision": "offline-fixture", "source_kind": "offline-fixture"}
     assert first["bm25_document_count"] == first["chunk_count"] + 1
 
     again = build(real_embedding=False, config_path=path, project_root=tmp_path)
@@ -56,3 +68,14 @@ def test_config_loader_is_strict(tmp_path):
     path.write_text(yaml.safe_dump(raw, sort_keys=False), encoding="utf-8")
     with pytest.raises(ValueError, match="unexpected"):
         ConfigLoader.load(path, project_root=tmp_path)
+
+
+def test_real_provider_runtime_snapshot_matches_manifest(tmp_path):
+    path = _temporary_config(tmp_path, max_chars=90)
+    report = build(real_embedding=True, config_path=path, project_root=tmp_path,
+                   provider_override=FakeConfiguredEmbedding())
+    manifest = report["manifest"]; runtime = manifest["runtime_effective_config"]["embedding"]
+    assert (manifest["embedding_provider"], manifest["embedding_model"],
+            manifest["embedding_revision"], manifest["embedding_source_kind"]) == (
+            runtime["provider"], runtime["model"], runtime["revision"], runtime["source_kind"])
+    assert runtime["source_kind"] == "test-local-snapshot"

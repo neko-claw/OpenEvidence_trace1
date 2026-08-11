@@ -13,9 +13,10 @@ def manifest(text="Mock text", model="BAAI/bge-m3"):
         "wiki": {"root": "z", "builder_version": "wiki", "topics": [{"slug": "mock"}]}}
     return create_manifest(evidence=[evidence], chunk_policy_version=policy.version,
         chunk_policy=policy.as_dict(), embedding_provider="flagembedding", embedding_model=model,
-        embedding_revision="rev", embedding_mode="dense", vector_distance="cosine",
+        embedding_revision="rev", embedding_source_kind="test", embedding_mode="dense", vector_distance="cosine",
         bm25_tokenizer_version="tok", wiki_builder_version="wiki",
-        config_schema_version="config", effective_config=effective)
+        config_schema_version="config", requested_config=effective,
+        runtime_effective_config=effective)
 
 
 def test_versions_change_only_with_corpus_or_semantic_config():

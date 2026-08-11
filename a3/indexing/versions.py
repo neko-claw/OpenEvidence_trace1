@@ -21,9 +21,11 @@ def corpus_version(evidence: Sequence[Evidence]) -> str:
 def create_manifest(*, evidence: Sequence[Evidence], chunk_policy_version: str,
                     chunk_policy: dict[str, Any], embedding_provider: str,
                     embedding_model: str, embedding_revision: str | None,
+                    embedding_source_kind: str,
                     embedding_mode: str, vector_distance: str,
                     bm25_tokenizer_version: str, wiki_builder_version: str,
-                    config_schema_version: str, effective_config: dict[str, Any]) -> IndexManifest:
+                    config_schema_version: str, requested_config: dict[str, Any],
+                    runtime_effective_config: dict[str, Any]) -> IndexManifest:
     corpus = corpus_version(evidence)
     versions = {"manifest_schema_version": INDEX_MANIFEST_SCHEMA_VERSION,
             "evidence_schema_version": EVIDENCE_SCHEMA_VERSION,
@@ -34,11 +36,12 @@ def create_manifest(*, evidence: Sequence[Evidence], chunk_policy_version: str,
     base = {**versions, "corpus_version": corpus, "chunk_policy_version": chunk_policy_version,
             "chunk_policy": chunk_policy, "bm25_tokenizer_version": bm25_tokenizer_version,
             "embedding_provider": embedding_provider, "embedding_model": embedding_model,
-            "embedding_revision": embedding_revision, "embedding_mode": embedding_mode,
+            "embedding_revision": embedding_revision, "embedding_source_kind": embedding_source_kind,
+            "embedding_mode": embedding_mode,
             "vector_distance": vector_distance, "wiki_builder_version": wiki_builder_version,
-            "effective_config": effective_config}
-    semantic = {key: value for key, value in base.items() if key != "effective_config"}
-    semantic["effective_config"] = _semantic_config(effective_config)
+            "requested_config": requested_config, "runtime_effective_config": runtime_effective_config}
+    semantic = {key: value for key, value in base.items() if key != "requested_config"}
+    semantic["runtime_effective_config"] = _semantic_config(runtime_effective_config)
     return IndexManifest(**base, index_version=canonical_hash(semantic))
 
 

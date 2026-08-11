@@ -6,7 +6,7 @@ from a3.domain.models import Evidence
 from a3.indexing.chunking import ChunkPolicy, chunk_evidence
 from a3.indexing.versions import create_manifest
 from a3.wiki.builder import DeterministicOfflineWikiGenerator, build_wiki
-from a3.wiki.generator import WikiPage
+from a3.wiki.generator import LLMWikiGeneratorAdapter, WikiPage
 from a3.wiki.validation import validate_wiki_pages
 
 POLICY = ChunkPolicy(version="test", max_chars=1200, overlap_chars=150, natural_boundary_ratio=.6)
@@ -17,10 +17,14 @@ TOPICS = [WikiTopicConfig(slug="hypertension", title="Hypertension", synonyms=["
 def _manifest(evidence):
     manifest = create_manifest(evidence=evidence, chunk_policy_version=POLICY.version,
         chunk_policy=POLICY.as_dict(), embedding_provider="offline-smoke", embedding_model="fake",
-        embedding_revision="fixture", embedding_mode="dense", vector_distance="cosine",
+        embedding_revision="fixture", embedding_source_kind="offline-fixture",
+        embedding_mode="dense", vector_distance="cosine",
         bm25_tokenizer_version="tok", wiki_builder_version="wiki-v1",
-        config_schema_version="config-v1", effective_config={"corpus_cutoff": "2026-01-01",
-        "wiki": {"topics": [x.model_dump() for x in TOPICS]}})
+        config_schema_version="config-v1",
+        requested_config={"corpus_cutoff": "2026-01-01",
+            "wiki": {"topics": [x.model_dump() for x in TOPICS]}},
+        runtime_effective_config={"corpus_cutoff": "2026-01-01",
+            "wiki": {"topics": [x.model_dump() for x in TOPICS]}})
     # Pin the build timestamp so repeated builds are byte-identical.
     manifest.created_at = datetime(2026, 1, 1, tzinfo=timezone.utc)
     return manifest
@@ -67,3 +71,46 @@ def test_offline_generator_refuses_non_mock_evidence():
     with pytest.raises(RuntimeError, match="mock evidence only"):
         DeterministicOfflineWikiGenerator("wiki-v1").generate(
             evidence=evidence, spans=[], manifest=_manifest(evidence), topics=TOPICS)
+
+
+def test_rebuild_removes_only_unmodified_a3_owned_stale_pages(tmp_path):
+    evidence=[]; spans=[]
+    for topic in ("hypertension", "dyslipidemia"):
+        item=Evidence(id=f"M-{topic}", source_type="review", title="Mock",
+            abstract_or_chunk="Exact fixture.", mock=True, provenance={"topic": topic, "fixture": "wiki"})
+        evidence.append(item); spans.extend(chunk_evidence(item, POLICY)[1])
+    manifest=_manifest(evidence); generator=DeterministicOfflineWikiGenerator("wiki-v1")
+    build_wiki(tmp_path, evidence, spans, manifest, TOPICS, generator)
+    user_page=tmp_path / "notes.md"; user_page.write_text("user content", encoding="utf-8")
+    build_wiki(tmp_path, evidence, spans, manifest, TOPICS[:1], generator)
+    assert not (tmp_path / "dyslipidemia.md").exists()
+    assert user_page.read_text(encoding="utf-8") == "user content"
+
+    build_wiki(tmp_path, evidence, spans, manifest, TOPICS, generator)
+    stale=tmp_path / "dyslipidemia.md"; stale.write_text("user replaced content", encoding="utf-8")
+    build_wiki(tmp_path, evidence, spans, manifest, TOPICS[:1], generator)
+    assert stale.read_text(encoding="utf-8") == "user replaced content"
+
+
+def test_llm_adapter_implements_protocol_and_fails_closed_on_citation_escape(tmp_path):
+    evidence=[Evidence(id="UPSTREAM-LOCAL", upstream_id="UPSTREAM-LOCAL", source_type="review",
+        title="Reviewed input", abstract_or_chunk="Exact reviewed input sentence.")]
+    spans=chunk_evidence(evidence[0], POLICY)[1]; topic=TOPICS[:1]; manifest=_manifest(evidence)
+    prompt=tmp_path / "prompt.md"; prompt.write_text("versioned prompt", encoding="utf-8")
+    schema=tmp_path / "schema.json"; schema.write_text('{"type":"object"}', encoding="utf-8")
+
+    def structured(_payload):
+        return {"topics": [{"slug": topic[0].slug, "title": topic[0].title,
+            "entries": [{"text": spans[0].text, "evidence_id": evidence[0].id,
+                         "span_id": spans[0].span_id}]}]}
+
+    generator=LLMWikiGeneratorAdapter(structured, prompt_path=prompt, schema_path=schema, version="test")
+    bundle=generator.generate(evidence=evidence, spans=spans, manifest=manifest, topics=topic)
+    assert [page.slug for page in bundle.pages] == ["_index", "hypertension"]
+    assert "REQUIRES HUMAN REVIEW" in bundle.pages[1].content
+
+    escaped=LLMWikiGeneratorAdapter(lambda _payload: {"topics": [{"slug": topic[0].slug,
+        "title": topic[0].title, "entries": [{"text": "invented", "evidence_id": evidence[0].id,
+        "span_id": "OUTSIDE"}]}]}, prompt_path=prompt, schema_path=schema, version="test")
+    with pytest.raises(RuntimeError, match="whitelist"):
+        escaped.generate(evidence=evidence, spans=spans, manifest=manifest, topics=topic)

@@ -116,9 +116,22 @@ class LoadedA3Config:
     def wiki_root(self) -> Path:
         return self.resolve(self.config.wiki.root)
 
-    def effective_config(self) -> dict[str, object]:
-        """Portable effective values; local absolute paths never enter version hashes."""
+    def requested_config(self) -> dict[str, object]:
+        """Validated requested YAML values before runtime provider overrides."""
         return self.config.model_dump(mode="json")
+
+    def runtime_effective_config(self, *, embedding_provider: str, embedding_model: str,
+                                 embedding_revision: str | None, embedding_source_kind: str,
+                                 fixture_path: str | Path | None = None) -> dict[str, object]:
+        """Single portable snapshot of values that actually drive this build."""
+        snapshot = self.config.model_dump(mode="json")
+        embedding = dict(snapshot["embedding"])
+        embedding.update(provider=embedding_provider, model=embedding_model,
+                         revision=embedding_revision, source_kind=embedding_source_kind)
+        snapshot["embedding"] = embedding
+        if fixture_path is not None:
+            snapshot["mock_fixture"] = str(fixture_path)
+        return snapshot
 
 
 class ConfigLoader:

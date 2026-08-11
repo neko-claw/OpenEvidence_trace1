@@ -5,8 +5,11 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any
 
-from a3.domain.models import Chunk, Evidence, SearchHit
+import json
+
+from a3.domain.models import Chunk, Evidence, EvidenceSpan, IndexManifest, SearchHit
 from a3.indexing.embeddings import EmbeddingProvider
+from a3.indexing.search_contract import manifest_search_fields, span_refs_for_chunk
 
 
 def vector_text(e: Evidence, c: Chunk) -> str:
@@ -17,16 +20,17 @@ def vector_text(e: Evidence, c: Chunk) -> str:
 
 
 class ChromaVectorIndex:
-    def __init__(self, path: str | Path, index_version: str, provider: EmbeddingProvider) -> None:
+    def __init__(self, path: str | Path, manifest: IndexManifest, provider: EmbeddingProvider) -> None:
         import chromadb
-        self.index_version = index_version
+        self.manifest = manifest
+        self.index_version = manifest.index_version
         self.provider = provider
         self.client = chromadb.PersistentClient(path=str(path))
-        safe = re.sub(r"[^a-zA-Z0-9_-]", "_", index_version[:24])
+        safe = re.sub(r"[^a-zA-Z0-9_-]", "_", self.index_version[:24])
         self.collection = self.client.get_or_create_collection(
-            name=f"oe_a3_{safe}", metadata={"hnsw:space": "cosine", "index_version": index_version})
+            name=f"oe_a3_{safe}", metadata={"hnsw:space": "cosine", "index_version": self.index_version})
 
-    def sync(self, evidence: list[Evidence], chunks: list[Chunk]) -> int:
+    def sync(self, evidence: list[Evidence], chunks: list[Chunk], spans: list[EvidenceSpan]) -> int:
         by_id = {e.id: e for e in evidence}
         selected = [c for c in chunks if c.evidence_id in by_id]
         for chunk in selected:
@@ -44,10 +48,22 @@ class ChromaVectorIndex:
         for c in selected:
             e = by_id[c.evidence_id]
             raw = {"chunk_id": c.chunk_id, "evidence_id": e.id, "evidence_content_hash": e.content_hash,
+                "chunk_content_hash": c.content_hash,
                 "source_type": e.source_type, "stable_id": e.stable_id, "title": e.title,
                 "evidence_level": e.evidence_level, "page": c.page, "raw_page": c.raw_page,
                 "section": c.section,
-                "index_version": self.index_version, "mock": e.mock,
+                "index_version": self.index_version, "corpus_version": self.manifest.corpus_version,
+                "chunk_policy_version": self.manifest.chunk_policy_version,
+                "bm25_tokenizer_version": self.manifest.bm25_tokenizer_version,
+                "embedding_provider": self.manifest.embedding_provider,
+                "embedding_model": self.manifest.embedding_model,
+                "embedding_revision": self.manifest.embedding_revision,
+                "embedding_source_kind": self.manifest.embedding_source_kind,
+                "wiki_builder_version": self.manifest.wiki_builder_version,
+                "config_schema_version": self.manifest.config_schema_version,
+                "span_refs_json": json.dumps([item.model_dump(mode="json")
+                    for item in span_refs_for_chunk(spans, c.chunk_id)], ensure_ascii=False, sort_keys=True),
+                "mock": e.mock, "tombstone": e.tombstone, "live_state": "live",
                 "population": e.population, "intervention": e.intervention,
                 "comparator": e.comparator, "outcome": e.outcome,
                 "published_at": e.published_at.isoformat() if e.published_at else None}
@@ -77,7 +93,12 @@ class ChromaVectorIndex:
                 comparator=meta.get("comparator"), outcome=meta.get("outcome"),
                 published_at=meta.get("published_at"), page=meta.get("page"),
                 raw_page=meta.get("raw_page"), section=meta.get("section"),
-                index_version=self.index_version, metadata=dict(meta)))
+                mock=bool(meta["mock"]), tombstone=bool(meta["tombstone"]),
+                live_state=str(meta["live_state"]),
+                chunk_content_hash=str(meta["chunk_content_hash"]),
+                evidence_content_hash=str(meta["evidence_content_hash"]),
+                span_refs=json.loads(str(meta["span_refs_json"])),
+                **manifest_search_fields(self.manifest), metadata=dict(meta)))
             if len(hits) >= top_k:
                 break
         return hits

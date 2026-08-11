@@ -11,8 +11,9 @@ from pydantic import BaseModel, ConfigDict, Field, field_validator, model_valida
 EVIDENCE_SCHEMA_VERSION = "a3-evidence-v0.2"
 CHUNK_SCHEMA_VERSION = "a3-chunk-v0.2"
 SPAN_SCHEMA_VERSION = "a3-span-v0.2"
-SEARCH_HIT_SCHEMA_VERSION = "a3-search-hit-v0.2"
-INDEX_MANIFEST_SCHEMA_VERSION = "a3-index-manifest-v0.2"
+A3_CONTRACT_VERSION = "a3-compat-v0.3"
+SEARCH_HIT_SCHEMA_VERSION = "a3-search-hit-v0.3"
+INDEX_MANIFEST_SCHEMA_VERSION = "a3-index-manifest-v0.3"
 
 
 def canonical_hash(value: Any) -> str:
@@ -155,6 +156,23 @@ class EvidenceSpan(StrictModel):
         return self
 
 
+class SearchSpanRef(StrictModel):
+    span_id: str
+    chunk_id: str
+    text: str
+    char_start: int = Field(ge=0)
+    char_end: int = Field(ge=0)
+    offset_scope: Literal["chunk"] = "chunk"
+    document_char_start: int = Field(ge=0)
+    document_char_end: int = Field(ge=0)
+    page: int | None = Field(default=None, ge=1)
+    raw_page: str | None = None
+    section: str | None = None
+    span_content_hash: str
+    chunk_content_hash: str
+    evidence_content_hash: str
+
+
 class SearchHit(StrictModel):
     document_kind: Literal["evidence", "wiki_navigation"] = "evidence"
     channel: Literal["lexical", "vector"]
@@ -175,8 +193,33 @@ class SearchHit(StrictModel):
     page: int | None = Field(default=None, ge=1)
     raw_page: str | None = None
     section: str | None = None
+    mock: bool
+    tombstone: bool | None
+    live_state: Literal["live", "tombstoned", "navigation_only", "UNKNOWN"]
+    chunk_content_hash: str | None
+    evidence_content_hash: str | None
+    span_refs: list[SearchSpanRef]
+    corpus_version: str
     index_version: str
+    chunk_policy_version: str
+    bm25_tokenizer_version: str
+    embedding_provider: str
+    embedding_model: str
+    embedding_revision: str | None
+    embedding_source_kind: str
+    wiki_builder_version: str
+    config_schema_version: str
     metadata: dict[str, Any] = Field(default_factory=dict)
+
+    @model_validator(mode="after")
+    def navigation_is_not_evidence(self) -> "SearchHit":
+        if self.document_kind == "wiki_navigation":
+            if self.evidence_id is not None or not self.mock or self.tombstone is not None:
+                raise ValueError("Wiki navigation cannot be represented as medical Evidence")
+            if self.live_state != "navigation_only" or self.chunk_content_hash is not None \
+                    or self.evidence_content_hash is not None or self.span_refs:
+                raise ValueError("Wiki navigation must not carry Evidence/Chunk/Span provenance")
+        return self
 
 
 class IndexManifest(StrictModel):
@@ -194,8 +237,10 @@ class IndexManifest(StrictModel):
     embedding_provider: str
     embedding_model: str
     embedding_revision: str | None = None
+    embedding_source_kind: str
     embedding_mode: str = "dense"
     vector_distance: str = "cosine"
     wiki_builder_version: str
-    effective_config: dict[str, Any]
+    requested_config: dict[str, Any]
+    runtime_effective_config: dict[str, Any]
     created_at: datetime = Field(default_factory=utc_now)

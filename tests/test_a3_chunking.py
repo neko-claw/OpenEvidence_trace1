@@ -20,3 +20,15 @@ def test_chunks_and_spans_are_deterministic_exact_and_retain_locator():
         assert evidence.abstract_or_chunk[span.document_char_start:span.document_char_end] == span.text
         assert span.chunk_content_hash == chunk.content_hash
         assert span.evidence_content_hash == evidence.content_hash
+
+
+def test_chinese_sentence_boundaries_do_not_require_spaces():
+    evidence = Evidence(id="MOCK-ZH", source_type="review", title="Mock Chinese",
+        abstract_or_chunk="第一句。第二句！第三句？第四句；", mock=True)
+    policy = ChunkPolicy(version="zh", max_chars=1200, overlap_chars=0,
+                         natural_boundary_ratio=.6)
+    chunks, spans = chunk_evidence(evidence, policy)
+    assert [span.text for span in spans] == ["第一句。", "第二句！", "第三句？", "第四句；"]
+    assert all(chunks[0].text[span.char_start:span.char_end] == span.text for span in spans)
+    assert all(evidence.abstract_or_chunk[span.document_char_start:span.document_char_end] == span.text
+               for span in spans)
