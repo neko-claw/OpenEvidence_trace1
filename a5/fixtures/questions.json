@@ -1,0 +1,17 @@
+[
+  {
+    "question_id": "Q-PASS",
+    "text": "Run the artificial supported-evidence scenario.",
+    "metadata": {"scenario": "pass", "fixture_evidence_ids": ["E1", "E2"]}
+  },
+  {
+    "question_id": "Q-WARN",
+    "text": "Run the artificial partial-evidence scenario.",
+    "metadata": {"scenario": "warn", "fixture_evidence_ids": ["E1", "E3"]}
+  },
+  {
+    "question_id": "Q-REFUSE",
+    "text": "Run the artificial no-evidence scenario.",
+    "metadata": {"scenario": "refuse", "fixture_evidence_ids": []}
+  }
+]

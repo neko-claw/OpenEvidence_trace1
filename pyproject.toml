@@ -1,14 +1,31 @@
+[build-system]
+requires = ["setuptools>=69"]
+build-backend = "setuptools.build_meta"
+
 [project]
 name = "openevidence-mvp"
 version = "0.1.0"
-description = "OpenEvidence 风格证据智能助手 MVP —— 第一部分：数据集采集（高血压 + 血脂）"
-requires-python = ">=3.8"
+description = "OpenEvidence evidence assistant MVP with A5 trustworthy generation"
+readme = "README.md"
+requires-python = ">=3.11,<3.13"
 dependencies = [
-    "requests>=2.28",
+  "requests>=2.28",
+  "pydantic>=2.8,<3",
+]
+
+[project.optional-dependencies]
+retrieval = [
+  "rank-bm25>=0.2",
+  "chromadb>=0.4",
+]
+dev = [
+  "pytest>=8.2,<9",
 ]
 
 [tool.setuptools.packages.find]
-include = ["ingestion*"]
+include = ["ingestion*", "a5*"]
 
-[project.optional-dependencies]
-retrieval = ["rank-bm25>=0.2", "chromadb>=0.4"]
+[tool.pytest.ini_options]
+addopts = "-q"
+testpaths = ["tests"]
+pythonpath = ["."]

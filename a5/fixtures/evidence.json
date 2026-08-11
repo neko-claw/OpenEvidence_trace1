@@ -1,0 +1,101 @@
+[
+  {
+    "id": "E1",
+    "content": "Artificial fixture statement A is marked as supported for workflow testing.",
+    "source_type": "mock_guideline",
+    "title": "Mock evidence E1",
+    "source_metadata": {
+      "supports_claim_ids": ["C1"],
+      "mock_claims": [
+        {
+          "claim_id": "C1",
+          "text": "Artificial claim A is supported in this offline scenario.",
+          "criticality": "critical",
+          "evidence_ids": ["E1"],
+          "uncertainty": 0.05
+        }
+      ]
+    },
+    "population": "synthetic population",
+    "intervention": "synthetic intervention",
+    "comparator": "synthetic comparator",
+    "outcome": "synthetic outcome A",
+    "mock": true
+  },
+  {
+    "id": "E2",
+    "content": "Artificial fixture statement B is marked as supported for workflow testing.",
+    "source_type": "mock_review",
+    "title": "Mock evidence E2",
+    "source_metadata": {
+      "supports_claim_ids": ["C2"],
+      "mock_claims": [
+        {
+          "claim_id": "C2",
+          "text": "Artificial claim B is supported in this offline scenario.",
+          "criticality": "important",
+          "evidence_ids": ["E2"],
+          "uncertainty": 0.1
+        }
+      ]
+    },
+    "mock": true
+  },
+  {
+    "id": "E3",
+    "content": "Artificial fixture statement C provides only partial context and no rule-level support marker.",
+    "source_type": "mock_study",
+    "title": "Mock evidence E3",
+    "source_metadata": {
+      "mock_claims": [
+        {
+          "claim_id": "C3",
+          "text": "Artificial claim C is not fully supported in this offline scenario.",
+          "criticality": "important",
+          "evidence_ids": ["E3"],
+          "uncertainty": 0.6
+        }
+      ]
+    },
+    "mock": true
+  },
+  {
+    "id": "E4",
+    "content": "Artificial fixture statement D is marked as contradicting critical claim C4.",
+    "source_type": "mock_study",
+    "title": "Mock evidence E4",
+    "source_metadata": {
+      "contradicts_claim_ids": ["C4"],
+      "mock_claims": [
+        {
+          "claim_id": "C4",
+          "text": "Artificial critical claim D is contradicted in this offline scenario.",
+          "criticality": "critical",
+          "evidence_ids": ["E4"],
+          "uncertainty": 0.8
+        }
+      ]
+    },
+    "mock": true
+  },
+  {
+    "id": "E5",
+    "content": "Artificial fixture statement E contains conflicting rule markers solely for conflict-path testing.",
+    "source_type": "mock_conflict",
+    "title": "Mock evidence E5",
+    "source_metadata": {
+      "supports_claim_ids": ["C5"],
+      "contradicts_claim_ids": ["C5"],
+      "mock_claims": [
+        {
+          "claim_id": "C5",
+          "text": "Artificial claim E has unresolved conflicting fixture markers.",
+          "criticality": "critical",
+          "evidence_ids": ["E5"],
+          "uncertainty": 0.9
+        }
+      ]
+    },
+    "mock": true
+  }
+]
