@@ -1,6 +1,6 @@
 {
-  "config_version": "0.2.0",
-  "agent_version": "0.2.0",
-  "state_machine_version": "0.2.0",
+  "config_version": "0.3.0",
+  "agent_version": "0.3.0",
+  "state_machine_version": "0.3.0",
   "max_tool_calls": 3
 }

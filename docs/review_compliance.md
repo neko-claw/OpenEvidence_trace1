@@ -5,8 +5,8 @@ only after its implementation and behavior-specific tests pass. Upstream A1–A4
 dependencies remain behind A5 ports/adapters and are never counted as an A5
 implementation.
 
-Baseline: 2026-08-11, branch `agent/a5-trustworthy-generation`, 30 legacy tests
-passed before remediation.
+Baseline: 2026-08-12. The original B1–B5 remediation is retained; this revision
+adds the planning-defined Gate1 and reviewed A1–A4 branch contracts.
 
 ## B1 — Skill delivery
 
@@ -93,9 +93,33 @@ passed before remediation.
 - Remaining Upstream Dependency: Final A1 policy versions and production model
   selection; both remain replaceable configuration.
 
+## I1 — Gate1 and upstream provenance
+
+- Status: PASS (A5 scope)
+- Implementation: Explicit Gate1 state/event; production records require
+  configured provenance fields and an accepted Adapter integrity marker;
+  tombstone/mismatch/mock-in-production fail closed.
+- Files: `a5/gates/evidence_integrity.py`,
+  `a5/ports/evidence_integrity.py`, workflow/state/models/config.
+- Tests: Gate1 strict/mock states, workflow trace, production UNKNOWN/eligible.
+- Remaining Upstream Dependency: A2 source validation and A3 provenance enter
+  through reviewed adapters; branch-to-main integration remains pending.
+
+## I2 — Rerank and Embedding isolation
+
+- Status: PASS (A5 scope)
+- Implementation: Retrieval score kind/scope/calibration are explicit. Gate2
+  accepts only calibrated cross-query quality scores. A4 rank values remain
+  query-local diagnostics. Unverified BGE-M3/CrossEncoder are disabled in the
+  effective config and rejected when presented as enabled production features.
+- Tests: uncalibrated scores remain UNKNOWN; capability blockers execute.
+- Remaining Upstream Dependency: A3 dev Recall@50/latency and A4 valid R0–R3
+  same-candidate-pool ablation.
+
 ## Merge state
 
-**MERGE READY** — B1–B5 are PASS; `pixi run test` reports 50 passed, the demo
-artifacts cover Gate0 through Gate6, and the final self-review found no
-production shortcut or upstream-boundary violation. See
+**MERGE READY (A5 CONTROL LAYER)** — `pixi run test` reports 74 passed; the
+refreshed demo covers Gate0→Gate1→Gate2→Claim→Gate5→Gate6; Schema, capability,
+Mock boundary and diff checks pass. Upstream production integration remains
+PENDING and is not part of this A5-owned readiness claim. See
 `docs/merge_readiness_report.md`.

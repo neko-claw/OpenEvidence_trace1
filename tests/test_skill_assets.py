@@ -16,9 +16,7 @@ ROOT = Path(__file__).parents[1]
 
 def _assert_schema_root_matches(model, schema: dict) -> None:
     generated = model.model_json_schema()
-    assert schema["title"] == generated["title"]
-    assert set(schema["properties"]) == set(generated["properties"])
-    assert set(schema.get("required", [])) == set(generated.get("required", []))
+    assert schema == generated
 
 
 def test_manifests_prompts_schemas_and_fixtures_load() -> None:
@@ -43,13 +41,8 @@ def test_skill_loader_resolves_name_version_and_implementation() -> None:
 
 def test_versioned_prompt_loader_loads_all_runtime_prompts() -> None:
     loader = PromptLoader()
-    version = "0.2.0"
-    for name in (
-        "question_classification",
-        "evidence_research",
-        "claim_generation",
-        "citation_audit",
-    ):
+    versions = load_runtime_config().skills.prompt_versions
+    for name, version in versions.items():
         assert f"version: {version}" in loader.load(name, version)
 
 
@@ -76,14 +69,15 @@ def test_skill_fixtures_validate_against_pydantic_contracts() -> None:
 
 
 def test_skill_and_top_level_prompt_assets_do_not_drift() -> None:
+    config = load_runtime_config()
     pairs = [
         (
             ROOT / "a5/skills/evidence_research/prompt_v0.2.0.md",
             ROOT / "prompts/evidence_research_v0.2.0.md",
         ),
         (
-            ROOT / "a5/skills/citation_audit/prompt_v0.2.0.md",
-            ROOT / "prompts/citation_audit_v0.2.0.md",
+            ROOT / f"a5/skills/citation_audit/prompt_v{config.skills.citation_audit.prompt_version}.md",
+            ROOT / f"prompts/citation_audit_v{config.skills.citation_audit.prompt_version}.md",
         ),
     ]
     for packaged, shared in pairs:

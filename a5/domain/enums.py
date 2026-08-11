@@ -16,6 +16,7 @@ class WorkflowState(StrEnum):
     SELECT_SKILL = "SELECT_SKILL"
     PLAN = "PLAN"
     RETRIEVE = "RETRIEVE"
+    GATE1 = "GATE1"
     GATE2 = "GATE2"
     SUMMARIZE_EVIDENCE = "SUMMARIZE_EVIDENCE"
     GENERATE_CLAIMS = "GENERATE_CLAIMS"
@@ -86,3 +87,21 @@ class FreshnessState(StrEnum):
     STALE = "STALE"
     UNKNOWN = "UNKNOWN"
     NOT_REQUIRED = "NOT_REQUIRED"
+
+
+class EvidenceIntegrityStatus(StrEnum):
+    ELIGIBLE = "ELIGIBLE"
+    REJECTED = "REJECTED"
+    UNKNOWN = "UNKNOWN"
+
+
+class RetrievalScoreKind(StrEnum):
+    QUALITY = "QUALITY"
+    RANKING = "RANKING"
+    UNKNOWN = "UNKNOWN"
+
+
+class RetrievalScoreScope(StrEnum):
+    CROSS_QUERY = "CROSS_QUERY"
+    QUERY_LOCAL = "QUERY_LOCAL"
+    UNKNOWN = "UNKNOWN"

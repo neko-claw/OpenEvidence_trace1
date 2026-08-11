@@ -26,6 +26,7 @@ def test_normal_state_path_is_explicit_and_terminal() -> None:
         WorkflowState.SELECT_SKILL,
         WorkflowState.PLAN,
         WorkflowState.RETRIEVE,
+        WorkflowState.GATE1,
         WorkflowState.GATE2,
         WorkflowState.SUMMARIZE_EVIDENCE,
         WorkflowState.GENERATE_CLAIMS,
@@ -49,8 +50,10 @@ def test_gate2_retry_loop_is_explicit() -> None:
         WorkflowState.SELECT_SKILL,
         WorkflowState.PLAN,
         WorkflowState.RETRIEVE,
+        WorkflowState.GATE1,
         WorkflowState.GATE2,
         WorkflowState.RETRIEVE,
+        WorkflowState.GATE1,
         WorkflowState.GATE2,
     ):
         machine.transition(state)

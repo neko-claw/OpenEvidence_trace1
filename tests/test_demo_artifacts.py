@@ -1,6 +1,8 @@
 import json
 from pathlib import Path
 
+from a5.runtime_config import load_runtime_config
+
 
 ROOT = Path(__file__).parents[1]
 
@@ -12,6 +14,7 @@ def test_demo_trace_artifacts_cover_required_control_flow() -> None:
         "GATE0",
         "SELECT_SKILL",
         "RETRIEVE",
+        "GATE1",
         "GATE2",
         "SUMMARIZE_EVIDENCE",
         "GENERATE_CLAIMS",
@@ -31,9 +34,11 @@ def test_demo_trace_artifacts_cover_required_control_flow() -> None:
 
 
 def test_readable_demo_trace_contains_gate_and_skill_versions() -> None:
+    config = load_runtime_config()
     text = (ROOT / "artifacts/demo_trace.txt").read_text(encoding="utf-8")
-    assert "Gate0@0.2.0" in text
-    assert "evidence_research@0.2.0" in text
-    assert "citation_audit@0.2.0" in text
-    assert "Gate5@0.2.0" in text
-    assert "Gate6@0.2.0" in text
+    assert f"Gate0@{config.gates.gate0_version}" in text
+    assert f"Gate1@{config.gates.gate1_version}" in text
+    assert f"evidence_research@{config.skills.evidence_research.version}" in text
+    assert f"citation_audit@{config.skills.citation_audit.version}" in text
+    assert f"Gate5@{config.gates.gate5_version}" in text
+    assert f"Gate6@{config.gates.gate6_version}" in text

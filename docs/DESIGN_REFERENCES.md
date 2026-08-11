@@ -30,6 +30,17 @@ stack, model, benchmark, or large external implementation was copied.
   bounded.
 - [Pydantic](https://docs.pydantic.dev/): runtime contracts and JSON Schema.
   A5 validates fixtures with Pydantic and tests Schema root consistency.
+- [Reciprocal Rank Fusion](https://research.google/pubs/reciprocal-rank-fusion-outperforms-condorcet-and-individual-rank-learning-methods/):
+  rank-based fusion motivates keeping an RRF/ranking value distinct from a
+  calibrated retrieval-quality probability.
+- [SentenceTransformers CrossEncoder documentation](https://www.sbert.net/docs/package_reference/cross_encoder/model.html):
+  output activation and range depend on the model configuration. A5 therefore
+  refuses to interpret an uncalibrated CrossEncoder/rerank value as Gate2
+  sufficiency or Gate5 entailment.
+- [BGE-M3](https://arxiv.org/abs/2402.03216) and its
+  [official implementation](https://github.com/FlagOpen/FlagEmbedding): model
+  capability is not project-specific validation. A5 keeps the capability off
+  until A3 supplies reproducible dev Recall@50, latency and version evidence.
 
 `ExactSpanTextualSupportEvaluator` is deliberately limited. It does not
 reproduce NLI or medical inference from any referenced project.

@@ -1,10 +1,10 @@
 # A5 Merge Readiness Report
 
-Date: 2026-08-11
+Date: 2026-08-12
 
-Branch: `agent/a5-trustworthy-generation`
+Branch: `feature/a5-trust-integration`
 
-Scope: PR #1 blocking review remediation
+Scope: A5 blocking review remediation plus A1–A4 compatibility hardening
 
 ## B1 — Skill delivery: PASS
 
@@ -70,9 +70,10 @@ Scope: PR #1 blocking review remediation
 
 ## Full verification
 
-- `pixi run test`: **50 passed in 0.29s**.
+- `pixi run test`: **74 passed in 0.40s**.
 - `python -m compileall -q a5 main.py`: PASS.
-- `pixi run demo`: PASS/WARN/REFUSE completed; artifacts regenerated.
+- `pixi run demo`: PASS/WARN/REFUSE completed; artifacts regenerated and
+  include Gate0, Gate1, corrective Gate2, both Skills, Gate5 and Gate6.
 - `git diff --check`: PASS (Windows LF→CRLF informational warnings only).
 - Production shortcut audit: no support-label inference, fail-open safety,
   Workflow Mock imports, or Workflow hardcoded semantic versions.
@@ -81,8 +82,22 @@ Scope: PR #1 blocking review remediation
 
 ## Final status
 
-**MERGE READY**
+## Additional integration hardening
 
-All B1–B5 blocking items have implementation, behavior-specific tests and demo
-evidence. A1–A4 production functionality remains an explicit integration
-dependency rather than a fabricated A5 implementation.
+- Gate1 source/provenance tripwire and Trace: PASS.
+- A2 Evidence/MCP v1 and A2→A3 normalization contracts: PASS.
+- A3 real Span/hash/offset mapping without synthetic spans: PASS.
+- A4 document grouping, conflict/source mapping and ranking-score semantics:
+  PASS at the A5 Adapter boundary.
+- Unverified Embedding/CrossEncoder capability isolation: PASS.
+- Numeric/unit deterministic Gate5 check: PASS.
+
+## Final status
+
+**MERGE READY (A5 CONTROL LAYER)**
+
+All A5-owned blockers have executable implementation, behavior-specific tests,
+current demo evidence and configuration snapshots. A1–A4 branch-to-main
+integration, real Embedding/rerank validation and formal medical evaluation
+remain explicit external dependencies; none is represented as completed by
+this status.
