@@ -95,6 +95,12 @@ flowchart LR
 
 ### 5.2 依赖的 Chunk 最小字段
 
+`EvidenceChunk` 除稳定 ID、来源、文本、PICO、向量、版本字段外，还需：
+
+- `trust_tier`：`verified` 或 `discovery`，表示该条证据被验证到什么程度，而不是它来自哪里（“来自网页的 PubMed 页”和“PubMed API 验证的 PMID”不是一回事）。A2 在入库/提升阶段写入，A4 只读取，绝不从 `source_type` 推断。
+- `verification_method`：如 `pubmed_api`、`pubmed_pmid_resolution`；`discovery` 证据留空。
+- 提升（Promotion）是行为不是等级：A2 完成 PMID/DOI/NCT 解析后 `replace(trust_tier="verified")`，content hash 不因验证状态变化而改变。
+
 ```text
 chunk_id, evidence_id, text, title, source_type, stable_id, url,
 published_at, evidence_level, population, intervention, comparator,
@@ -170,7 +176,30 @@ RRF(d) = 1 / (rrf_k + rank_bm25(d))
 
 P0 使用 `rrf_k=60`。不存在于某一路的候选不贡献该路项。RRF 仅融合“相对排名”，不应被误解为医学证据质量分。
 
-### 6.4 特征重排
+### 6.4 证据可信池混合（Evidence Mixer）
+
+在 RRF 与特征重排之间插入可信池混合（`retrieval/evidence_mixer.py`），而不是在 rerank 之后再按比例硬切：让可信数据和广域数据都有机会参加真正的排序。
+
+```text
+BM25 + Vector -> RRF -> EvidenceMixer(n) -> 特征重排 -> MMR
+```
+
+1. `compute_verified_ratio(query, config)` 只由题型与时效性决定 n（A5 的 Claim 在检索时还不存在，不能用 ClaimCriticality 算 n）：
+
+   | 题型 | 基础 n | 时效加成 | 上限 |
+   |---|---|---|---|
+   | guideline | 0.90 | current/latest +0.05 | 0.95 |
+   | latest_trial | 0.85 | 同上 | 0.95 |
+   | therapy | 0.80 | 同上 | 0.95 |
+   | generic（含 diagnosis/prognosis 回退） | 0.65 | 同上 | 0.95 |
+
+2. `mix_evidence(candidates, n, candidate_limit)` 按 `trust_tier` 拆池，各取 `round(limit*n)` 与 `limit - round(limit*n)`，池内保持 RRF 序；可信池不足时从广域池补齐（缺口记入 `MixLog.shortfall`），广域池为空时退化为纯可信池，反之亦然，绝不因混合产生空结果。
+
+3. `MixLog` 与 `mix` 阶段耗时写入 `SearchResult` 审计轨迹（rank_log / stage_latency_ms / retrieval_warning）。
+
+n 只约束召回池形状；最终上下文的选择仍由 rerank + MMR 决定（K2=5--8），不再机械按 n 切。
+
+### 6.5 特征重排
 
 对 RRF 候选池中的前 20--30 条计算以下特征，并全部缩放到 `[0, 1]`：
 
@@ -196,7 +225,7 @@ feature_score = 0.30 * semantic_norm
 
 `source_reliability_score` 不等同于研究质量；研究设计与证据等级只能由 `evidence_level_score` 表达。全部权重、归一化方法、题型规则和术语表必须写入 `rerank_config_version`。
 
-### 6.5 PICO 匹配规则
+### 6.6 PICO 匹配规则
 
 PICO 字段不完整时不能强行扣分。对存在的字段计算匹配：
 
@@ -206,7 +235,7 @@ pico_match = mean(available_field_matches)
 
 `available_field_matches` 来自标题、摘要、人工标注或 A3 提供的结构化字段。若查询和证据均缺 PICO 字段，值为 `null`，相应权重在该 query 内重新归一化，而非当作零分。
 
-### 6.6 MMR 去冗余选择
+### 6.7 MMR 去冗余选择
 
 从特征重排后的前 20 条中，迭代选择最终 `k_final=5--8` 条：
 
@@ -224,7 +253,7 @@ P0 从 `λ=0.75` 开始，在开发集上冻结。相似度取 chunk embedding c
 
 MMR 是顺序选择过程，因此冗余惩罚不应提前塞入静态 `feature_score`。
 
-### 6.7 检索充分性信号
+### 6.8 检索充分性信号
 
 A4 只输出信号，不做最终医学拒答。以下情况向 A5 返回 `retrieval_warning=true`：
 
@@ -247,6 +276,13 @@ retrieval:
   max_chunks_per_document: 2
   max_chunks_per_source: 4
   mmr_lambda: 0.75
+  verified_ratio_base:          # Evidence Mixer 可信池比例（按题型）
+    guideline: 0.90
+    latest_trial: 0.85
+    therapy: 0.80
+    generic: 0.65
+  verified_ratio_freshness_bump: 0.05
+  verified_ratio_max: 0.95
   weights:
     semantic: 0.30
     lexical: 0.20

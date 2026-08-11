@@ -58,6 +58,8 @@ def write_config_yaml(path: str | Path, config: RetrievalConfig) -> Path:
         "cross_encoder_alpha",
         "freshness_weight_latest_trial",
         "latest_window_days",
+        "verified_ratio_freshness_bump",
+        "verified_ratio_max",
         "index_version",
         "corpus_version",
         "rerank_config_version",
@@ -67,6 +69,9 @@ def write_config_yaml(path: str | Path, config: RetrievalConfig) -> Path:
     lines.append("  source_quality_table:")
     for source, score in config.source_quality_table:
         lines.append(f"    - [{_scalar(source)}, {_scalar(score)}]")
+    lines.append("  verified_ratio_base:")
+    for question_type, ratio in config.verified_ratio_base:
+        lines.append(f"    - [{_scalar(question_type)}, {_scalar(ratio)}]")
     lines.append("  feature_weights:")
     for name in ("semantic", "lexical", "pico_match", "evidence_level", "freshness", "source_reliability"):
         lines.append(f"    {name}: {_scalar(getattr(config.feature_weights, name))}")
@@ -107,12 +112,25 @@ def load_config_yaml(path: str | Path) -> RetrievalConfig:
         raise ConfigYamlError("config YAML source_quality_table must be a list of [source, score] pairs")
     table = tuple((pair[0], float(pair[1])) for pair in table_data)
 
-    kwargs: dict[str, Any] = {"feature_weights": weights, "source_quality_table": table}
+    ratio_data = data.get("verified_ratio_base")
+    if not isinstance(ratio_data, list) or any(
+        not isinstance(pair, (list, tuple)) or len(pair) != 2 or not isinstance(pair[0], str) or not _is_number(pair[1])
+        for pair in ratio_data
+    ):
+        raise ConfigYamlError("config YAML verified_ratio_base must be a list of [question_type, ratio] pairs")
+    verified_ratio_base = tuple((pair[0], float(pair[1])) for pair in ratio_data)
+
+    kwargs: dict[str, Any] = {
+        "feature_weights": weights,
+        "source_quality_table": table,
+        "verified_ratio_base": verified_ratio_base,
+    }
     for name in (
         "bm25_top_k", "vector_top_k", "fusion_top_k", "rerank_top_k", "selection_top_k",
         "rrf_k", "max_chunks_per_document", "max_chunks_per_source", "mmr_lambda",
         "evidence_type_bonus", "cross_encoder_alpha", "freshness_weight_latest_trial",
-        "latest_window_days", "index_version", "corpus_version", "rerank_config_version",
+        "latest_window_days", "verified_ratio_freshness_bump", "verified_ratio_max",
+        "index_version", "corpus_version", "rerank_config_version",
     ):
         if name not in data:
             raise ConfigYamlError(f"config YAML is missing required key: {name}")
@@ -156,6 +174,9 @@ def _same_config(left: RetrievalConfig, right: RetrievalConfig) -> bool:
         and left.freshness_weight_latest_trial == right.freshness_weight_latest_trial
         and left.latest_window_days == right.latest_window_days
         and left.source_quality_table == right.source_quality_table
+        and left.verified_ratio_base == right.verified_ratio_base
+        and left.verified_ratio_freshness_bump == right.verified_ratio_freshness_bump
+        and left.verified_ratio_max == right.verified_ratio_max
         and left.index_version == right.index_version
         and left.corpus_version == right.corpus_version
         and left.rerank_config_version == right.rerank_config_version

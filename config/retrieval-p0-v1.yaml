@@ -14,6 +14,8 @@ retrieval:
   cross_encoder_alpha: 0.5
   freshness_weight_latest_trial: 0.2
   latest_window_days: 1826
+  verified_ratio_freshness_bump: 0.05
+  verified_ratio_max: 0.95
   index_version: idx-20260811-v1
   corpus_version: corpus-20260811-v1
   rerank_config_version: rerank-p0-v1
@@ -22,6 +24,11 @@ retrieval:
     - [pubmed, 0.9]
     - [trials, 0.85]
     - [europepmc, 0.8]
+  verified_ratio_base:
+    - [guideline, 0.9]
+    - [latest_trial, 0.85]
+    - [therapy, 0.8]
+    - [generic, 0.65]
   feature_weights:
     semantic: 0.3
     lexical: 0.2

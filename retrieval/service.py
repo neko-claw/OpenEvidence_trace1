@@ -14,7 +14,8 @@ from .bm25 import BM25Index
 from .config import FeatureWeights, RetrievalConfig
 from .fusion import fuse_rrf
 from .models import MAX_RRF_OPERAND, EvidenceChunk, Query, RankLog, ScoredChunk, SearchResult, SearchStatus
-from .adaptive import adapt_k
+from .adaptive import adapt_k, compute_verified_ratio
+from .evidence_mixer import mix_evidence
 from .rerank import FeatureReranker, select_mmr
 from .support_check import ClaimSupport, check_claims, detect_conflicts
 from .vector import VectorSearch
@@ -26,7 +27,7 @@ class _LexicalSearch(Protocol):
 
 QueryVectorProvider = Callable[[Query], Sequence[float]]
 _LOW_TOP_RERANK_SCORE = 0.35
-_STAGES = ("bm25", "vector", "fusion", "rerank", "mmr", "total")
+_STAGES = ("bm25", "vector", "fusion", "mix", "rerank", "mmr", "total")
 
 
 class RetrievalService:
@@ -102,13 +103,22 @@ class RetrievalService:
             )
             timings["fusion"] = _elapsed_ms(stage_started)
 
+            stage_started = perf_counter()
+            verified_ratio, ratio_actions = compute_verified_ratio(query, self._config)
+            mixed_candidates, mix_log = mix_evidence(
+                candidates,
+                verified_ratio,
+                self._config.fusion_top_k,
+            )
+            timings["mix"] = _elapsed_ms(stage_started)
+
             k1, k2, adaptive_actions = adapt_k(query, self._config)
             # The context budget is a hard cap: adaptive rules may shrink K,
             # but never grow it beyond the frozen selection budget.
             k2 = min(k2, self._config.selection_top_k)
 
             stage_started = perf_counter()
-            reranked = self._reranker.rank_all(query, candidates)
+            reranked = self._reranker.rank_all(query, mixed_candidates)
             timings["rerank"] = _elapsed_ms(stage_started)
 
             stage_started = perf_counter()
@@ -141,7 +151,7 @@ class RetrievalService:
             timings,
             claim_support=claim_support,
             conflicts=conflicts,
-            notes=adaptive_actions,
+            notes=(*adaptive_actions, mix_log.summary),
         )
 
     def _search_bm25(
@@ -416,7 +426,7 @@ def _warning(
     if reasons and status in (SearchStatus.FAILED, SearchStatus.PARTIAL):
         messages.append("Details: " + "; ".join(reasons))
     if notes:
-        messages.append("Adaptive K adjustments: " + "; ".join(notes) + ".")
+        messages.append("Adjustments: " + "; ".join(notes) + ".")
     return " ".join(messages) if messages else None
 
 
@@ -456,6 +466,9 @@ def _snapshot_config(config: RetrievalConfig) -> RetrievalConfig:
         cross_encoder_alpha=config.cross_encoder_alpha,
         freshness_weight_latest_trial=config.freshness_weight_latest_trial,
         source_quality_table=config.source_quality_table,
+        verified_ratio_base=config.verified_ratio_base,
+        verified_ratio_freshness_bump=config.verified_ratio_freshness_bump,
+        verified_ratio_max=config.verified_ratio_max,
         feature_weights=FeatureWeights(
             semantic=weights.semantic,
             lexical=weights.lexical,
