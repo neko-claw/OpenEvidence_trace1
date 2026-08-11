@@ -5,7 +5,7 @@ import types
 from datetime import datetime, timezone
 
 from a3.domain.models import Evidence
-from a3.indexing.chunking import chunk_evidence
+from a3.indexing.chunking import ChunkPolicy, chunk_evidence
 from a3.indexing.embeddings import (
     DEFAULT_BGE_M3_MODEL_ID,
     BgeM3EmbeddingProvider,
@@ -29,6 +29,9 @@ class FakeEmbeddingProvider:
 
     def encode_documents(self, texts): return [self._one(x) for x in texts]
     def encode_queries(self, texts): return [self._one(x) for x in texts]
+
+
+POLICY = ChunkPolicy(version="test", max_chars=1200, overlap_chars=150, natural_boundary_ratio=.6)
 
 
 def test_bge_provider_is_pinned_normalized_and_dense_only(monkeypatch):
@@ -102,7 +105,7 @@ def test_vector_explicit_embeddings_idempotence_persistence_and_metadata(tmp_pat
         abstract_or_chunk="pressure pressure synthetic", published_at=datetime(2024,1,1,tzinfo=timezone.utc), mock=True),
         Evidence(id="M2", source_type="trial", title="Lipids mock",
         abstract_or_chunk="lipids cholesterol synthetic", published_at=datetime(2026,1,1,tzinfo=timezone.utc), mock=True)]
-    chunks = sum((chunk_evidence(e)[0] for e in evidence), [])
+    chunks = sum((chunk_evidence(e, POLICY)[0] for e in evidence), [])
     root = tmp_path / "chroma"
     index = ChromaVectorIndex(root, "abc123", FakeEmbeddingProvider())
     assert index.sync(evidence, chunks) == 2
@@ -114,3 +117,6 @@ def test_vector_explicit_embeddings_idempotence_persistence_and_metadata(tmp_pat
     assert all(value is not None for value in hit.metadata.values())
     dated = reopened.search("synthetic", 5, {"date_to":"2024-12-31"})
     assert [item.evidence_id for item in dated] == ["M1"]
+    current_chunks = [chunk for chunk in chunks if chunk.evidence_id == "M1"]
+    assert reopened.sync([evidence[0]], current_chunks) == 1
+    assert all(hit.evidence_id != "M2" for hit in reopened.search("cholesterol", 5))

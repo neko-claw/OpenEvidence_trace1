@@ -20,5 +20,15 @@ vector:
   root: data/chroma
   distance: cosine
 wiki:
+  root: wiki
   builder_version: a3-wiki-v0.1
-  topics: [hypertension, dyslipidemia]
+  generator: deterministic-offline
+  topics:
+    - slug: hypertension
+      title: Hypertension
+      synonyms: [high blood pressure]
+      mesh: [Hypertension]
+    - slug: dyslipidemia
+      title: Dyslipidemia
+      synonyms: [lipid disorder]
+      mesh: [Dyslipidemias]

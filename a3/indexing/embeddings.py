@@ -11,15 +11,16 @@ LOCAL_MODEL_ENV = "A3_BGE_M3_MODEL_PATH"
 _LOCAL_REQUIRED_FILES = ("config.json", "pytorch_model.bin", "tokenizer_config.json")
 
 
-def resolve_bge_m3_source(model_id: str = DEFAULT_BGE_M3_MODEL_ID) -> str:
-    local_value = os.getenv(LOCAL_MODEL_ENV)
+def resolve_bge_m3_source(model_id: str = DEFAULT_BGE_M3_MODEL_ID,
+                          local_path_env: str = LOCAL_MODEL_ENV) -> str:
+    local_value = os.getenv(local_path_env)
     if not local_value:
         return model_id
     path = Path(local_value).expanduser()
     if not path.exists():
-        raise FileNotFoundError(f"{LOCAL_MODEL_ENV} does not exist: {path}")
+        raise FileNotFoundError(f"{local_path_env} does not exist: {path}")
     if not path.is_dir():
-        raise NotADirectoryError(f"{LOCAL_MODEL_ENV} is not a directory: {path}")
+        raise NotADirectoryError(f"{local_path_env} is not a directory: {path}")
     missing = [name for name in _LOCAL_REQUIRED_FILES if not (path / name).is_file()]
     if missing:
         raise RuntimeError(f"Incomplete local BGE-M3 model directory. Missing: {missing}")
@@ -38,13 +39,14 @@ class EmbeddingProvider(Protocol):
 class BgeM3EmbeddingProvider:
     def __init__(self, model_id: str = DEFAULT_BGE_M3_MODEL_ID,
                  revision: str | None = DEFAULT_BGE_M3_REVISION,
-                 *, use_fp16: bool = False) -> None:
+                 *, use_fp16: bool = False, local_path_env: str = LOCAL_MODEL_ENV,
+                 normalize: bool = True) -> None:
         from FlagEmbedding import BGEM3FlagModel
         self._model_id = model_id
         self._revision = revision
-        source = resolve_bge_m3_source(model_id)
+        source = resolve_bge_m3_source(model_id, local_path_env)
         self._source_kind = "local" if source != model_id else "hub"
-        kwargs = {"use_fp16": use_fp16, "normalize_embeddings": True}
+        kwargs = {"use_fp16": use_fp16, "normalize_embeddings": normalize}
         if revision and self._source_kind == "hub":
             kwargs["revision"] = revision
         self._model = BGEM3FlagModel(source, **kwargs)

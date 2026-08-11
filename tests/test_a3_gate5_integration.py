@@ -3,7 +3,7 @@ from datetime import datetime, timezone
 import pytest
 
 from a3.domain.models import Evidence
-from a3.indexing.chunking import chunk_evidence
+from a3.indexing.chunking import ChunkPolicy, chunk_evidence
 from a5.adapters.a3_evidence_adapter import adapt_a3_evidence
 from a5.adapters.rule_based_claim_verifier import RuleBasedClaimVerifier
 from a5.domain.enums import ClaimCriticality, MatchStatus, VerificationStatus
@@ -14,7 +14,9 @@ def record(**updates):
     data=dict(id="E1",source_type="trial",title="Mock",abstract_or_chunk="Exact synthetic outcome is stable.",
         population="synthetic adults",intervention="synthetic A",comparator="synthetic B",outcome="synthetic outcome",
         published_at=datetime(2025,1,1,tzinfo=timezone.utc),mock=True)
-    data.update(updates); e=Evidence(**data); c,s=chunk_evidence(e)
+    data.update(updates); e=Evidence(**data)
+    policy=ChunkPolicy(version="test",max_chars=1200,overlap_chars=150,natural_boundary_ratio=.6)
+    c,s=chunk_evidence(e,policy)
     return adapt_a3_evidence(e,c,s,index_version="i",corpus_version="c")
 
 

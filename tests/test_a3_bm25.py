@@ -2,7 +2,9 @@ from datetime import datetime, timezone
 
 from a3.domain.models import Evidence
 from a3.indexing.bm25 import BM25Index, tokenize
-from a3.indexing.chunking import chunk_evidence
+from a3.indexing.chunking import ChunkPolicy, chunk_evidence
+
+POLICY = ChunkPolicy(version="test", max_chars=1200, overlap_chars=150, natural_boundary_ratio=.6)
 
 
 def records():
@@ -19,8 +21,8 @@ def test_bilingual_identifier_tokenizer():
 
 
 def test_bm25_search_save_load_and_no_match(tmp_path):
-    evidence = records(); chunks = sum((chunk_evidence(e)[0] for e in evidence), [])
-    index = BM25Index.build(evidence, chunks, "idx")
+    evidence = records(); chunks = sum((chunk_evidence(e, POLICY)[0] for e in evidence), [])
+    index = BM25Index.build(evidence, chunks, "idx", "tok")
     assert index.search("blood-pressure", 3)[0].evidence_id == "M1"
     assert index.search("unfindable", 3) == []
     loaded = BM25Index.load(index.save(tmp_path))

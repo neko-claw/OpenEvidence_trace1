@@ -132,7 +132,7 @@ For each upstream delivery record:
 - temporary assumption removed;
 - remaining owner and TODO.
 
-## A3 Integration Diff — a3-schema/index v0.1
+## A3 Integration Diff — a3-schema/index v0.2
 
 - Upstream: `a3.domain.models` is authoritative for A3 Evidence, PICO, Chunk,
   EvidenceSpan, SearchHit, and IndexManifest. No formal A2 schema or sample was
@@ -160,6 +160,18 @@ For each upstream delivery record:
 - Missing/remaining owner: A2 final schema and importer semantics (A2), A4
   normalized retrieval score and BM25/vector fusion/rerank/MMR (A4), semantic
   medical verification (A5 owner), and source-card/Wiki presentation (A6).
+
+- Frozen downstream artifacts are checked in under `contracts/a3/v0.2/`; they
+  contain Pydantic-generated schemas and a versioned mock fixture, not an A2
+  final Evidence declaration. Field and provenance semantics are documented in
+  `docs/A3_CONTRACT.md`.
+- Chunk offsets are document-relative. Span offsets are chunk-relative and also
+  carry explicit document-relative offsets. Both carry current content hashes;
+  non-numeric locators such as `S12` and `appendix-A` remain in `raw_page`.
+- `config/a3.yaml` is validated strictly and controls every A3 build path and
+  semantic version input. Its effective values are persisted in IndexManifest.
+- Wiki lexical hits are marked `document_kind=wiki_navigation`; only configured
+  title/synonym/MeSH terms enter BM25, never Chroma or the raw evidence corpus.
 
 ### A4 remote contract observation (2026-08-11)
 

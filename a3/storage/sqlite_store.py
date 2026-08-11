@@ -67,6 +67,22 @@ class SQLiteEvidenceStore:
         return [Evidence.model_validate_json(row[0]) for row in rows]
 
     def replace_chunks(self, evidence: Evidence, chunks: list[Chunk], spans: list[EvidenceSpan]) -> None:
+        by_chunk = {chunk.chunk_id: chunk for chunk in chunks}
+        for chunk in chunks:
+            if chunk.evidence_id != evidence.id or chunk.evidence_content_hash != evidence.content_hash:
+                raise ValueError(f"chunk {chunk.chunk_id} does not match current evidence")
+            if evidence.abstract_or_chunk[chunk.char_start:chunk.char_end] != chunk.text:
+                raise ValueError(f"chunk {chunk.chunk_id} document offsets do not match evidence text")
+        for span in spans:
+            chunk = by_chunk.get(span.chunk_id)
+            if chunk is None or span.evidence_id != evidence.id:
+                raise ValueError(f"span {span.span_id} does not belong to supplied chunks/evidence")
+            if span.evidence_content_hash != evidence.content_hash or span.chunk_content_hash != chunk.content_hash:
+                raise ValueError(f"span {span.span_id} carries stale content hashes")
+            if chunk.text[span.char_start:span.char_end] != span.text:
+                raise ValueError(f"span {span.span_id} chunk offsets do not match span text")
+            if evidence.abstract_or_chunk[span.document_char_start:span.document_char_end] != span.text:
+                raise ValueError(f"span {span.span_id} document offsets do not match evidence text")
         self.connection.execute("DELETE FROM spans WHERE evidence_id=?", (evidence.id,))
         self.connection.execute("DELETE FROM chunks WHERE evidence_id=?", (evidence.id,))
         self.connection.executemany("INSERT INTO chunks VALUES(?,?,?,?)",
@@ -76,9 +92,15 @@ class SQLiteEvidenceStore:
         self.connection.commit()
 
     def list_current_chunks(self) -> list[Chunk]:
-        hashes = {e.content_hash for e in self.list_current_evidence()}
-        rows = self.connection.execute("SELECT evidence_content_hash,payload_json FROM chunks ORDER BY chunk_id").fetchall()
-        return [Chunk.model_validate_json(r[1]) for r in rows if r[0] in hashes]
+        current = {e.id: e.content_hash for e in self.list_current_evidence()}
+        rows = self.connection.execute(
+            "SELECT evidence_id,evidence_content_hash,payload_json FROM chunks ORDER BY chunk_id").fetchall()
+        chunks = [Chunk.model_validate_json(row[2]) for row in rows
+                  if current.get(row[0]) == row[1]]
+        for chunk in chunks:
+            if current[chunk.evidence_id] != chunk.evidence_content_hash:
+                raise ValueError(f"stale chunk hash returned for {chunk.chunk_id}")
+        return chunks
 
     def list_spans_for_evidence(self, evidence_id: str) -> list[EvidenceSpan]:
         rows = self.connection.execute("SELECT payload_json FROM spans WHERE evidence_id=? ORDER BY span_id", (evidence_id,)).fetchall()

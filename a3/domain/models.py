@@ -8,6 +8,12 @@ from typing import Any, Literal
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
+EVIDENCE_SCHEMA_VERSION = "a3-evidence-v0.2"
+CHUNK_SCHEMA_VERSION = "a3-chunk-v0.2"
+SPAN_SCHEMA_VERSION = "a3-span-v0.2"
+SEARCH_HIT_SCHEMA_VERSION = "a3-search-hit-v0.2"
+INDEX_MANIFEST_SCHEMA_VERSION = "a3-index-manifest-v0.2"
+
 
 def canonical_hash(value: Any) -> str:
     payload = json.dumps(value, ensure_ascii=False, sort_keys=True, separators=(",", ":"), default=str)
@@ -101,12 +107,22 @@ class Chunk(StrictModel):
     evidence_id: str
     evidence_content_hash: str
     text: str
-    page: str | None = None
+    page: int | None = Field(default=None, ge=1)
+    raw_page: str | None = None
     section: str | None = None
+    offset_scope: Literal["document"] = "document"
     char_start: int = Field(ge=0)
     char_end: int = Field(ge=0)
     token_count: int = Field(ge=0)
     content_hash: str
+
+    @model_validator(mode="after")
+    def validate_offsets(self) -> "Chunk":
+        if self.char_end <= self.char_start:
+            raise ValueError("chunk char_end must be greater than char_start")
+        if self.char_end - self.char_start != len(self.text):
+            raise ValueError("chunk document offsets must match text length")
+        return self
 
 
 class EvidenceSpan(StrictModel):
@@ -116,18 +132,37 @@ class EvidenceSpan(StrictModel):
     text: str
     char_start: int = Field(ge=0)
     char_end: int = Field(ge=0)
-    page: str | None = None
+    offset_scope: Literal["chunk"] = "chunk"
+    document_char_start: int = Field(ge=0)
+    document_char_end: int = Field(ge=0)
+    page: int | None = Field(default=None, ge=1)
+    raw_page: str | None = None
     section: str | None = None
+    chunk_content_hash: str
+    evidence_content_hash: str
     content_hash: str
+
+    @model_validator(mode="after")
+    def validate_offsets(self) -> "EvidenceSpan":
+        if self.char_end <= self.char_start:
+            raise ValueError("span char_end must be greater than char_start")
+        if self.document_char_end <= self.document_char_start:
+            raise ValueError("span document_char_end must be greater than document_char_start")
+        if self.char_end - self.char_start != len(self.text):
+            raise ValueError("span chunk offsets must match text length")
+        if self.document_char_end - self.document_char_start != len(self.text):
+            raise ValueError("span document offsets must match text length")
+        return self
 
 
 class SearchHit(StrictModel):
+    document_kind: Literal["evidence", "wiki_navigation"] = "evidence"
     channel: Literal["lexical", "vector"]
     rank: int = Field(ge=1)
     raw_score: float | None = None
     distance: float | None = None
     chunk_id: str
-    evidence_id: str
+    evidence_id: str | None
     title: str
     text: str
     source_type: str
@@ -137,13 +172,20 @@ class SearchHit(StrictModel):
     comparator: str | None = None
     outcome: str | None = None
     published_at: datetime | None = None
-    page: str | None = None
+    page: int | None = Field(default=None, ge=1)
+    raw_page: str | None = None
     section: str | None = None
     index_version: str
     metadata: dict[str, Any] = Field(default_factory=dict)
 
 
 class IndexManifest(StrictModel):
+    manifest_schema_version: str
+    evidence_schema_version: str
+    chunk_schema_version: str
+    span_schema_version: str
+    search_hit_schema_version: str
+    config_schema_version: str
     corpus_version: str
     index_version: str
     chunk_policy_version: str
@@ -155,4 +197,5 @@ class IndexManifest(StrictModel):
     embedding_mode: str = "dense"
     vector_distance: str = "cosine"
     wiki_builder_version: str
+    effective_config: dict[str, Any]
     created_at: datetime = Field(default_factory=utc_now)

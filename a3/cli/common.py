@@ -8,8 +8,7 @@ from pathlib import Path
 from a3.domain.models import Evidence
 
 ROOT = Path(__file__).resolve().parents[2]
-DB = ROOT / "data/sqlite/a3.db"
-FIXTURE = ROOT / "data/fixtures/a3_mock_evidence.jsonl"
+DEFAULT_CONFIG = ROOT / "config/a3.yaml"
 
 
 def load_jsonl(path: str | Path) -> list[Evidence]:

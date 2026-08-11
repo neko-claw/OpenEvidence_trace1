@@ -1,0 +1,113 @@
+{
+  "additionalProperties": false,
+  "properties": {
+    "bm25_tokenizer_version": {
+      "title": "Bm25 Tokenizer Version",
+      "type": "string"
+    },
+    "chunk_policy": {
+      "additionalProperties": true,
+      "title": "Chunk Policy",
+      "type": "object"
+    },
+    "chunk_policy_version": {
+      "title": "Chunk Policy Version",
+      "type": "string"
+    },
+    "chunk_schema_version": {
+      "title": "Chunk Schema Version",
+      "type": "string"
+    },
+    "config_schema_version": {
+      "title": "Config Schema Version",
+      "type": "string"
+    },
+    "corpus_version": {
+      "title": "Corpus Version",
+      "type": "string"
+    },
+    "created_at": {
+      "format": "date-time",
+      "title": "Created At",
+      "type": "string"
+    },
+    "effective_config": {
+      "additionalProperties": true,
+      "title": "Effective Config",
+      "type": "object"
+    },
+    "embedding_mode": {
+      "default": "dense",
+      "title": "Embedding Mode",
+      "type": "string"
+    },
+    "embedding_model": {
+      "title": "Embedding Model",
+      "type": "string"
+    },
+    "embedding_provider": {
+      "title": "Embedding Provider",
+      "type": "string"
+    },
+    "embedding_revision": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Embedding Revision"
+    },
+    "evidence_schema_version": {
+      "title": "Evidence Schema Version",
+      "type": "string"
+    },
+    "index_version": {
+      "title": "Index Version",
+      "type": "string"
+    },
+    "manifest_schema_version": {
+      "title": "Manifest Schema Version",
+      "type": "string"
+    },
+    "search_hit_schema_version": {
+      "title": "Search Hit Schema Version",
+      "type": "string"
+    },
+    "span_schema_version": {
+      "title": "Span Schema Version",
+      "type": "string"
+    },
+    "vector_distance": {
+      "default": "cosine",
+      "title": "Vector Distance",
+      "type": "string"
+    },
+    "wiki_builder_version": {
+      "title": "Wiki Builder Version",
+      "type": "string"
+    }
+  },
+  "required": [
+    "manifest_schema_version",
+    "evidence_schema_version",
+    "chunk_schema_version",
+    "span_schema_version",
+    "search_hit_schema_version",
+    "config_schema_version",
+    "corpus_version",
+    "index_version",
+    "chunk_policy_version",
+    "chunk_policy",
+    "bm25_tokenizer_version",
+    "embedding_provider",
+    "embedding_model",
+    "wiki_builder_version",
+    "effective_config"
+  ],
+  "title": "IndexManifest",
+  "type": "object"
+}

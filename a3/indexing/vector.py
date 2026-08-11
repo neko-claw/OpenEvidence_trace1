@@ -29,15 +29,24 @@ class ChromaVectorIndex:
     def sync(self, evidence: list[Evidence], chunks: list[Chunk]) -> int:
         by_id = {e.id: e for e in evidence}
         selected = [c for c in chunks if c.evidence_id in by_id]
+        for chunk in selected:
+            if chunk.evidence_content_hash != by_id[chunk.evidence_id].content_hash:
+                raise ValueError(f"stale evidence hash for chunk {chunk.chunk_id}")
+        desired_ids = {c.chunk_id for c in selected}
+        existing_ids = set(self.collection.get(include=[])["ids"])
+        stale_ids = sorted(existing_ids - desired_ids)
+        if stale_ids:
+            self.collection.delete(ids=stale_ids)
         if not selected:
-            return self.collection.count()
+            return 0
         texts = [vector_text(by_id[c.evidence_id], c) for c in selected]
         metadata: list[dict[str, str | int | float | bool]] = []
         for c in selected:
             e = by_id[c.evidence_id]
             raw = {"chunk_id": c.chunk_id, "evidence_id": e.id, "evidence_content_hash": e.content_hash,
                 "source_type": e.source_type, "stable_id": e.stable_id, "title": e.title,
-                "evidence_level": e.evidence_level, "page": c.page, "section": c.section,
+                "evidence_level": e.evidence_level, "page": c.page, "raw_page": c.raw_page,
+                "section": c.section,
                 "index_version": self.index_version, "mock": e.mock,
                 "population": e.population, "intervention": e.intervention,
                 "comparator": e.comparator, "outcome": e.outcome,
@@ -66,7 +75,8 @@ class ChromaVectorIndex:
                 source_type=str(meta["source_type"]), evidence_level=meta.get("evidence_level"),
                 population=meta.get("population"), intervention=meta.get("intervention"),
                 comparator=meta.get("comparator"), outcome=meta.get("outcome"),
-                published_at=meta.get("published_at"), page=meta.get("page"), section=meta.get("section"),
+                published_at=meta.get("published_at"), page=meta.get("page"),
+                raw_page=meta.get("raw_page"), section=meta.get("section"),
                 index_version=self.index_version, metadata=dict(meta)))
             if len(hits) >= top_k:
                 break
