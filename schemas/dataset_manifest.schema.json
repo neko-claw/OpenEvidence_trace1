@@ -1,81 +1,114 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://openevidence.local/schemas/dataset_manifest.schema.json",
-  "title": "OpenEvidence DatasetManifest v0.1",
-  "description": "按《实施规划 v0.5》§3.1 冻结的题库数据契约之一。A1 负责题库清单与 split 哈希；B2 冻结 TEST 正式集前必须复核本清单并更新 created_at/冻结标记。",
+  "title": "OpenEvidence DatasetManifest v0.2",
   "type": "object",
   "additionalProperties": false,
   "required": [
     "dataset_version",
+    "manifest_version",
     "created_at",
     "corpus_cutoff",
     "source_datasets",
     "licenses",
+    "hash_algorithm",
     "split_hashes",
+    "split_lifecycle",
     "source_group_policy",
-    "dedup_method",
-    "dedup_threshold"
+    "source_group_audit",
+    "dedup_steps",
+    "known_gaps"
   ],
   "properties": {
-    "dataset_version": {
-      "type": "string",
-      "pattern": "^openevidence-question-bank-v[0-9]+\\.[0-9]+$"
-    },
-    "created_at": { "type": "string", "format": "date-time" },
-    "corpus_cutoff": {
-      "type": "string",
-      "format": "date",
-      "description": "证据语料（非题库）数据截止日期；与最新研究题的 as_of_date 配合实现时间留出。"
-    },
-    "source_datasets": {
-      "type": "array",
-      "items": { "type": "string" },
-      "minItems": 1
-    },
+    "dataset_version": {"type": "string", "pattern": "^openevidence-question-bank-v[0-9]+\\.[0-9]+$"},
+    "manifest_version": {"const": "dataset-manifest-v0.2"},
+    "created_at": {"type": "string", "format": "date-time"},
+    "corpus_cutoff": {"type": "string", "format": "date"},
+    "source_datasets": {"type": "array", "items": {"type": "string"}, "minItems": 1, "uniqueItems": true},
     "licenses": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["question_bank", "evidence_sources"],
+      "required": ["question_bank", "evidence_sources", "external_pack"],
       "properties": {
-        "question_bank": { "type": "string", "description": "题库本身的许可声明；合成场景题，不含真实患者数据。" },
-        "evidence_sources": { "type": "array", "items": { "type": "string" } }
+        "question_bank": {"type": "string"},
+        "evidence_sources": {"type": "array", "items": {"type": "string"}},
+        "external_pack": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["status", "evaluation_eligible", "notes"],
+          "properties": {
+            "status": {"const": "LICENSE_AND_PROVENANCE_PENDING"},
+            "evaluation_eligible": {"const": false},
+            "notes": {"type": "string", "minLength": 1}
+          }
+        }
       }
     },
+    "hash_algorithm": {"const": "sha256(concat(canonical_json(record,sort_keys=true,separators=(',',':'))))"},
     "split_hashes": {
       "type": "object",
       "additionalProperties": false,
       "required": ["DEV", "TEST", "STRESS", "EXTERNAL", "RESERVE"],
-      "propertyNames": { "enum": ["DEV", "TEST", "STRESS", "EXTERNAL", "RESERVE"] },
-      "patternProperties": {
-        "^(DEV|TEST|STRESS|EXTERNAL|RESERVE)$": {
-          "type": "string",
-          "pattern": "^[0-9a-f]{64}$",
-          "description": "sha256(canonical JSON of split records, 文件顺序拼接)。"
-        }
-      },
-      "description": "逐 split 内容哈希；B2 冻结前重新计算并核对，防止正式题静默改动。"
+      "properties": {
+        "DEV": {"$ref": "#/$defs/hash"},
+        "TEST": {"$ref": "#/$defs/hash"},
+        "STRESS": {"$ref": "#/$defs/hash"},
+        "EXTERNAL": {"$ref": "#/$defs/hash"},
+        "RESERVE": {"$ref": "#/$defs/hash"}
+      }
     },
-    "source_group_policy": {
-      "type": "string",
-      "description": "同一原始题的翻译/改写必须共享 source_group_id 且只能进入同一 split；DEV 与 TEST 不得共享同一 gold 段落的直接派生问题。"
-    },
-    "dedup_method": {
-      "type": "array",
-      "items": { "type": "string" },
-      "minItems": 1,
-      "description": "文本去重 + source_group_id 隔离 + embedding 聚类近义去重（§6.3）。"
-    },
-    "dedup_threshold": {
+    "split_lifecycle": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["embedding_similarity"],
+      "required": ["DEV", "TEST", "STRESS", "EXTERNAL", "RESERVE"],
       "properties": {
-        "embedding_similarity": {
-          "type": "number",
-          "minimum": 0,
-          "maximum": 1,
-          "description": "B2 语义去重时使用的余弦相似度阈值（候选值，冻结前由 B2 确认）。"
+        "DEV": {"$ref": "#/$defs/splitState"},
+        "TEST": {"$ref": "#/$defs/splitState"},
+        "STRESS": {"$ref": "#/$defs/splitState"},
+        "EXTERNAL": {"$ref": "#/$defs/splitState"},
+        "RESERVE": {"$ref": "#/$defs/splitState"}
+      }
+    },
+    "source_group_policy": {"type": "string", "minLength": 1},
+    "source_group_audit": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["status", "total_groups", "singleton_groups", "cross_split_collisions"],
+      "properties": {
+        "status": {"enum": ["PENDING_B2_DERIVATION_AUDIT", "VERIFIED"]},
+        "total_groups": {"type": "integer", "minimum": 0},
+        "singleton_groups": {"type": "integer", "minimum": 0},
+        "cross_split_collisions": {"type": "integer", "minimum": 0}
+      }
+    },
+    "dedup_steps": {
+      "type": "array",
+      "minItems": 3,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["method", "status", "owner", "result"],
+        "properties": {
+          "method": {"type": "string", "minLength": 1},
+          "status": {"enum": ["EXECUTED_VERIFIED", "PLANNED_NOT_EXECUTED"]},
+          "owner": {"type": "string", "minLength": 1},
+          "result": {"type": ["string", "null"]},
+          "candidate_threshold": {"type": ["number", "null"], "minimum": 0, "maximum": 1}
         }
+      }
+    },
+    "known_gaps": {"type": "array", "items": {"type": "string", "minLength": 1}, "minItems": 1}
+  },
+  "$defs": {
+    "hash": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "splitState": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["status", "evaluation_eligible", "reason"],
+      "properties": {
+        "status": {"enum": ["A1_STRUCTURE_FROZEN", "B2_GOLD_PENDING", "LICENSE_AND_PROVENANCE_PENDING", "RESERVE_ONLY", "EVALUATION_FROZEN"]},
+        "evaluation_eligible": {"type": "boolean"},
+        "reason": {"type": "string", "minLength": 1}
       }
     }
   }

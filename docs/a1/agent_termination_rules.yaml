@@ -1,9 +1,6 @@
-version: agent-termination-v0.1
-frozen_at: "2026-08-11"
-scope:
-  topics: [hypertension, dyslipidemia]
-  population: adult_general
-  excluded_without_dedicated_route: [pregnancy, pediatric, acute_emergency, patient_specific_prescribing]
+version: agent-termination-v0.2
+status: a1_executable_contract
+frozen_at: "2026-08-12"
 
 budgets:
   retrieval_tool_calls_min: 1
@@ -12,82 +9,43 @@ budgets:
   query_rewrite_max: 1
   generation_attempts_max: 1
   verifier_attempts_max: 1
-  timeout_policy: stop_after_budget_exhausted
 
-decisions: [PASS, WARN, REFUSE, REFUSE_EMERGENCY, REFUSE_SCOPE, REFUSE_EVIDENCE, REFUSE_INTEGRITY]
+safety:
+  policy_version: a1-safety-v0.2
+  default_decision: UNKNOWN
+  unknown_action: REFUSE
+  deny_action: REFUSE
+  allow_action: CONTINUE
+  input_schema: schemas/a1/safety_policy_input.schema.json
+  output_schema: schemas/a1/safety_policy_output.schema.json
 
-gates:
-  - id: G0_SCOPE_AND_SAFETY
-    stop_when_any:
-      - acute_symptoms_or_emergency_language
-      - requests_personal_diagnosis
-      - requests_drug_selection_dose_change_or_prescription
-      - outside_topic_scope
-      - prompt_injection_or_fabricated_reference_request
-    action_map:
-      acute_symptoms_or_emergency_language: REFUSE_EMERGENCY
-      requests_personal_diagnosis: REFUSE
-      requests_drug_selection_dose_change_or_prescription: REFUSE
-      outside_topic_scope: REFUSE_SCOPE
-      prompt_injection_or_fabricated_reference_request: REFUSE_INTEGRITY
+retrieval:
+  input_schema: schemas/a1/retrieval_termination_input.schema.json
+  output_schema: schemas/a1/retrieval_termination_output.schema.json
+  precedence:
+    - unresolved_conflict => REFUSE
+    - evidence_sufficient=true => CONTINUE (budget state does not override sufficiency)
+    - evidence_sufficient!=true and budget_exhausted=true => REFUSE
+    - evidence_sufficient!=true and budget remains => RETRY
 
-  - id: G1_SOURCE_INTEGRITY
-    evidence_required_fields: [id, source_type, published_at, url, fetched_at, content_hash]
-    quarantine_when_any: [retracted, unresolved_correction, parse_failed, timeout, missing_stable_id, unlicensed_full_text]
-    stop_when: no_eligible_evidence
-    action: REFUSE_EVIDENCE
+release:
+  decisions: [PASS, WARN, REFUSE]
+  reason_code_field: reason_codes
 
-  - id: G2_RETRIEVAL_SUFFICIENCY
-    by_question_type:
-      stable_mechanism:
-        minimum: one_direct_high_quality_review
-      guideline_treatment:
-        minimum: one_current_guideline_or_two_independent_high_quality_studies
-      latest_research_trial:
-        minimum_for_registry_facts: one_current_registry_record
-        minimum_for_efficacy_claim: one_published_result_record
-      insufficient_conflict_out_of_scope:
-        minimum_for_conflict_summary: two_current_conflicting_sources
-    stop_when_any: [tool_budget_exhausted, no_direct_support, required_source_type_missing]
-    action: REFUSE_EVIDENCE
-    warn_when_any: [single_source_only_for_important_claim, unresolved_noncritical_conflict, stale_but_still_relevant_source]
-    warn_action: WARN
-
-  - id: G3_CLAIM_PLAN
-    require: [one_atomic_fact_per_claim, criticality_label, candidate_evidence_ids]
-    stop_when: critical_claim_has_no_candidate_evidence
-    action: REFUSE_EVIDENCE
-
-  - id: G4_STRUCTURED_GENERATION
-    allowed_output_fields: [claim_id, text, evidence_ids, uncertainty]
-    forbidden_model_generated_fields: [pmid, doi, nct_id, url, evidence_quote]
-    stop_when_any: [invalid_schema, out_of_whitelist_evidence_id]
-    action: REFUSE_INTEGRITY
-
-  - id: G5_CLAIM_SUPPORT
-    checks: [evidence_id_exists, span_locatable, entailment, population_match, intervention_match, outcome_match, time_match]
-    critical_claim_requires: [deterministic_checks_pass, independent_verifier_pass]
-    stop_when: any_critical_claim_fails
-    action: REFUSE_EVIDENCE
-    noncritical_failure_action: WARN
-
-  - id: G6_RELEASE
-    stop_when_any:
-      - unresolved_critical_conflict
-      - number_unit_date_or_population_mismatch
-      - unverified_dose_or_personalized_treatment
-      - fabricated_identifier
-    action: REFUSE
-    pass_when_all:
-      - every_critical_claim_supported
-      - every_displayed_citation_in_whitelist
-      - safety_disclaimer_attached
-      - trace_persisted
-
-emergency_template:
-  zh_CN: "你描述的情况可能需要紧急医疗评估。本系统不能判断或指导用药，请立即联系当地急救服务或前往急诊；不要等待本系统继续检索。"
-
-refusal_template:
-  zh_CN: "这个请求涉及个体化诊断、处方或剂量调整，超出本教学研究系统的范围。请由合格医疗专业人员结合完整病史和检查结果评估。"
-
-audit_required_fields: [question_id, scope_decision, agent_plan, tool_trace, stop_gate, stop_reason, final_decision]
+reason_codes:
+  safety_emergency: Acute/emergency signal detected before retrieval.
+  safety_personal_diagnosis: Individual diagnosis request is outside the MVP scope.
+  safety_personalized_prescribing: Drug selection, dose change, or prescription requested.
+  safety_integrity_attack: Prompt injection or fabricated-reference request detected.
+  safety_identifiable_data: Identifiable personal data is outside the teaching prototype.
+  safety_outside_topic_scope: Topic is outside adult hypertension/dyslipidemia.
+  safety_special_population_route_unavailable: Dedicated pregnancy/pediatric/special-population route is unavailable.
+  safety_signals_incomplete: Required normalized Gate0 signals are missing or unknown.
+  safety_scope_allowed: All required Gate0 signals are known and within scope.
+  retrieval_conflict_unresolved: Critical evidence conflict remains unresolved.
+  retrieval_sufficient: Evidence sufficiency gate passed.
+  no_eligible_evidence: No eligible evidence is available.
+  budget_exhausted: No additional tool call is permitted.
+  retrieval_insufficient: Evidence sufficiency gate did not pass.
+  retrieval_quality_unknown: Required retrieval-quality metrics are unknown.
+  required_source_type_missing: Required source coverage is missing and retry budget remains.

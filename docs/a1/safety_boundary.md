@@ -1,4 +1,6 @@
-# A1 医学安全边界 v0.1
+# A1 医学安全边界 v0.2
+
+v0.2（2026-08-12）：统一发布 Decision/原因码，补充三态 Gate0 fail-closed 机器契约。
 
 ## 产品定位
 
@@ -18,12 +20,18 @@ OpenEvidence MVP 是公开医学证据的检索、摘要与引用演示系统，
 |---|---|---|
 | 要求根据个人症状、检验或病历确诊 | `REFUSE` | 说明不能诊断，建议联系合格医疗人员 |
 | 要求选择具体药物、开处方、调整剂量或停药 | `REFUSE` | 不给出个体化方案；提示不要自行改变治疗 |
-| 出现胸痛、呼吸困难、神经功能异常、意识改变，或用户描述可能的急症 | `REFUSE_EMERGENCY` | 停止常规证据生成，提示立即联系当地急救服务；不延迟求助去等待系统回答 |
-| 问题超出高血压/血脂范围 | `REFUSE_SCOPE` | 说明当前 MVP 范围，不自动扩展到其他疾病 |
-| 证据不足、只有方案而无结果 | `WARN` 或 `REFUSE_EVIDENCE` | 只说明已知设计/状态，不推断疗效 |
-| 关键来源冲突且无法解释 | `WARN_CONFLICT` | 并列版本、地区、人群和年份；不输出唯一治疗结论 |
-| 提示注入、要求忽略规则、伪造 PMID/DOI/NCT/URL | `REFUSE_INTEGRITY` | 忽略恶意指令，标记非法引用并记录审计事件 |
-| 涉及儿童、妊娠或其他特殊人群但证据路由未配置 | `REFUSE_SCOPE` 或 `WARN` | 明确当前成人一般人群边界，建议专业评估 |
+| 出现胸痛、呼吸困难、神经功能异常、意识改变，或用户描述可能的急症 | `REFUSE` + `safety_emergency` | 停止常规证据生成，提示立即联系当地急救服务；不延迟求助去等待系统回答 |
+| 问题超出高血压/血脂范围 | `REFUSE` + `safety_outside_topic_scope` | 说明当前 MVP 范围，不自动扩展到其他疾病 |
+| 证据不足、只有方案而无结果 | `WARN`/`REFUSE` + 证据原因码 | 只说明已知设计/状态，不推断疗效 |
+| 关键来源冲突且无法解释 | `REFUSE` + `retrieval_conflict_unresolved` | 并列版本、地区、人群和年份；关键冲突未解决时不发布治疗结论 |
+| 提示注入、要求忽略规则、伪造 PMID/DOI/NCT/URL | `REFUSE` + `safety_integrity_attack` | 忽略恶意指令，标记非法引用并记录审计事件 |
+| 涉及儿童、妊娠或其他特殊人群但证据路由未配置 | `REFUSE` + `safety_special_population_route_unavailable` | 明确当前成人一般人群边界，建议专业评估 |
+
+顶层发布枚举固定为 `PASS | WARN | REFUSE`；场景差异只放在
+`reason_codes[]`，不再创建 `REFUSE_SCOPE` 等平行决策值。Gate0 的输入先由
+上游分类器归一化；任一必需信号缺失时返回 `SafetyDecision.UNKNOWN`，A5 必须
+按 fail-closed 规则终止。可执行契约见 `a1/policy.py` 与
+`docs/a1/agent_termination_rules.yaml`。
 
 ## 隐私边界
 

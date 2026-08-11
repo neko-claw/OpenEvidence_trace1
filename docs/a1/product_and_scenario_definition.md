@@ -1,6 +1,7 @@
-# A1 产品与医学场景定义 v0.3
+# A1 产品与医学场景定义 v0.4
 
-冻结日期：2026-08-11
+修订日期：2026-08-12
+v0.4 修订：区分 A1 结构冻结与正式评测冻结，明确 EXTERNAL benchmark-style 候选状态。
 v0.3 修订：题库扩展至 130 题（新增 STRESS/EXTERNAL/RESERVE），新增 dataset_manifest/qrel 契约。  
 依据：《OpenEvidence 风格的证据智能助手 MVP》《第三期可以提前准备的工作》与实施规划 v0.5。
 
@@ -56,7 +57,7 @@ NEJM AI 访谈强调，好的临床支持不仅是“答对”，还要让证据
 
 ## MVP 成功标准
 
-- 30 道开发题 + 60 道正式题 + 20 道压力题 + 10 道外部基准题 + 10 道备用题（共 130 题）冻结于 `data/processed/questions.jsonl`；开发题用于调检索 K、rerank 和拒答阈值，但不进入主结论。
+- 30 道开发题 + 60 道正式候选题 + 20 道压力候选题 + 10 道 benchmark-style 外部候选题 + 10 道备用题（共 130 题）的 A1 结构存于 `data/processed/questions.jsonl`；是否可进入评测由 `dataset_manifest.json.split_lifecycle` 决定。当前没有 split 被标为 `EVALUATION_FROZEN`。
 - 3 条固定演示题展示真实可打开引用，其中至少一条涉及最新试验状态。
 - 1 条急症/剂量问题在 Gate 0 立即终止，不进入普通生成。
 - 回答中的 Evidence ID 100% 来自本次检索结果。
@@ -79,6 +80,6 @@ NEJM AI 访谈强调，好的临床支持不仅是“答对”，还要让证据
 
 ## 题库与契约（v0.3 修订）
 
-- 题库 130 题冻结于 `data/processed/questions.jsonl`，逐 split 哈希见 `data/processed/dataset_manifest.json`。
+- 题库 130 题的 A1 结构版本存于 `data/processed/questions.jsonl`，逐 split 哈希与真实生命周期见 `data/processed/dataset_manifest.json`；gold/语义去重/外部许可完成前不得宣称评测冻结。
 - 题目结构由 `schemas/question.schema.json` 定义；Qrel 交接契约见 `schemas/qrel.schema.json`。
 - STRESS/EXTERNAL/RESERVE 设计见 `docs/a1/question_bank_blueprint.md`。

@@ -1,6 +1,6 @@
-# A1 来源覆盖矩阵 v0.2
+# A1 来源覆盖矩阵 v0.3
 
-冻结日期：2026-08-11  
+修订日期：2026-08-12（正式来源/gold 待 A2/B2）
 范围：成人高血压与血脂异常；仅供教学研究，不用于临床诊疗。
 
 ## 路由规则
@@ -52,7 +52,7 @@
 
 - 合并后的 `questions.jsonl` 共 130 题（DEV 30 + TEST 60 + STRESS 20 + EXTERNAL 10 + RESERVE 10），其中 `candidate_sources` 只是检索入口，不是 gold；任何调参脚本必须过滤 `split=DEV`，压力题单独报告。
 - `gold_source_ids` 在 A1 版本中必须为空；A2 完成摄入、切块和 Evidence ID 后，由 B2 人工核验并冻结。
-- 问题不得复制指南标题、摘要原句或试验官方标题；`source_group_id` 用于后续防止同义改写跨 split 泄漏（当前 130 题已校验无跨 split 泄漏）。
+- 问题不得复制指南标题、摘要原句或试验官方标题；`source_group_id` 用于防止同义改写跨 split 泄漏。当前自动检查只确认没有重复 group ID，派生关系正确性仍为 `PENDING_B2_DERIVATION_AUDIT`，不能据此宣称语义泄漏检查已完成。
 - 正式集不能由这些开发题直接改写生成，也不能共享同一 gold 段落；题库冻结哈希见 `data/processed/dataset_manifest.json`。
 
 ## 在线核对记录

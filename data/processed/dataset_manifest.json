@@ -1,6 +1,7 @@
 {
-  "dataset_version": "openevidence-question-bank-v0.1",
-  "created_at": "2026-08-11T00:00:00+08:00",
+  "dataset_version": "openevidence-question-bank-v0.2",
+  "manifest_version": "dataset-manifest-v0.2",
+  "created_at": "2026-08-12T00:00:00+08:00",
   "corpus_cutoff": "2026-08-11",
   "source_datasets": [
     "data/processed/questions.jsonl",
@@ -8,28 +9,86 @@
     "schemas/question.schema.json"
   ],
   "licenses": {
-    "question_bank": "合成教学场景题，不含真实患者数据；不复制指南标题/摘要原句或试验官方标题。",
+    "question_bank": "合成教学场景题，不含真实患者数据；不复制指南标题、摘要原句或试验官方标题。",
     "evidence_sources": [
       "PubMed/Europe PMC 元数据按 NLM 使用条款",
       "ClinicalTrials.gov 数据按 U.S. government 公共领域",
-      "2025 AHA/ACC 与 2026 ACC/AHA 指南仅存元数据/链接（candidate_support）",
-      "2024 ESC 指南未获许可，仅保留元数据（见 source_coverage_matrix.md）"
-    ]
+      "指南候选仅保存可核验元数据/链接；正文许可由 A2/B2 复核"
+    ],
+    "external_pack": {
+      "status": "LICENSE_AND_PROVENANCE_PENDING",
+      "evaluation_eligible": false,
+      "notes": "EXTERNAL 是 benchmark-style 合成候选，不是已导入的公开 benchmark；许可证、逐题来源和 gold 未完成前禁止进入评测结论。"
+    }
   },
+  "hash_algorithm": "sha256(concat(canonical_json(record,sort_keys=true,separators=(',',':'))))",
   "split_hashes": {
     "DEV": "dfb4cd3aa4f0b89db6fa251710268a22120c57fefb5626bd30d097701e65a862",
     "TEST": "c34b98ec06f3ea29917149d45ec26428dde54855e04895f332f78b56042921f5",
-    "STRESS": "c7b9546cc02edc73eaf92c907df170545c710484f3b05e7a49595eaa17e8977d",
-    "EXTERNAL": "8448b4f6198522be60595e95858cc5d5765bc3837b5fc3dd3c7e43efa98637b5",
-    "RESERVE": "3e0b5df1b761477e1feec1ba6c76d7793a6128d705d839cc08b466ae48522cb1"
+    "STRESS": "9d46a561bbde535215b13b6d1ca4799d2da0cd3ff0f57f15d9e3f9a653fe99d7",
+    "EXTERNAL": "e34c1bc078b7875ee747a819cbf62c8dfd3a0735884e676d868e1fd16b2926f4",
+    "RESERVE": "8292fb2b270b75348ea7dc5ae076605d197442092f92c565f30f9f98c0f903a5"
   },
-  "source_group_policy": "同一原始题的翻译/同义改写共享 source_group_id 且只能进入同一 split；DEV 与 TEST 不得共享同一 gold 段落的直接派生问题；B2 冻结前需完成 embedding 聚类复核。",
-  "dedup_method": [
-    "text_hash",
-    "source_group_id_isolation",
-    "embedding_cluster_near_duplicate_review"
+  "split_lifecycle": {
+    "DEV": {
+      "status": "A1_STRUCTURE_FROZEN",
+      "evaluation_eligible": false,
+      "reason": "开发集仅用于调参；题目结构已锁定，但 gold 与近义去重仍由 B2 复核。"
+    },
+    "TEST": {
+      "status": "B2_GOLD_PENDING",
+      "evaluation_eligible": false,
+      "reason": "A1 已交付题目结构；gold、教师来源缺口与语义去重未完成，不能宣称正式评测集冻结。"
+    },
+    "STRESS": {
+      "status": "B2_GOLD_PENDING",
+      "evaluation_eligible": false,
+      "reason": "压力场景结构已交付；预期行为和证据映射待 B2 审核。"
+    },
+    "EXTERNAL": {
+      "status": "LICENSE_AND_PROVENANCE_PENDING",
+      "evaluation_eligible": false,
+      "reason": "仅为 benchmark-style 合成候选；逐题来源、许可证和 gold 均未冻结。"
+    },
+    "RESERVE": {
+      "status": "RESERVE_ONLY",
+      "evaluation_eligible": false,
+      "reason": "仅用于经审核替换失效题，未进入评测。"
+    }
+  },
+  "source_group_policy": "source_group_id 表示共同原始题/翻译/同义改写的派生组，必须跨 split 稳定且不得由 split 名称推导。v0.1 现有编号暂保留兼容性；B2 必须结合真实来源完成派生关系审核后，才能把任一评测 split 标为 EVALUATION_FROZEN。",
+  "source_group_audit": {
+    "status": "PENDING_B2_DERIVATION_AUDIT",
+    "total_groups": 130,
+    "singleton_groups": 130,
+    "cross_split_collisions": 0
+  },
+  "dedup_steps": [
+    {
+      "method": "canonical_question_text_hash",
+      "status": "EXECUTED_VERIFIED",
+      "owner": "A1",
+      "result": "no_exact_question_text_duplicates"
+    },
+    {
+      "method": "source_group_cross_split_collision_check",
+      "status": "EXECUTED_VERIFIED",
+      "owner": "A1",
+      "result": "no_reused_group_ids; derivation correctness remains pending"
+    },
+    {
+      "method": "embedding_cluster_near_duplicate_review",
+      "status": "PLANNED_NOT_EXECUTED",
+      "owner": "B2",
+      "result": null,
+      "candidate_threshold": 0.85
+    }
   ],
-  "dedup_threshold": {
-    "embedding_similarity": 0.85
-  }
+  "known_gaps": [
+    "teacher-authored questions: 0; add or obtain a documented waiver before evaluation freeze",
+    "gold_source_ids and qrels pending B2 review",
+    "semantic near-duplicate review not executed",
+    "source_group derivation audit not executed",
+    "EXTERNAL license and item-level provenance not verified"
+  ]
 }

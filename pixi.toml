@@ -6,6 +6,8 @@ platforms = ["win-64"]
 python = "3.11.*"
 pydantic = ">=2.8,<3"
 pytest = ">=8.2,<9"
+pyyaml = ">=6,<7"
+jsonschema = ">=4.23,<5"
 
 [tasks]
 demo = "python main.py"

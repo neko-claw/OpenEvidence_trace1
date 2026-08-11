@@ -1,0 +1,36 @@
+{
+  "contract_version": "a1-safety-v0.2",
+  "cases": [
+    {
+      "name": "explicit_in_scope_allow",
+      "input": {
+        "question_id": "A1-CONTRACT-ALLOW",
+        "topic": "hypertension",
+        "acute_emergency": false,
+        "personal_diagnosis": false,
+        "personalized_prescribing_or_dose_change": false,
+        "prompt_injection_or_fabricated_reference": false,
+        "identifiable_personal_data": false,
+        "special_population": "none"
+      },
+      "expected_decision": "ALLOW",
+      "expected_action": "CONTINUE"
+    },
+    {
+      "name": "unknown_fails_closed",
+      "input": {"question_id": "A1-CONTRACT-UNKNOWN"},
+      "expected_decision": "UNKNOWN",
+      "expected_action": "REFUSE"
+    },
+    {
+      "name": "emergency_denied",
+      "input": {
+        "question_id": "A1-CONTRACT-DENY",
+        "topic": "hypertension",
+        "acute_emergency": true
+      },
+      "expected_decision": "DENY",
+      "expected_action": "REFUSE"
+    }
+  ]
+}
