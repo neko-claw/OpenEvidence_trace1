@@ -1,0 +1,82 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://openevidence.local/schemas/dataset_manifest.schema.json",
+  "title": "OpenEvidence DatasetManifest v0.1",
+  "description": "按《实施规划 v0.5》§3.1 冻结的题库数据契约之一。A1 负责题库清单与 split 哈希；B2 冻结 TEST 正式集前必须复核本清单并更新 created_at/冻结标记。",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "dataset_version",
+    "created_at",
+    "corpus_cutoff",
+    "source_datasets",
+    "licenses",
+    "split_hashes",
+    "source_group_policy",
+    "dedup_method",
+    "dedup_threshold"
+  ],
+  "properties": {
+    "dataset_version": {
+      "type": "string",
+      "pattern": "^openevidence-question-bank-v[0-9]+\\.[0-9]+$"
+    },
+    "created_at": { "type": "string", "format": "date-time" },
+    "corpus_cutoff": {
+      "type": "string",
+      "format": "date",
+      "description": "证据语料（非题库）数据截止日期；与最新研究题的 as_of_date 配合实现时间留出。"
+    },
+    "source_datasets": {
+      "type": "array",
+      "items": { "type": "string" },
+      "minItems": 1
+    },
+    "licenses": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["question_bank", "evidence_sources"],
+      "properties": {
+        "question_bank": { "type": "string", "description": "题库本身的许可声明；合成场景题，不含真实患者数据。" },
+        "evidence_sources": { "type": "array", "items": { "type": "string" } }
+      }
+    },
+    "split_hashes": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["DEV", "TEST", "STRESS", "EXTERNAL", "RESERVE"],
+      "propertyNames": { "enum": ["DEV", "TEST", "STRESS", "EXTERNAL", "RESERVE"] },
+      "patternProperties": {
+        "^(DEV|TEST|STRESS|EXTERNAL|RESERVE)$": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$",
+          "description": "sha256(canonical JSON of split records, 文件顺序拼接)。"
+        }
+      },
+      "description": "逐 split 内容哈希；B2 冻结前重新计算并核对，防止正式题静默改动。"
+    },
+    "source_group_policy": {
+      "type": "string",
+      "description": "同一原始题的翻译/改写必须共享 source_group_id 且只能进入同一 split；DEV 与 TEST 不得共享同一 gold 段落的直接派生问题。"
+    },
+    "dedup_method": {
+      "type": "array",
+      "items": { "type": "string" },
+      "minItems": 1,
+      "description": "文本去重 + source_group_id 隔离 + embedding 聚类近义去重（§6.3）。"
+    },
+    "dedup_threshold": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["embedding_similarity"],
+      "properties": {
+        "embedding_similarity": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1,
+          "description": "B2 语义去重时使用的余弦相似度阈值（候选值，冻结前由 B2 确认）。"
+        }
+      }
+    }
+  }
+}

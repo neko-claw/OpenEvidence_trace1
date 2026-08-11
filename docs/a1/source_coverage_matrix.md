@@ -22,7 +22,7 @@
 
 每个主题均含简单、中等、困难各 5 题；全体题集三个难度各 10 题。
 
-以上表格对应 DEV 30 题。新增 TEST 候选 60 题的分布为四类各 15 题、高血压与血脂各 30 题，详见 `question_bank_blueprint.md`。TEST 候选不得用于调参，必须完成 B2 gold/qrels 与语义去重后才能冻结。
+以上表格对应 DEV 30 题。TEST 60 题的分布为四类各 15 题、高血压与血脂各 30 题；STRESS 20 / EXTERNAL 10 / RESERVE 10 的设计与分布详见 `question_bank_blueprint.md`。TEST 候选不得用于调参，必须完成 B2 gold/qrels 与语义去重后才能冻结；STRESS 结果单独报告；EXTERNAL 的公开基准题须先通过许可证核验。
 
 ## 已核对的 P0 权威入口
 
@@ -50,10 +50,10 @@
 
 ## 交接限制
 
-- 合并后的 `questions.jsonl` 共 90 题，其中 `candidate_sources` 只是检索入口，不是 gold；任何调参脚本必须过滤 `split=DEV`。
+- 合并后的 `questions.jsonl` 共 130 题（DEV 30 + TEST 60 + STRESS 20 + EXTERNAL 10 + RESERVE 10），其中 `candidate_sources` 只是检索入口，不是 gold；任何调参脚本必须过滤 `split=DEV`，压力题单独报告。
 - `gold_source_ids` 在 A1 版本中必须为空；A2 完成摄入、切块和 Evidence ID 后，由 B2 人工核验并冻结。
-- 问题不得复制指南标题、摘要原句或试验官方标题；`source_group_id` 用于后续防止同义改写跨 split 泄漏。
-- 正式集不能由这些开发题直接改写生成，也不能共享同一 gold 段落。
+- 问题不得复制指南标题、摘要原句或试验官方标题；`source_group_id` 用于后续防止同义改写跨 split 泄漏（当前 130 题已校验无跨 split 泄漏）。
+- 正式集不能由这些开发题直接改写生成，也不能共享同一 gold 段落；题库冻结哈希见 `data/processed/dataset_manifest.json`。
 
 ## 在线核对记录
 
