@@ -1,0 +1,12 @@
+[workspace]
+channels = ["conda-forge"]
+platforms = ["win-64"]
+
+[dependencies]
+python = "3.11.*"
+pydantic = ">=2.8,<3"
+pytest = ">=8.2,<9"
+
+[tasks]
+demo = "python main.py"
+test = "pytest"

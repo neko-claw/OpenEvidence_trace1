@@ -1,0 +1,20 @@
+{
+  "config_version": "0.2.0",
+  "evidence_research": {"version": "0.2.0", "prompt_version": "0.2.0", "manifest": "a5/skills/evidence_research/manifest.yaml"},
+  "citation_audit": {"version": "0.2.0", "prompt_version": "0.2.0", "manifest": "a5/skills/citation_audit/manifest.yaml"},
+  "prompt_versions": {
+    "question_classification": "0.2.0",
+    "evidence_research": "0.2.0",
+    "claim_generation": "0.2.0",
+    "citation_audit": "0.2.0"
+  },
+  "classifier": {
+    "policy_version": "temporary-a1-default-0.2.0",
+    "fallback_type": "general_evidence",
+    "keyword_types": {"treatment_evidence": ["treatment"]},
+    "rules": {
+      "treatment_evidence": {"preferred_sources": ["guideline", "systematic_review"], "expected_evidence_types": ["guideline"], "freshness_required": false, "max_tool_calls": 2},
+      "general_evidence": {"preferred_sources": ["guideline", "systematic_review"], "expected_evidence_types": ["guideline"], "freshness_required": false, "max_tool_calls": 2}
+    }
+  }
+}

@@ -1,0 +1,30 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "EvidenceResearchOutput",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["question_type", "search_queries", "preferred_sources", "freshness_required", "expected_evidence_types", "max_tool_calls", "evidence_summary"],
+  "properties": {
+    "question_type": {"type": "string"},
+    "search_queries": {"type": "array", "minItems": 1, "items": {"type": "string"}},
+    "preferred_sources": {"type": "array", "minItems": 1, "items": {"type": "string"}},
+    "freshness_required": {"type": "boolean"},
+    "expected_evidence_types": {"type": "array", "minItems": 1, "items": {"type": "string"}},
+    "max_tool_calls": {"type": "integer", "minimum": 1},
+    "evidence_summary": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["evidence_count", "summary_text"],
+      "properties": {
+        "evidence_count": {"type": "integer", "minimum": 0},
+        "evidence_ids": {"type": "array", "items": {"type": "string"}},
+        "source_types": {"type": "array", "items": {"type": "string"}},
+        "source_diversity": {"type": ["number", "null"], "minimum": 0, "maximum": 1},
+        "strongest_evidence_level": {"type": ["string", "null"]},
+        "freshness_summary": {"enum": ["FRESH", "STALE", "UNKNOWN", "NOT_REQUIRED"]},
+        "conflicts_detected": {"type": "boolean"},
+        "summary_text": {"type": "string"}
+      }
+    }
+  }
+}

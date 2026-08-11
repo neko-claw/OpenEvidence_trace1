@@ -1,0 +1,49 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "CitationAuditInput",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["claims", "evidence"],
+  "properties": {
+    "claims": {"type": "array", "items": {"$ref": "#/$defs/claim"}},
+    "evidence": {"type": "array", "items": {"$ref": "#/$defs/evidence"}},
+    "context": {
+      "type": "object",
+      "properties": {
+        "freshness_required": {"type": "boolean"},
+        "run_date": {"type": "string", "format": "date"}
+      }
+    }
+  },
+  "$defs": {
+    "claim": {
+      "type": "object",
+      "required": ["claim_id", "text", "criticality"],
+      "properties": {
+        "claim_id": {"type": "string", "minLength": 1},
+        "run_id": {"type": "string"},
+        "text": {"type": "string", "minLength": 1},
+        "criticality": {"enum": ["critical", "important", "context"]},
+        "evidence_ids": {"type": "array", "items": {"type": "string"}},
+        "evidence_span_ids": {"type": "array", "items": {"type": "string"}},
+        "uncertainty": {"enum": ["LOW", "MEDIUM", "HIGH", "UNKNOWN"]},
+        "entailment_score": {"type": ["number", "null"], "minimum": 0, "maximum": 1}
+      }
+    },
+    "evidence": {
+      "type": "object",
+      "required": ["id", "content", "source_type", "title"],
+      "properties": {
+        "id": {"type": "string"},
+        "content": {"type": "string"},
+        "source_type": {"type": "string"},
+        "title": {"type": "string"},
+        "published_at": {"type": ["string", "null"], "format": "date-time"},
+        "retrieval_score": {"type": ["number", "null"]},
+        "evidence_level": {"type": ["string", "null"]},
+        "spans": {"type": "array"},
+        "mock": {"type": "boolean"}
+      }
+    }
+  }
+}
