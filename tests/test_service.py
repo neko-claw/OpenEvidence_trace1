@@ -109,7 +109,7 @@ def test_search_appends_only_explicit_english_terms_to_bm25_query_and_preserves_
     assert received_queries == [original_query]
 
 
-def test_search_fail_closed_filters_undated_or_old_candidates_before_rrf_for_current_queries() -> None:
+def test_search_current_keeps_undated_candidates_and_scores_freshness_in_rerank() -> None:
     base = EvidenceChunk(
         chunk_id="recent",
         evidence_id="e-recent",
@@ -131,11 +131,48 @@ def test_search_fail_closed_filters_undated_or_old_candidates_before_rrf_for_cur
     )
     service = RetrievalService(lexical, None, None, _config())
 
+    # ``current``（当前推荐，指南类）不再 fail-closed 过滤无日期 chunk：缺日期时
+    # freshness 特征权重在查询内重归一化，避免指南类问题误空结果（与 A3 索引
+    # 数据约定核对后的行为）。
     result = service.search(Query(query_id="q-current", text="hypertension", freshness="current"))
+
+    # 唯一降级来源是 vector 通道不可用（测试构造），与日期过滤无关。
+    assert result.status is SearchStatus.PARTIAL
+    assert result.degradation_reasons == ("vector_unavailable",)
+    assert {log.candidate.chunk.chunk_id for log in result.rank_log} == {"recent", "old", "undated"}
+
+
+def test_search_latest_filters_undated_or_stale_candidates() -> None:
+    base = EvidenceChunk(
+        chunk_id="recent",
+        evidence_id="e-recent",
+        stable_id="PMID:recent",
+        text="Recent hypertension evidence.",
+        source_type="pubmed",
+        published_at="2024-08-12",
+        index_version="index-20260811",
+        corpus_version="corpus-20260811",
+    )
+    old = replace(base, chunk_id="old", evidence_id="e-old", stable_id="PMID:old", published_at="2010-01-01")
+    undated = replace(base, chunk_id="undated", evidence_id="e-undated", stable_id="PMID:undated", published_at=None)
+    lexical = _StaticSearch(
+        [
+            ScoredChunk(chunk=old, score=0.9, rank=1, stage="bm25"),
+            ScoredChunk(chunk=undated, score=0.8, rank=2, stage="bm25"),
+            ScoredChunk(chunk=base, score=0.7, rank=3, stage="bm25"),
+        ]
+    )
+    service = RetrievalService(lexical, None, None, _config())
+
+    # ``latest``（最新试验）保持 fail-closed：无日期或超出窗口的记录直接过滤。
+    result = service.search(Query(query_id="q-latest", text="hypertension", freshness="latest"))
 
     assert result.selected_chunks == (base,)
     assert [log.candidate.chunk.chunk_id for log in result.rank_log] == ["recent"]
-    assert any("excluded 2" in reason for reason in result.degradation_reasons)
+    # 预期过滤不是降级：degradation_reasons 只有 vector 通道不可用（测试构造），
+    # 不包含任何 excluded 计数。
+    assert result.status is SearchStatus.PARTIAL
+    assert result.degradation_reasons == ("vector_unavailable",)
 
 
 def test_search_does_not_apply_latest_window_to_generic_queries() -> None:

@@ -134,6 +134,144 @@ def citation_precision(claim_supports: Sequence[ClaimSupport]) -> float:
     return precise / total_citations
 
 
+# --- 3.1 Qrel contract: atomic-point / evidence-span granularity -----------
+# A span qrel maps one evidence span to the chunk that contains it, the atomic
+# claim (``atomic_point_id``, may be empty for chunk-only qrels) it supports,
+# and a nonnegative relevance grade.  Ranking is still over chunk IDs; a span
+# is "retrieved" when its chunk is in the top ``k``.
+SpanQrel = tuple[str, str, float]  # (chunk_id, atomic_point_id, grade)
+
+
+def aggregate_chunk_qrels(span_qrels: Mapping[str, SpanQrel]) -> Mapping[str, float]:
+    """Collapse span-level qrels to chunk-level grades (max grade per chunk).
+
+    Lets the standard ``evaluate_ranking`` metrics run on the same judgments.
+    """
+    normalized = _validate_span_qrels(span_qrels)
+    grades: dict[str, float] = {}
+    for _, (chunk_id, _, grade) in normalized.items():
+        grades[chunk_id] = max(grades.get(chunk_id, 0.0), grade)
+    return MappingProxyType(grades)
+
+
+def span_success_at_k(ranked_ids: Sequence[str], span_qrels: Mapping[str, SpanQrel], k: int) -> float:
+    """One when any relevant span's chunk appears in the top ``k``."""
+    ranked, spans = _validate_span_ranking(ranked_ids, span_qrels, k)
+    positions = {chunk_id: position for position, chunk_id in enumerate(ranked, start=1)}
+    return float(
+        any(grade > 0.0 and positions.get(chunk_id, k + 1) <= k for chunk_id, _, grade in spans.values())
+    )
+
+
+def span_recall_at_k(ranked_ids: Sequence[str], span_qrels: Mapping[str, SpanQrel], k: int) -> float:
+    """Fraction of relevant evidence spans whose chunk is in the top ``k``."""
+    ranked, spans = _validate_span_ranking(ranked_ids, span_qrels, k)
+    relevant = [(chunk_id, grade) for chunk_id, _, grade in spans.values() if grade > 0.0]
+    if not relevant:
+        return 0.0
+    top_k = set(ranked[:k])
+    return sum(1 for chunk_id, _ in relevant if chunk_id in top_k) / len(relevant)
+
+
+def span_mrr(ranked_ids: Sequence[str], span_qrels: Mapping[str, SpanQrel]) -> float:
+    """Reciprocal rank of the first relevant span's chunk."""
+    ranked = _validate_ranked_ids(ranked_ids)
+    spans = _validate_span_qrels(span_qrels)
+    positions = {chunk_id: position for position, chunk_id in enumerate(ranked, start=1)}
+    for chunk_id, _, grade in spans.values():
+        if grade > 0.0 and chunk_id in positions:
+            return 1.0 / positions[chunk_id]
+    return 0.0
+
+
+def span_ndcg_at_k(ranked_ids: Sequence[str], span_qrels: Mapping[str, SpanQrel], k: int) -> float:
+    """Linearly graded normalized DCG over evidence spans at cutoff ``k``.
+
+    Spans sharing one chunk receive that chunk's rank, so a chunk with several
+    supporting spans contributes proportionally more evidence without inflating
+    the position.
+    """
+    ranked, spans = _validate_span_ranking(ranked_ids, span_qrels, k)
+    positions = {chunk_id: position for position, chunk_id in enumerate(ranked, start=1)}
+    relevant = [(chunk_id, grade) for chunk_id, _, grade in spans.values() if grade > 0.0]
+    if not relevant:
+        return 0.0
+    maximum_relevance = max(grade for _, grade in relevant)
+    ideal = sorted((grade for _, grade in relevant), reverse=True)[:k]
+    ideal_dcg = _dcg(ideal, maximum_relevance)
+    if ideal_dcg == 0.0:
+        return 0.0
+    observed = sorted(
+        (position, grade)
+        for chunk_id, grade in relevant
+        if (position := positions.get(chunk_id, k + 1)) <= k
+    )
+    observed_dcg = _dcg([grade for _, grade in observed], maximum_relevance)
+    return min(1.0, max(0.0, observed_dcg / ideal_dcg))
+
+
+def claim_coverage_at_k(ranked_ids: Sequence[str], span_qrels: Mapping[str, SpanQrel], k: int) -> float:
+    """Fraction of atomic points with at least one retrieved relevant span.
+
+    Atomic points without any positive span are ignored, so the metric answers
+    "of the claims this question actually tests, how many are covered" (3.1
+    Qrel 契约的 atomic_point_id 粒度).
+    """
+    ranked, spans = _validate_span_ranking(ranked_ids, span_qrels, k)
+    points: dict[str, list[tuple[str, float]]] = {}
+    for _, (chunk_id, point_id, grade) in spans.items():
+        if not point_id or grade <= 0.0:
+            continue
+        points.setdefault(point_id, []).append((chunk_id, grade))
+    if not points:
+        return 0.0
+    top_k = set(ranked[:k])
+    covered = sum(1 for spans_of_point in points.values() if any(chunk_id in top_k for chunk_id, _ in spans_of_point))
+    return covered / len(points)
+
+
+def evaluate_span_ranking(ranked_ids: Sequence[str], span_qrels: Mapping[str, SpanQrel], k: int) -> Mapping[str, float]:
+    """Calculate the 3.1 span-granularity metrics for one ranked result list."""
+    metrics = {
+        "span_success_at_k": span_success_at_k(ranked_ids, span_qrels, k),
+        "span_recall_at_k": span_recall_at_k(ranked_ids, span_qrels, k),
+        "span_mrr": span_mrr(ranked_ids, span_qrels),
+        "span_ndcg_at_k": span_ndcg_at_k(ranked_ids, span_qrels, k),
+        "claim_coverage_at_k": claim_coverage_at_k(ranked_ids, span_qrels, k),
+    }
+    if any(not isfinite(value) or not 0.0 <= value <= 1.0 for value in metrics.values()):
+        raise ValueError("span evaluation metrics must be finite values in [0, 1]")
+    return MappingProxyType(metrics)
+
+
+def _validate_span_ranking(
+    ranked_ids: Sequence[str], span_qrels: Mapping[str, SpanQrel], k: int
+) -> tuple[tuple[str, ...], dict[str, SpanQrel]]:
+    if not isinstance(k, int) or isinstance(k, bool) or k <= 0:
+        raise ValueError("k must be a positive integer")
+    return _validate_ranked_ids(ranked_ids), _validate_span_qrels(span_qrels)
+
+
+def _validate_span_qrels(span_qrels: Mapping[str, SpanQrel]) -> dict[str, SpanQrel]:
+    if not isinstance(span_qrels, Mapping):
+        raise ValueError("span_qrels must map span IDs to (chunk_id, atomic_point_id, grade) triples")
+    normalized: dict[str, SpanQrel] = {}
+    for span_id, value in span_qrels.items():
+        if not isinstance(span_id, str) or not span_id.strip():
+            raise ValueError("span_qrels keys must be nonblank span IDs")
+        if (
+            not isinstance(value, tuple)
+            or len(value) != 3
+            or not isinstance(value[0], str)
+            or not value[0].strip()
+            or not isinstance(value[1], str)
+            or not _finite_nonnegative(value[2])
+        ):
+            raise ValueError("span_qrels values must be (chunk_id, atomic_point_id, grade) triples")
+        normalized[span_id] = (value[0], value[1], float(value[2]))
+    return normalized
+
+
 def conflict_rate(conflicts: Sequence[tuple[str, str, str]], chunk_count: int) -> float:
     """Conflicting evidence pairs over the maximum possible pair count."""
     if not isinstance(chunk_count, int) or isinstance(chunk_count, bool) or chunk_count < 0:
@@ -343,6 +481,12 @@ def _chunk_record(chunk: EvidenceChunk) -> dict[str, object]:
         "url": chunk.url,
         "published_at": chunk.published_at,
         "evidence_level": chunk.evidence_level,
+        "pmid": chunk.pmid,
+        "doi": chunk.doi,
+        "nct_id": chunk.nct_id,
+        "authors": list(chunk.authors),
+        "guideline_name": chunk.guideline_name,
+        "fetched_at": chunk.fetched_at,
         "pico_population": list(chunk.pico_population),
         "pico_intervention": list(chunk.pico_intervention),
         "pico_comparator": list(chunk.pico_comparator),

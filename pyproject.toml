@@ -1,10 +1,22 @@
+# 赛道一 A4 模块并入主工程（openevidence-mvp）的配置。
+# 与 main 分支保持同一 project 名、Python 版本区间与基础依赖，
+# 直接合并不会覆盖主工程配置；sentence-transformers 等重依赖放入可选 extras。
 [project]
-name = "clinical-evidence-retrieval"
+name = "openevidence-mvp"
 version = "0.1.0"
-description = "A4 retrieval and reranking contracts for clinical evidence"
-requires-python = ">=3.13"
+description = "OpenEvidence MVP：赛道一 A4 检索与 Rerank（可并入 a5 的检索契约）"
+requires-python = ">=3.11,<3.13"
 dependencies = [
+    "pydantic>=2.0",
+    "requests>=2.31",
+]
+
+[project.optional-dependencies]
+bge = [
     "sentence-transformers>=4.0",
+]
+dev = [
+    "pytest>=8.0",
 ]
 
 [tool.pytest.ini_options]

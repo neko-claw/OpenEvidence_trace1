@@ -104,7 +104,14 @@ def test_fulltext_feature_prefers_long_text_and_europepmc() -> None:
     assert by_id["europe"].candidate.feature_scores["fulltext"] == pytest.approx(1.0)
 
 
-def test_redundancy_penalty_lowers_score_for_duplicate_vectors() -> None:
+def test_redundancy_feature_is_diagnostic_only_and_mmr_owns_dedup() -> None:
+    """6.6: 冗余惩罚不应提前塞入静态 feature_score，MMR 是唯一的去冗余环节。
+
+    The ``redundancy`` feature stays in the audit trail as diagnostics, but it
+    must not depress the static rerank score: identical raw scores keep their
+    tie order (by chunk_id) and de-duplication happens in ``select_mmr`` via
+    the ``(1 - lambda) * max_similarity`` penalty.
+    """
     query = Query(query_id="q1", text="hypertension trial")
     first = _candidate(
         "first",
@@ -130,6 +137,40 @@ def test_redundancy_penalty_lowers_score_for_duplicate_vectors() -> None:
     by_id = {log.candidate.chunk.chunk_id: log for log in ranks}
     assert by_id["duplicate"].candidate.feature_scores["redundancy"] > 0.9
     assert by_id["diverse"].candidate.feature_scores["redundancy"] == pytest.approx(0.0, abs=0.01)
-    # Identical raw scores, but the duplicate pays the static redundancy penalty.
-    assert by_id["diverse"].candidate.rerank_score > by_id["duplicate"].candidate.rerank_score
-    assert by_id["diverse"].candidate.rerank_score > by_id["first"].candidate.rerank_score
+    # 静态重排分数不再被冗余惩罚压低：同分候选保持 rrf 并列顺序（chunk_id 稳定序）。
+    assert by_id["diverse"].candidate.rerank_score == pytest.approx(by_id["duplicate"].candidate.rerank_score)
+    assert by_id["first"].candidate.rerank_score == pytest.approx(by_id["duplicate"].candidate.rerank_score)
+
+
+def test_mmr_applies_similarity_penalty_as_the_only_redundancy_control() -> None:
+    """MMR 用 (1-lambda)*max_similarity 去冗余，硬上限 2 chunk/文献、4 chunk/来源。"""
+    from retrieval.models import RankLog
+    from retrieval.rerank import select_mmr
+
+    query = Query(query_id="q1", text="hypertension trial")
+    first = _candidate(
+        "first",
+        chunk=_chunk("first", content_vector=(1.0, 0.0)),
+        bm25_raw_score=2.0,
+        vector_raw_score=0.9,
+    )
+    duplicate = _candidate(
+        "duplicate",
+        chunk=_chunk("duplicate", content_vector=(0.999, 0.001)),
+        bm25_raw_score=2.0,
+        vector_raw_score=0.9,
+    )
+    ranks = FeatureReranker(RetrievalConfig()).rank(query, [first, duplicate])
+
+    config = RetrievalConfig(selection_top_k=2, mmr_lambda=0.75)
+    selected = select_mmr(ranks, config, 2)
+
+    # 两条都进入选择，但后选中的那条（与已选高度相似）记录了高 mmr_similarity_penalty。
+    assert len(selected) == 2
+    penalties = {
+        log.candidate.chunk.chunk_id: log.candidate.feature_scores["mmr_similarity_penalty"]
+        for log in selected
+    }
+    assert max(penalties.values()) > 0.9
+    assert min(penalties.values()) == pytest.approx(0.0, abs=0.01)
+    assert selected[0].candidate.feature_scores["mmr_score"] >= selected[1].candidate.feature_scores["mmr_score"]

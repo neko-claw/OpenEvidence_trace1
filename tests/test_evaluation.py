@@ -184,3 +184,103 @@ def test_write_run_jsonl_rejects_non_utf8_contract_strings_before_creating_a_fil
 
     assert not destination.exists()
     assert not destination.parent.exists()
+
+
+# --- 3.1 Qrel 契约：evidence_span_id / atomic_point_id 粒度 ---
+
+
+def test_aggregate_chunk_qrels_takes_max_grade_per_chunk() -> None:
+    from retrieval.evaluation import aggregate_chunk_qrels
+
+    aggregated = aggregate_chunk_qrels(
+        {
+            "span-1": ("chunk-a", "point-1", 3.0),
+            "span-2": ("chunk-a", "point-2", 1.0),
+            "span-3": ("chunk-b", "point-1", 2.0),
+        }
+    )
+
+    assert aggregated == {"chunk-a": 3.0, "chunk-b": 2.0}
+
+
+def test_span_recall_at_k_counts_spans_whose_chunk_is_in_top_k() -> None:
+    from retrieval.evaluation import span_recall_at_k
+
+    span_qrels = {
+        "s1": ("chunk-a", "point-1", 3.0),
+        "s2": ("chunk-b", "point-1", 2.0),
+        "s3": ("chunk-c", "point-2", 0.0),  # irrelevant span ignored
+    }
+    assert span_recall_at_k(["chunk-a", "chunk-b"], span_qrels, 1) == 0.5
+    assert span_recall_at_k(["chunk-a", "chunk-b"], span_qrels, 2) == 1.0
+
+
+def test_span_ndcg_at_k_uses_chunk_position_for_its_spans() -> None:
+    from retrieval.evaluation import span_ndcg_at_k
+
+    span_qrels = {"s1": ("chunk-a", "point-1", 3.0), "s2": ("chunk-b", "point-1", 1.0)}
+    # chunk-a 在 rank1、chunk-b 在 rank2 → 完美排序，nDCG=1
+    assert span_ndcg_at_k(["chunk-a", "chunk-b"], span_qrels, 2) == 1.0
+    # 倒序 → nDCG < 1（且明显低于完美排序）
+    reversed_ndcg = span_ndcg_at_k(["chunk-b", "chunk-a"], span_qrels, 2)
+    assert 0.5 < reversed_ndcg < 1.0
+
+
+def test_span_mrr_returns_reciprocal_rank_of_first_relevant_span_chunk() -> None:
+    from retrieval.evaluation import span_mrr
+
+    span_qrels = {"s1": ("chunk-a", "point-1", 3.0)}
+    assert span_mrr(["chunk-a"], span_qrels) == 1.0
+    assert span_mrr(["other", "chunk-a"], span_qrels) == 0.5
+    assert span_mrr(["other"], span_qrels) == 0.0
+
+
+def test_claim_coverage_at_k_covers_atomic_points() -> None:
+    from retrieval.evaluation import claim_coverage_at_k
+
+    span_qrels = {
+        "s1": ("chunk-a", "point-1", 3.0),
+        "s2": ("chunk-b", "point-2", 2.0),
+        "s3": ("chunk-c", "point-2", 1.0),
+    }
+    # top-1 只覆盖 point-1
+    assert claim_coverage_at_k(["chunk-a"], span_qrels, 1) == 0.5
+    # top-2 覆盖两个原子主张
+    assert claim_coverage_at_k(["chunk-a", "chunk-b"], span_qrels, 2) == 1.0
+
+
+def test_evaluate_span_ranking_returns_bounded_metrics() -> None:
+    from retrieval.evaluation import evaluate_span_ranking
+
+    metrics = evaluate_span_ranking(
+        ["chunk-a", "chunk-b"],
+        {"s1": ("chunk-a", "point-1", 3.0), "s2": ("chunk-b", "point-1", 2.0)},
+        2,
+    )
+
+    assert set(metrics) == {
+        "span_success_at_k",
+        "span_recall_at_k",
+        "span_mrr",
+        "span_ndcg_at_k",
+        "claim_coverage_at_k",
+    }
+    assert all(0.0 <= value <= 1.0 for value in metrics.values())
+    assert metrics["span_recall_at_k"] == 1.0
+    assert metrics["claim_coverage_at_k"] == 1.0
+
+
+def test_span_qrels_validation_rejects_malformed_values() -> None:
+    from retrieval.evaluation import span_recall_at_k
+
+    for bad in (
+        {"s1": ("chunk-a",)},  # 元组长度不足
+        {"s1": ("", "point-1", 3.0)},  # 空 chunk_id
+        {"s1": ("chunk-a", "point-1", -1.0)},  # 负等级
+        {"": ("chunk-a", "point-1", 3.0)},  # 空 span_id
+    ):
+        try:
+            span_recall_at_k(["chunk-a"], bad, 1)
+            raise AssertionError("malformed span qrels must be rejected")
+        except ValueError:
+            pass

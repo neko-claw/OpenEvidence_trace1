@@ -25,6 +25,7 @@ class UpsertStats:
     unchanged: int = 0
     duplicates_skipped: int = 0
     tombstoned_skipped: int = 0
+    gate_skipped: int = 0
 
 
 _PICO_FIELDS = ("pico_population", "pico_intervention", "pico_comparator", "pico_outcome")
@@ -41,13 +42,17 @@ class EvidenceStore:
         corpus_version: str = "v1",
         embedding_model: str = "unknown",
         chunk_policy: str = "v1",
+        enforce_source_gate: bool = False,
     ) -> None:
         if not isinstance(index_version, str) or not index_version.strip():
             raise ValueError("index_version must be a nonblank string")
         if not isinstance(corpus_version, str) or not corpus_version.strip():
             raise ValueError("corpus_version must be a nonblank string")
+        if not isinstance(enforce_source_gate, bool):
+            raise ValueError("enforce_source_gate must be a bool")
         self._index_version = index_version
         self._corpus_version = corpus_version
+        self._enforce_source_gate = enforce_source_gate
         self._connection = sqlite3.connect(str(path))
         self._connection.row_factory = sqlite3.Row
         self._create_schema()
@@ -77,6 +82,12 @@ class EvidenceStore:
                 page TEXT NOT NULL DEFAULT '',
                 section TEXT NOT NULL DEFAULT '',
                 token_count INTEGER NOT NULL DEFAULT 0,
+                pmid TEXT NOT NULL DEFAULT '',
+                doi TEXT NOT NULL DEFAULT '',
+                nct_id TEXT NOT NULL DEFAULT '',
+                authors TEXT NOT NULL DEFAULT '[]',
+                guideline_name TEXT NOT NULL DEFAULT '',
+                fetched_at TEXT,
                 index_version TEXT NOT NULL,
                 corpus_version TEXT NOT NULL
             );
@@ -101,6 +112,12 @@ class EvidenceStore:
             ("page", "TEXT NOT NULL DEFAULT ''"),
             ("section", "TEXT NOT NULL DEFAULT ''"),
             ("token_count", "INTEGER NOT NULL DEFAULT 0"),
+            ("pmid", "TEXT NOT NULL DEFAULT ''"),
+            ("doi", "TEXT NOT NULL DEFAULT ''"),
+            ("nct_id", "TEXT NOT NULL DEFAULT ''"),
+            ("authors", "TEXT NOT NULL DEFAULT '[]'"),
+            ("guideline_name", "TEXT NOT NULL DEFAULT ''"),
+            ("fetched_at", "TEXT"),
         ):
             if column not in columns:
                 self._connection.execute(f"ALTER TABLE chunks ADD COLUMN {column} {definition}")
@@ -110,12 +127,21 @@ class EvidenceStore:
         """Insert new chunks, update changed ones, and skip duplicates by hash.
 
         A chunk whose ``stable_id`` is tombstoned is skipped; a chunk whose
-        ``content_hash`` already exists anywhere in the store is skipped.
+        ``content_hash`` already exists anywhere in the store is skipped.  When
+        ``enforce_source_gate`` is enabled, chunks that fail the Gate1 source
+        gate are skipped and counted in ``gate_skipped`` instead of entering
+        the index (5.7 来源门禁).
         """
         stats = UpsertStats()
         for chunk in chunks:
             if not isinstance(chunk, EvidenceChunk):
                 raise ValueError("chunks must contain only EvidenceChunk values")
+            if self._enforce_source_gate:
+                from .gate import check_source_gate
+
+                if not check_source_gate(chunk).passed:
+                    stats = _bump(stats, "gate_skipped")
+                    continue
             if self._is_tombstoned(chunk.stable_id):
                 stats = _bump(stats, "tombstoned_skipped")
                 continue
@@ -238,8 +264,9 @@ class EvidenceStore:
         self._connection.execute(
             "INSERT INTO chunks(chunk_id, evidence_id, stable_id, title, text, source_type, url, "
             "published_at, evidence_level, topic, pico_population, pico_intervention, pico_comparator, "
-            "pico_outcome, content_hash, is_tombstoned, page, section, token_count, index_version, "
-            "corpus_version) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+            "pico_outcome, content_hash, is_tombstoned, page, section, token_count, pmid, doi, nct_id, "
+            "authors, guideline_name, fetched_at, index_version, "
+            "corpus_version) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
             _chunk_row(chunk, self._index_version, self._corpus_version),
         )
 
@@ -248,7 +275,8 @@ class EvidenceStore:
             "UPDATE chunks SET evidence_id = ?, stable_id = ?, title = ?, text = ?, source_type = ?, "
             "url = ?, published_at = ?, evidence_level = ?, topic = ?, pico_population = ?, "
             "pico_intervention = ?, pico_comparator = ?, pico_outcome = ?, content_hash = ?, "
-            "is_tombstoned = 0, page = ?, section = ?, token_count = ?, index_version = ?, "
+            "is_tombstoned = 0, page = ?, section = ?, token_count = ?, pmid = ?, doi = ?, nct_id = ?, "
+            "authors = ?, guideline_name = ?, fetched_at = ?, index_version = ?, "
             "corpus_version = ? WHERE chunk_id = ?",
             (
                 chunk.evidence_id,
@@ -268,6 +296,12 @@ class EvidenceStore:
                 chunk.page,
                 chunk.section,
                 _token_count(chunk),
+                chunk.pmid,
+                chunk.doi,
+                chunk.nct_id,
+                json.dumps(list(chunk.authors), ensure_ascii=False),
+                chunk.guideline_name,
+                chunk.fetched_at,
                 self._index_version,
                 self._corpus_version,
                 chunk.chunk_id,
@@ -296,6 +330,12 @@ def _chunk_row(chunk: EvidenceChunk, index_version: str, corpus_version: str) ->
         chunk.page,
         chunk.section,
         _token_count(chunk),
+        chunk.pmid,
+        chunk.doi,
+        chunk.nct_id,
+        json.dumps(list(chunk.authors), ensure_ascii=False),
+        chunk.guideline_name,
+        chunk.fetched_at,
         index_version,
         corpus_version,
     )
@@ -322,6 +362,12 @@ def _row_to_chunk(row: sqlite3.Row, index_version: str, corpus_version: str) -> 
         page=row["page"],
         section=row["section"],
         token_count=row["token_count"],
+        pmid=row["pmid"],
+        doi=row["doi"],
+        nct_id=row["nct_id"],
+        authors=tuple(json.loads(row["authors"])),
+        guideline_name=row["guideline_name"],
+        fetched_at=row["fetched_at"],
         index_version=index_version,
         corpus_version=corpus_version,
     )

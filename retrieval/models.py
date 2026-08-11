@@ -136,6 +136,16 @@ class EvidenceChunk:
     page: str = ""
     section: str = ""
     token_count: int = 0
+    # --- Gate1 source-provenance contract (5.7) ---
+    # Structured stable identifiers; ``stable_id`` keeps the canonical
+    # "PMID:..." / "DOI:..." / "NCT..." string for cross-source dedup while
+    # these fields carry the machine-readable parts for citation and gating.
+    pmid: str = ""
+    doi: str = ""
+    nct_id: str = ""
+    authors: tuple[str, ...] = ()
+    guideline_name: str = ""
+    fetched_at: str | None = None
     is_tombstoned: bool = False
     index_version: str = "v1"
     corpus_version: str = "v1"
@@ -163,6 +173,12 @@ class EvidenceChunk:
             raise ValueError("token_count must be a nonnegative integer")
         if not isinstance(self.content_hash, str):
             raise ValueError("content_hash must be a string")
+        for field_name in ("pmid", "doi", "nct_id", "guideline_name"):
+            if not isinstance(getattr(self, field_name), str):
+                raise ValueError(f"{field_name} must be a string")
+        object.__setattr__(self, "authors", _normalize_terms(self.authors, "authors"))
+        if self.fetched_at is not None and not isinstance(self.fetched_at, str):
+            raise ValueError("fetched_at must be a string or None")
         # The hash is always derived from content: a copied or caller-supplied
         # value is recomputed so ``replace()``/round-trips can never serve a
         # stale hash, and store dedup stays consistent with the content.
@@ -199,7 +215,12 @@ _PICO_SEPARATOR = "\x1e"
 
 
 def _compute_content_hash(chunk: EvidenceChunk) -> str:
-    """Deterministic SHA-256 over the content fields that define a chunk version."""
+    """Deterministic SHA-256 over the content fields that define a chunk version.
+
+    Provenance fields (``fetched_at``, ``url``, ``pmid``/``doi``/``nct_id``) do
+    not define content identity and are deliberately excluded; authorship and
+    guideline name are content and therefore included.
+    """
     pico_parts = []
     for field_name in ("pico_population", "pico_intervention", "pico_comparator", "pico_outcome"):
         pico_parts.append(_PICO_SEPARATOR.join(getattr(chunk, field_name)))
@@ -213,6 +234,8 @@ def _compute_content_hash(chunk: EvidenceChunk) -> str:
             chunk.published_at if chunk.published_at is not None else "",
             chunk.evidence_level,
             _PICO_SEPARATOR.join(pico_parts),
+            _PICO_SEPARATOR.join(chunk.authors),
+            chunk.guideline_name,
         )
     )
     return sha256(canonical.encode("utf-8")).hexdigest()
@@ -238,8 +261,11 @@ class Query:
     evidence_levels: tuple[str, ...] | Iterable[str] = ()
     atomic_claims: tuple[str, ...] | Iterable[str] = ()
     domain: str = "generic"
+    out_of_scope: bool = False
 
     def __post_init__(self) -> None:
+        if not isinstance(self.out_of_scope, bool):
+            raise ValueError("out_of_scope must be a bool")
         _require_nonblank(self.query_id, "query_id")
         _require_nonblank(self.text, "text")
         _require_nonblank(self.language, "language")

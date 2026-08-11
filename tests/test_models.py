@@ -262,3 +262,57 @@ def test_rank_log_rejects_a_non_candidate_primary_candidate() -> None:
 def test_score_and_rank_contracts_reject_non_float_representable_integers(factory: object, field_name: str) -> None:
     with pytest.raises(ValueError, match=field_name):
         factory()  # type: ignore[operator]
+
+
+def test_evidence_chunk_carries_gate1_provenance_fields() -> None:
+    chunk = evidence_chunk(
+        pmid="33000020",
+        doi="10.1000/example",
+        nct_id="NCT05500001",
+        authors=("Wang H", "Li Y"),
+        guideline_name="中国高血压防治指南（2024年修订版）",
+        fetched_at="2026-08-10T09:00:00Z",
+    )
+
+    assert chunk.pmid == "33000020"
+    assert chunk.doi == "10.1000/example"
+    assert chunk.nct_id == "NCT05500001"
+    assert chunk.authors == ("Wang H", "Li Y")
+    assert chunk.guideline_name == "中国高血压防治指南（2024年修订版）"
+    assert chunk.fetched_at == "2026-08-10T09:00:00Z"
+
+
+def test_evidence_chunk_validates_provenance_fields() -> None:
+    with pytest.raises(ValueError, match="pmid"):
+        evidence_chunk(pmid=123)  # type: ignore[arg-type]
+    with pytest.raises(ValueError, match="authors"):
+        evidence_chunk(authors=("",))  # type: ignore[arg-type]
+    with pytest.raises(ValueError, match="fetched_at"):
+        evidence_chunk(fetched_at=123)  # type: ignore[arg-type]
+
+
+def test_evidence_chunk_accepts_iso_strings_for_fetched_at() -> None:
+    chunk = evidence_chunk(fetched_at="2026-08-10T09:00:00Z")
+
+    assert chunk.fetched_at == "2026-08-10T09:00:00Z"
+
+
+def test_evidence_chunk_defaults_remain_backward_compatible() -> None:
+    chunk = evidence_chunk()
+
+    assert chunk.pmid == ""
+    assert chunk.doi == ""
+    assert chunk.nct_id == ""
+    assert chunk.authors == ()
+    assert chunk.guideline_name == ""
+    assert chunk.fetched_at is None
+
+
+def test_query_carries_out_of_scope_flag() -> None:
+    from retrieval.models import Query
+
+    query = Query(query_id="q1", text="帮我算一下服用多少毫克", out_of_scope=True)
+
+    assert query.out_of_scope is True
+    with pytest.raises(ValueError, match="out_of_scope"):
+        Query(query_id="q2", text="正常问题", out_of_scope="yes")  # type: ignore[arg-type]

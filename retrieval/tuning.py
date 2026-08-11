@@ -216,7 +216,6 @@ def write_freeze_record(
                 "source_reliability": config.feature_weights.source_reliability,
             },
             "mmr_lambda": config.mmr_lambda,
-            "redundancy_penalty": config.redundancy_penalty,
             "cross_encoder_alpha": config.cross_encoder_alpha,
             "freshness_weight_latest_trial": config.freshness_weight_latest_trial,
         },
@@ -260,7 +259,6 @@ def verify_frozen(freeze_path: str | Path, config: RetrievalConfig) -> bool:
         and weights.get("freshness") == config.feature_weights.freshness
         and weights.get("source_reliability") == config.feature_weights.source_reliability
         and recorded.get("mmr_lambda") == config.mmr_lambda
-        and recorded.get("redundancy_penalty") == config.redundancy_penalty
         and recorded.get("cross_encoder_alpha") == config.cross_encoder_alpha
         and recorded.get("freshness_weight_latest_trial") == config.freshness_weight_latest_trial
     )

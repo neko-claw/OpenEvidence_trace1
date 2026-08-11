@@ -1,0 +1,43 @@
+{
+  "_comment": "人工核验的开发集 qrels（A1/B2 冻结题集的人工标注）。“qrels” 为 chunk 粒度 {chunk_id: 等级}；“span_qrels” 为 3.1 Qrel 契约的 evidence-span 粒度：span_id -> [chunk_id, atomic_point_id, grade]。等级 3=高度相关，2=相关，1=边缘相关。",
+  "qrels": {
+    "dev-001": {"htn-guide-2024": 3.0, "htn-sr-amlodipine": 2.0, "htn-meta-2021": 1.0, "htn-rct-amlodipine": 1.0},
+    "dev-002": {"htn-rct-latest-2025": 3.0, "htn-trial-2024": 2.0},
+    "dev-003": {"htn-rct-amlodipine": 3.0, "htn-sr-amlodipine": 2.0, "htn-guide-2024": 1.0, "htn-guide-2015": 1.0},
+    "dev-004": {"htn-rct-amlodipine": 3.0, "htn-rct-chlorthalidone": 1.0},
+    "dev-005": {"lipid-guide-2023": 3.0, "lipid-sr-statin": 2.0, "lipid-rct-rosuvastatin": 1.0},
+    "dev-006": {"lipid-rct-ezetimibe": 3.0, "lipid-trial-2024": 2.0, "lipid-guide-2023": 1.0},
+    "dev-007": {"dia-rct-metformin": 3.0, "dia-sr-metformin": 2.0, "dia-guide-2024": 1.0},
+    "dev-008": {"dia-guide-2024": 3.0, "dia-sr-metformin": 1.0}
+  },
+  "span_qrels": {
+    "dev-001": {
+      "span-dev001-a": ["htn-guide-2024", "dev001-claim-1", 3.0],
+      "span-dev001-b": ["htn-sr-amlodipine", "dev001-claim-2", 2.0],
+      "span-dev001-c": ["htn-meta-2021", "dev001-claim-2", 1.0]
+    },
+    "dev-002": {
+      "span-dev002-a": ["htn-rct-latest-2025", "dev002-claim-1", 3.0],
+      "span-dev002-b": ["htn-trial-2024", "dev002-claim-1", 2.0]
+    },
+    "dev-003": {
+      "span-dev003-a": ["htn-rct-amlodipine", "dev003-claim-1", 3.0]
+    },
+    "dev-004": {
+      "span-dev004-a": ["htn-rct-amlodipine", "dev004-claim-1", 3.0]
+    },
+    "dev-005": {
+      "span-dev005-a": ["lipid-guide-2023", "dev005-claim-1", 3.0]
+    },
+    "dev-006": {
+      "span-dev006-a": ["lipid-rct-ezetimibe", "dev006-claim-1", 3.0],
+      "span-dev006-b": ["lipid-trial-2024", "dev006-claim-1", 2.0]
+    },
+    "dev-007": {
+      "span-dev007-a": ["dia-rct-metformin", "dev007-claim-1", 3.0]
+    },
+    "dev-008": {
+      "span-dev008-a": ["dia-guide-2024", "dev008-claim-1", 3.0]
+    }
+  }
+}

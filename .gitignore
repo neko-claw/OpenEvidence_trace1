@@ -7,7 +7,6 @@ venv/
 
 # 测试与运行产物
 .pytest_cache/
-artifacts/
 *.db
 *.sqlite
 
@@ -16,3 +15,12 @@ artifacts/
 
 # 原始数据缓存（不提交）
 data/raw/
+
+# artifacts/ 提交验收交付物，忽略临时运行产物
+artifacts/*
+!artifacts/runs/
+!artifacts/evaluation/
+!artifacts/reports/
+!artifacts/runs/*
+!artifacts/evaluation/*
+!artifacts/reports/*

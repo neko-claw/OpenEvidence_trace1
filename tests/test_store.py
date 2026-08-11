@@ -150,3 +150,58 @@ def test_store_is_reopenable_and_persistent(tmp_path) -> None:
     reopened = EvidenceStore(path, index_version="idx-v1", corpus_version="corpus-v1")
 
     assert len(reopened.load_chunks()) == 1
+
+
+def test_store_round_trips_gate1_provenance_fields(tmp_path) -> None:
+    chunk = _chunk(
+        "c-gate",
+        stable_id="PMID:33000020",
+        title="Amlodipine in older adults",
+        url="https://pubmed.ncbi.nlm.nih.gov/33000020/",
+        published_at="2024-06-01",
+        pmid="33000020",
+        doi="10.1000/example.2024.06.001",
+        nct_id="",
+        authors=("Wang H", "Li Y", "Chen J"),
+        guideline_name="",
+        fetched_at="2026-08-10T09:00:00Z",
+    )
+    store = EvidenceStore(tmp_path / "gate.db")
+
+    store.upsert_chunks((chunk,))
+    loaded = store.load_chunks()[0]
+
+    assert loaded.pmid == "33000020"
+    assert loaded.doi == "10.1000/example.2024.06.001"
+    assert loaded.authors == ("Wang H", "Li Y", "Chen J")
+    assert loaded.guideline_name == ""
+    assert loaded.fetched_at == "2026-08-10T09:00:00Z"
+
+
+def test_store_enforces_source_gate_and_counts_skipped(tmp_path) -> None:
+    complete = _chunk(
+        "c-ok",
+        url="https://pubmed.ncbi.nlm.nih.gov/1/",
+        published_at="2024-01-01",
+        fetched_at="2026-08-10T09:00:00Z",
+    )
+    missing_fetched = replace(complete, chunk_id="c-no-fetch", fetched_at=None)
+    missing_url = replace(complete, chunk_id="c-no-url", url="")
+    store = EvidenceStore(tmp_path / "gated.db", enforce_source_gate=True)
+
+    stats = store.upsert_chunks((complete, missing_fetched, missing_url))
+    loaded = store.load_chunks()
+
+    assert stats.gate_skipped == 2
+    assert stats.inserted == 1
+    assert [chunk.chunk_id for chunk in loaded] == ["c-ok"]
+
+
+def test_store_without_gate_enforcement_accepts_partial_provenance(tmp_path) -> None:
+    partial = _chunk("c-partial", fetched_at=None, url="")
+    store = EvidenceStore(tmp_path / "loose.db")
+
+    stats = store.upsert_chunks((partial,))
+
+    assert stats.inserted == 1
+    assert len(store.load_chunks()) == 1

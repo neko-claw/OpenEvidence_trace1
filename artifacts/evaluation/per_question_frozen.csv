@@ -1,0 +1,9 @@
+question_id,question_type,status,recall_at_50_pool,ndcg_at_8_ranking,mrr_ranking,span_recall_at_8,span_ndcg_at_8,claim_coverage_at_8,selected_count,context_tokens,latency_ms,warning
+dev-001,guideline,ok,1.0,0.90852720982657,1.0,1.0,0.9725044904464192,1.0,3,1139,4,Adaptive K adjustments: small_k_for_guideline.
+dev-002,latest_trial,ok,1.0,0.6787622294601762,0.5,1.0,1.0,1.0,3,826,2,Claim 1 lacks supporting evidence (insufficient). Adaptive K adjustments: small_k_for_latest.
+dev-003,therapy,ok,1.0,0.7688502919530392,1.0,1.0,1.0,1.0,8,1398,4,Adaptive K adjustments: large_k_for_multi_pico.
+dev-004,therapy,ok,1.0,0.5196610607458307,0.3333333333333333,1.0,1.0,1.0,8,1411,4,Claim 1 lacks supporting evidence (insufficient). Conflicting evidence detected: time. Adaptive K adjustments: large_k_for_multi_pico.
+dev-005,guideline,ok,1.0,0.6299699107075645,0.5,1.0,1.0,1.0,3,678,2,Adaptive K adjustments: small_k_for_guideline.
+dev-006,therapy,ok,1.0,0.7883773914853738,1.0,1.0,1.0,1.0,8,887,3,Claim 1 lacks supporting evidence (insufficient).
+dev-007,therapy,ok,1.0,0.6138273133441086,0.5,1.0,1.0,1.0,8,1433,5,Adaptive K adjustments: large_k_for_multi_pico.
+dev-008,guideline,ok,1.0,0.6193996029832952,0.5,1.0,1.0,1.0,3,1231,2,Adaptive K adjustments: small_k_for_guideline.

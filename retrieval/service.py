@@ -64,6 +64,18 @@ class RetrievalService:
         """Retrieve evidence with controlled degradation rather than fallback silence."""
         # This validates even a request that later experiences two channel failures.
         self._reranker.rank(query, ())
+        if query.out_of_scope:
+            # Scope gating (dosing / prescription / diagnosis / emergency) belongs
+            # to A1/A5; A4 must not silently cross the boundary and return
+            # evidence that could be read as advice.  Hand off explicitly.
+            return self._result(
+                query,
+                SearchStatus.EMPTY,
+                (),
+                (),
+                ["out_of_scope"],
+                {stage: 0 for stage in _STAGES},
+            )
         started = perf_counter()
         timings = {stage: 0 for stage in _STAGES}
         reasons: list[str] = []
@@ -91,7 +103,6 @@ class RetrievalService:
             timings["fusion"] = _elapsed_ms(stage_started)
 
             k1, k2, adaptive_actions = adapt_k(query, self._config)
-            reasons.extend(adaptive_actions)
             # The context budget is a hard cap: adaptive rules may shrink K,
             # but never grow it beyond the frozen selection budget.
             k2 = min(k2, self._config.selection_top_k)
@@ -130,6 +141,7 @@ class RetrievalService:
             timings,
             claim_support=claim_support,
             conflicts=conflicts,
+            notes=adaptive_actions,
         )
 
     def _search_bm25(
@@ -182,6 +194,7 @@ class RetrievalService:
         *,
         claim_support: tuple[ClaimSupport, ...] = (),
         conflicts: tuple[tuple[str, str, str], ...] = (),
+        notes: Sequence[str] = (),
     ) -> SearchResult:
         return SearchResult(
             query_id=query.query_id,
@@ -194,7 +207,7 @@ class RetrievalService:
             degradation_reasons=tuple(reasons),
             latency_ms=timings["total"],
             stage_latency_ms=timings,
-            retrieval_warning=_warning(status, selected_chunks, rank_log, reasons, claim_support, conflicts),
+            retrieval_warning=_warning(status, selected_chunks, rank_log, reasons, claim_support, conflicts, notes),
             claim_support=claim_support,
             conflicts=conflicts,
         )
@@ -203,22 +216,37 @@ class RetrievalService:
 def _intake_candidates(
     raw: object, expected_stage: str, config: RetrievalConfig, query: Query
 ) -> tuple[list[ScoredChunk], int]:
-    """Keep only immutable, live candidates tied to this fixed index release."""
+    """Keep only immutable, live candidates tied to this fixed index release.
+
+    Returns ``(candidates, excluded)`` where ``excluded`` counts candidates
+    that are invalid or stale (tombstoned, malformed, version mismatch, or
+    duplicate).  Candidates that fail the *intended per-query metadata filters*
+    (domain / source type / evidence level / latest window) are skipped
+    silently: that is normal query behavior, not a degradation, and must not
+    inflate the degradation reasons.
+    """
     if isinstance(raw, (str, bytes)) or not isinstance(raw, Sequence):
         raise ValueError(f"{expected_stage} channel returned a non-sequence candidate collection")
     candidates: list[ScoredChunk] = []
     excluded = 0
     seen: set[str] = set()
     for item in raw:
-        if not _is_live_scored_chunk(item, expected_stage, config, query) or item.chunk.chunk_id in seen:
+        if not _is_valid_scored_chunk(item, expected_stage, config):
             excluded += 1
             continue
-        seen.add(item.chunk.chunk_id)
+        chunk = item.chunk
+        if chunk.chunk_id in seen:
+            excluded += 1
+            continue
+        if not _passes_latest_filter(chunk, query, config) or not _passes_metadata_filters(chunk, query):
+            continue  # intended per-query metadata filtering, not degradation
+        seen.add(chunk.chunk_id)
         candidates.append(item)
     return candidates, excluded
 
 
-def _is_live_scored_chunk(item: object, expected_stage: str, config: RetrievalConfig, query: Query) -> bool:
+def _is_valid_scored_chunk(item: object, expected_stage: str, config: RetrievalConfig) -> bool:
+    """Contract/version validity only; per-query metadata filters are separate."""
     if not isinstance(item, ScoredChunk) or item.stage != expected_stage:
         return False
     if (
@@ -255,12 +283,15 @@ def _is_live_scored_chunk(item: object, expected_stage: str, config: RetrievalCo
         return False
     if not isinstance(chunk.content_vector, tuple) or any(not _finite(value) for value in chunk.content_vector):
         return False
-    return (
-        chunk.index_version == config.index_version
-        and chunk.corpus_version == config.corpus_version
-        and _passes_latest_filter(chunk, query, config)
-        and _passes_metadata_filters(chunk, query)
-    )
+    return chunk.index_version == config.index_version and chunk.corpus_version == config.corpus_version
+
+
+def _is_live_scored_chunk(item: object, expected_stage: str, config: RetrievalConfig, query: Query) -> bool:
+    """Backward-compatible full check: validity plus per-query metadata filters."""
+    if not _is_valid_scored_chunk(item, expected_stage, config):
+        return False
+    chunk = item.chunk
+    return _passes_latest_filter(chunk, query, config) and _passes_metadata_filters(chunk, query)
 
 
 def _passes_metadata_filters(chunk: EvidenceChunk, query: Query) -> bool:
@@ -284,8 +315,17 @@ def _passes_metadata_filters(chunk: EvidenceChunk, query: Query) -> bool:
 
 
 def _passes_latest_filter(chunk: EvidenceChunk, query: Query, config: RetrievalConfig) -> bool:
-    """Fail closed for explicitly current/latest requests before RRF fusion."""
-    if query.freshness not in {"current", "latest"}:
+    """Fail closed for explicitly latest requests before RRF fusion.
+
+    Only ``freshness == "latest"`` (最新试验) hard-excludes undated or stale
+    records, per 6.1 "对于最新问题增加发表日期下限".  ``current`` (当前推荐,
+    e.g. guideline questions) keeps undated chunks eligible so a missing
+    ``published_at`` cannot blank out an entire guideline corpus; recency is
+    then expressed by the freshness feature, whose weight is redistributed
+    when the date is unavailable.  See the A3 index-data convention note in
+    the README.
+    """
+    if query.freshness != "latest":
         return True
     if not isinstance(chunk.published_at, str):
         return False
@@ -345,12 +385,18 @@ def _warning(
     reasons: Sequence[str],
     claim_support: Sequence[ClaimSupport] = (),
     conflicts: Sequence[tuple[str, str, str]] = (),
+    notes: Sequence[str] = (),
 ) -> str | None:
     messages: list[str] = []
     if status is SearchStatus.FAILED:
         messages.append("Retrieval failed; no evidence was returned.")
     elif status is SearchStatus.EMPTY:
         messages.append("Retrieval was empty; no eligible evidence was returned.")
+        if "out_of_scope" in reasons:
+            messages.append(
+                "Question is out of scope (dosing/prescription/diagnosis/emergency); "
+                "scope gating belongs to A1/A5 and no evidence was retrieved."
+            )
     elif status is SearchStatus.PARTIAL:
         messages.append("Retrieval is partial; one or more candidate channels were unavailable or degraded.")
     if selected_chunks and len({chunk.source_type.casefold().strip() for chunk in selected_chunks}) == 1:
@@ -369,6 +415,8 @@ def _warning(
         messages.append("Conflicting evidence detected: " + ", ".join(sorted(reasons_seen)) + ".")
     if reasons and status in (SearchStatus.FAILED, SearchStatus.PARTIAL):
         messages.append("Details: " + "; ".join(reasons))
+    if notes:
+        messages.append("Adaptive K adjustments: " + "; ".join(notes) + ".")
     return " ".join(messages) if messages else None
 
 
@@ -404,6 +452,10 @@ def _snapshot_config(config: RetrievalConfig) -> RetrievalConfig:
         max_chunks_per_source=config.max_chunks_per_source,
         mmr_lambda=config.mmr_lambda,
         latest_window_days=config.latest_window_days,
+        evidence_type_bonus=config.evidence_type_bonus,
+        cross_encoder_alpha=config.cross_encoder_alpha,
+        freshness_weight_latest_trial=config.freshness_weight_latest_trial,
+        source_quality_table=config.source_quality_table,
         feature_weights=FeatureWeights(
             semantic=weights.semantic,
             lexical=weights.lexical,

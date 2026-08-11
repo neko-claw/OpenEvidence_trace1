@@ -6,12 +6,14 @@
 
 ## 安装与验证
 
-运行环境为 Python 3.13+，核心检索和评测实现只依赖标准库；测试需要 pytest。
+工程配置与主仓库保持一致（`openevidence-mvp`，Python >=3.11,<3.13，基础依赖
+pydantic/requests）；核心检索和评测实现只依赖标准库，`sentence-transformers`
+等重依赖放在可选 extras（`pip install -e .[bge]`）。测试需要 pytest：
 
 ```powershell
 python -m pip install pytest
 python -m pytest
-python -m compileall retrieval
+python -m compileall retrieval a5
 ```
 
 也可只运行 A4 评测测试：
@@ -111,10 +113,15 @@ print(result.status.value, [item.chunk_id for item in result.selected_chunks])
 | `retrieval/store.py` | 4.1 存储与版本 | SQLite 证据库：content-hash 去重、tombstone、版本表、增量 upsert、metadata 过滤 |
 | `retrieval/bge_m3.py` | 4.2 双路召回 | BGE-M3 dense embedding（惰性加载、可注入工厂） |
 | `retrieval/cross_encoder.py` | 4.2/4.5 P1 | Cross-Encoder 重排，`s_final = α·CE + (1-α)·feature`，分数并列保留 |
-| `retrieval/rerank.py` | 4.2 十项特征 | semantic/lexical/rrf/title_abstract/pico/evidence_level/freshness/source_reliability/source_quality/fulltext + redundancy 惩罚；freshness 权重按题型调整（latest_trial 升到 0.20，机制题自动失效）；MMR 含证据类型多样性 bonus |
+| `retrieval/rerank.py` | 4.2 十项特征 | semantic/lexical/rrf/title_abstract/pico/evidence_level/freshness/source_reliability/source_quality/fulltext（redundancy 仅作诊断特征，**不**计入静态分数，去冗余完全由 MMR 承担，见 6.6）；freshness 权重按题型调整（latest_trial 升到 0.20，机制题自动失效）；MMR 含证据类型多样性 bonus |
 | `retrieval/support_check.py` | 4.2 步骤 6 | 规则式主张—证据预检（supported/background_only/insufficient/mismatch）+ 人群/时间冲突检测；完整 verifier 归 A5 |
 | `retrieval/adaptive.py` | 4.3.4 自适应 K | 5 条确定性规则调整 K1/K2，预算上限不可突破 |
 | `retrieval/tuning.py` | 4.3 调参 | K0×K1×K2 网格、**逐题明细 CSV（`grid_details`）**、**按题型召回曲线（`recall_curve_by_type`）**、冻结记录 + **防呆校验（`verify_frozen`/`require_frozen`，正式题前调用拒绝未冻结配置）** |
+| `retrieval/config_io.py` | 4.3/AGENTS | 冻结配置的严格 YAML 子集读写：`write_config_yaml`/`load_config_yaml`/`config_matches_yaml`，未知键与结构错误显式失败 |
+| `retrieval/gate.py` | 5.7 来源门禁 | Gate1：稳定 ID、来源类型、发布时间/版本、URL、抓取时间、内容 hash 齐全性校验（`check_source_gate`） |
+| `retrieval/ports.py` | A5/A6 集成 | `a5.ports.EvidenceRetriever` 契约：`Question`/`SearchPlan`/`RetrievalRequest` → `RetrievalResult` |
+| `a5/retrieval_bridge.py` | A5/A6 集成 | `A5EvidenceRetriever` 适配器：把 `RetrievalService.search()` 接到 A5 端口 |
+| `scripts/run_dev_eval.py` | 4.3/4.6/8 交付 | 开发集评测入口：网格 → 冻结 → R0-R3 消融 → 逐题 JSONL 运行 → 验收报告（`artifacts/`） |
 | `retrieval/ablation.py` | 4.6 消融 | R0–R3 对照运行器 + **citation_precision** + 决策日志 + CSV；R2 自动使用 `config.cross_encoder_alpha` |
 | `retrieval/evaluation.py` | 指标与报告 | 检索指标 + **citation_precision** / citation coverage / claim support / conflict rate / context tokens（优先用标注 `token_count`）/ 成本估算 |
 | `retrieval/models.py` | 4.1 片段表 | `EvidenceChunk` 含 **page/section/token_count**；store upsert 自动估算 token 数 |
@@ -122,27 +129,107 @@ print(result.status.value, [item.chunk_id for item in result.selected_chunks])
 
 ## 数据契约与上下游边界
 
-- `Query`：查询 ID、原始问题、语言、可选 PICO 字段和固定 `as_of_date`。A4 不保存真实患者资料。
-- `EvidenceChunk`：`chunk_id`、`evidence_id`、`stable_id`、正文、来源、证据等级、可选 PICO、向量及 `index_version/corpus_version`。`stable_id` 应为 PMID、DOI、NCT 或版本化指南标识，供引用和文献级去重使用。
-- `SearchResult`：`selected_chunks`、完整 `rank_log`、`index_version`、`corpus_version`、重排版本、阶段耗时、状态和降级原因。A5 只应根据 `selected_chunks` 回答并执行引用审计。
-- `RetrievalConfig`：候选数、RRF 参数、重排权重、MMR 参数、来源/文献上限和版本。正式评测前必须冻结配置与索引版本。
+- `Query`：查询 ID、原始问题、语言、可选 PICO 字段、固定 `as_of_date`，以及
+  `out_of_scope` 范围标记。A4 不保存真实患者资料；对剂量/处方/诊断我/急症处置
+  类问题，`RetrievalService` 返回 `empty` 并显式记录 `out_of_scope` 原因（范围
+  门禁归 A1/A5，A4 只完成交接信号，不返回可能被当作建议的证据）。
+- `EvidenceChunk`：`chunk_id`、`evidence_id`、`stable_id`、正文、来源、证据等级、
+  可选 PICO、向量、`index_version/corpus_version`，以及 Gate1 来源契约字段：
+  `pmid`/`doi`/`nct_id`（结构化稳定标识）、`authors`、`guideline_name`、
+  `fetched_at`（抓取时间）、`content_hash`（内容版本）。`stable_id` 应为 PMID、
+  DOI、NCT 或版本化指南标识，供引用和文献级去重使用。
+- **Gate1 来源门禁（5.7）**：`retrieval.gate.check_source_gate(chunk)` 校验
+  稳定 ID、来源类型、发布时间/版本（指南可用 `guideline_name` 替代日期）、URL、
+  抓取时间、内容 hash 是否齐全，返回 `SourceGateVerdict(passed, missing)`。
+  `EvidenceStore(..., enforce_source_gate=True)` 会在入库时跳过未通过门禁的
+  chunk（计入 `UpsertStats.gate_skipped`）。
+- `SearchResult`：`selected_chunks`、完整 `rank_log`、`index_version`、
+  `corpus_version`、重排版本、阶段耗时、状态和降级原因。A5 只应根据
+  `selected_chunks` 回答并执行引用审计。
+- **A5/A6 集成桥接**：`retrieval/ports.py` 定义 `a5.ports.EvidenceRetriever` 契约
+  （`Question`/`SearchPlan`/`RetrievalRequest` → `RetrievalResult`），
+  `a5/retrieval_bridge.A5EvidenceRetriever` 将其适配到 `RetrievalService.search()`。
+  `RetrievalResult` 只暴露 `selected_chunks` 与审计轨迹；`out_of_scope` 请求永远
+  不返回 chunk。
+- `RetrievalConfig`：候选数、RRF 参数、重排权重、MMR 参数、来源/文献上限和版本。
+  冻结副本提交在 `config/retrieval-p0-v1.yaml`（`retrieval/config_io.py` 严格解析），
+  正式评测前必须通过 `require_frozen` 与 `config_matches_yaml` 校验。
 
-索引由 A3 提供；A4 只读取索引和 chunk 元数据。`VectorSearch` 是向量检索接口，`InMemoryVectorSearch` 仅用于演示和测试。
+索引由 A3 提供；A4 只读取索引和 chunk 元数据。`VectorSearch` 是向量检索接口，
+`InMemoryVectorSearch` 仅用于演示和测试。
 
 ## 运行状态与降级
 
 | 状态 | 含义 |
 |---|---|
 | `ok` | BM25 和向量两路均成功，且得到可选证据。 |
-| `partial` | 至少一路不可用、被过滤或降级；仍可能返回另一通道的结果。 |
-| `empty` | 两路运行正常，但没有合格的证据候选。 |
+| `partial` | 至少一路不可用、被降级；仍可能返回另一通道的结果。 |
+| `empty` | 两路运行正常，但没有合格的证据候选（含 `out_of_scope` 范围外问题）。 |
 | `failed` | 两路不可用或融合/重排流程无法安全完成。 |
 
-`partial` 不会被静默伪装为 `ok`。下游必须显示或处理 `retrieval_warning` 与 `degradation_reasons`，不能把降级结果表述为完整证据综述。
+`partial` 不会被静默伪装为 `ok`。下游必须显示或处理 `retrieval_warning` 与
+`degradation_reasons`，不能把降级结果表述为完整证据综述。注意：按查询意图的
+元数据过滤（领域/来源/证据等级/`latest` 日期窗口）是正常行为，不计入降级原因；
+自适应 K 调整会以 `Adaptive K adjustments` 形式出现在 warning 中，同样不是降级。
+
+## 时效性语义与索引约定
+
+- `freshness=latest`（最新试验）：无 `published_at` 或超出窗口（默认 5 年）的 chunk
+  在 RRF 前被硬过滤（fail-closed）。
+- `freshness=current`（当前推荐，指南类问题）：**不再硬过滤无日期 chunk**，避免指南
+  类问题因索引缺日期而整批误空；缺日期时 freshness 特征权重在该查询内重归一化。
+  与 A3 的索引数据约定：A3 应尽量为 chunk 补齐 `published_at` 与 `fetched_at`。
+
+## 已知局限与职责边界
+
+- **PICO 匹配与支持性预检均为 token 重叠启发式**：对"相关但不支持主张"的证据
+  区分能力有限；`claim_support` 只是预检信号，主张—证据的最终验证（NLI
+  verifier）与发布门禁归 A5，A4 不据此作医学真伪判断。
+- **中文→英文改写为固定词典而非 LLM 改写**：词典覆盖有限，语义桥较弱，中英
+  同义表达召回依赖 A3 提供的 embedding 质量。
+- **范围门禁交接**：`out_of_scope` 问题 A4 返回空结果并显式标记，最终拒答由
+  A1/A5 执行。
 
 ## 离线评测与运行日志
 
 `retrieval.evaluation` 提供纯函数评测，qrels 是 `{chunk_id: 非负有限相关性等级}`。相关性大于 0 才算相关；空 qrels 的所有相关性指标都明确返回 `0.0`。排名 ID 必须是非空字符串且不得重复。
+
+### 3.1 Qrel 契约（evidence_span_id / atomic_point_id 粒度）
+
+除 chunk 粒度外，`evaluation` 支持主张/证据片段粒度：`span_qrels` 将
+`evidence_span_id` 映射到 `(chunk_id, atomic_point_id, grade)` 三元组。
+
+- `aggregate_chunk_qrels(span_qrels)`：折叠为 chunk 粒度（每 chunk 取最大等级）；
+- `span_success_at_k` / `span_recall_at_k` / `span_mrr` / `span_ndcg_at_k`：
+  span 的 chunk 出现在前 K 即视为该 span 被召回，按 span 等级计算；
+- `claim_coverage_at_k`：至少一个相关 span 被召回的原子主张占比（主张级评测）；
+- `evaluate_span_ranking(ranked_ids, span_qrels, k)`：一次性返回上述五项。
+
+### 开发集评测与验收交付物
+
+`data/dev/` 提交了 8 道开发题、28 条 Gate1 齐全的语料 chunk 与人工 qrels（chunk
+粒度和 span 粒度双份）。运行入口：
+
+```powershell
+python -m scripts.build_dev_vectors   # 生成确定性 hash 占位向量（一次）
+python -m scripts.run_dev_eval        # 网格 → 冻结 → 消融 → 逐题 → 报告
+```
+
+输出（已提交为验收交付物）：
+
+```text
+config/retrieval-p0-v1.yaml        # 冻结配置（YAML 权威副本）
+artifacts/evaluation/freeze.json   # 冻结记录（K 与版本，防呆校验）
+artifacts/evaluation/ablation.csv  # R0–R3 消融
+artifacts/evaluation/grid_details_dev.csv  # K 网格逐题明细
+artifacts/evaluation/per_question_frozen.csv  # 逐题 Recall@50 / nDCG@8 / span 指标
+artifacts/runs/dev-*.jsonl         # 逐题运行审计日志
+artifacts/reports/acceptance-report.md  # 验收报告（含反例与局限）
+```
+
+当前开发集结果：Recall@50（融合候选池）均值 1.000（目标 ≥ 0.85），nDCG@8
+（重排输入）均值约 0.69，span Recall@8 与主张覆盖@8 均为 1.000。指标口径与
+局限（token 重叠启发式、词典改写、与 A5 NLI verifier 的职责边界）见报告第 5-7 节。
 
 | 指标 | 含义 |
 |---|---|

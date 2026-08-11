@@ -99,6 +99,7 @@ class QueryPlan:
             english_terms=self.queries_en,
             atomic_claims=self.atomic_claims,
             domain=self.domain,
+            out_of_scope=self.out_of_scope,
         )
 
 

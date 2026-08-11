@@ -81,7 +81,6 @@ class RetrievalConfig:
     max_chunks_per_source: int = 4
     mmr_lambda: float = 0.75
     evidence_type_bonus: float = 0.03
-    redundancy_penalty: float = 0.15
     cross_encoder_alpha: float = 0.5
     freshness_weight_latest_trial: float = 0.20
     source_quality_table: tuple[tuple[str, float], ...] = (
@@ -113,8 +112,6 @@ class RetrievalConfig:
             raise ValueError("mmr_lambda must be a finite number in [0, 1]")
         if not _is_float_representable_finite(self.evidence_type_bonus) or self.evidence_type_bonus < 0:
             raise ValueError("evidence_type_bonus must be a finite nonnegative number")
-        if not _is_float_representable_finite(self.redundancy_penalty) or self.redundancy_penalty < 0:
-            raise ValueError("redundancy_penalty must be a finite nonnegative number")
         if not _is_float_representable_finite(self.cross_encoder_alpha) or not 0 <= self.cross_encoder_alpha <= 1:
             raise ValueError("cross_encoder_alpha must be a finite number in [0, 1]")
         if not _is_float_representable_finite(self.freshness_weight_latest_trial) or self.freshness_weight_latest_trial < 0:

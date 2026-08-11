@@ -579,9 +579,6 @@ def _weighted_score(features: Mapping[str, float | None], config: RetrievalConfi
     if total_weight <= 0:
         raise ValueError("no positive feature weight is available for candidate")
     score = sum(configured[name] / total_weight * value for name, value in scorable.items())
-    redundancy = features.get("redundancy")
-    if redundancy is not None:
-        score -= config.redundancy_penalty * float(redundancy)
     if not _finite_real(score):
         raise ValueError("rerank score must be finite")
     return score
@@ -632,7 +629,11 @@ def _required_score(candidate: Candidate) -> float:
 
 
 def _snapshot_config(config: RetrievalConfig) -> RetrievalConfig:
-    """Copy validated configuration so later frozen-object mutation cannot alter a run."""
+    """Copy validated configuration so later frozen-object mutation cannot alter a run.
+
+    Every tunable field is copied: a frozen YAML config must take full effect
+    even when a caller mutates the original object after construction.
+    """
     weights = config.feature_weights
     return RetrievalConfig(
         bm25_top_k=config.bm25_top_k,
@@ -645,6 +646,10 @@ def _snapshot_config(config: RetrievalConfig) -> RetrievalConfig:
         max_chunks_per_source=config.max_chunks_per_source,
         mmr_lambda=config.mmr_lambda,
         latest_window_days=config.latest_window_days,
+        evidence_type_bonus=config.evidence_type_bonus,
+        cross_encoder_alpha=config.cross_encoder_alpha,
+        freshness_weight_latest_trial=config.freshness_weight_latest_trial,
+        source_quality_table=config.source_quality_table,
         feature_weights=FeatureWeights(
             semantic=weights.semantic,
             lexical=weights.lexical,
