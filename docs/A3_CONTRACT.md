@@ -33,6 +33,11 @@ provider/model/revision/source kind/mode、向量距离和 Wiki builder 版本�
 保留请求的 YAML；`runtime_effective_config` 是实际运行快照并参与语义 index hash。存储路径
 仍不参与语义 hash。
 
+`config/a3.yaml` 的 `corpus_cutoff`（数据截止日期）是配置驱动的语义值：同时写入请求与
+实际运行快照，并通过 `runtime_effective_config` 参与 `index_version` 哈希。Wiki 每个主题页
+和索引页的 Provenance 固定包含 `updated at`（来自 `IndexManifest.created_at`）与
+`data cutoff`（来自 `corpus_cutoff`，未配置时为 `UNKNOWN`）。
+
 唯一 A3→A5 兼容入口是 `a5/adapters/a3.py::adapt_a3_selection`。它只消费 A4 本轮已选
 Chunk，不消费 SearchHit，不制造 normalized retrieval score；逐 Span provenance 和所有 A3
 版本保存在 A5 `source_metadata`/retriever diagnostics，供 AgentRun/Trace 留痕。

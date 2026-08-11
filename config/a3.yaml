@@ -1,6 +1,7 @@
 schema_version: a3-config-v0.1
 database: data/sqlite/a3.db
 mock_fixture: data/fixtures/a3_mock_evidence.jsonl
+corpus_cutoff: "2026-01-01"
 chunk_policy:
   version: a3-chunk-v0.1
   max_chars: 1200

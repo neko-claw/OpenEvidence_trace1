@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from datetime import date
 from pathlib import Path
 from typing import Literal
 
@@ -78,6 +79,7 @@ class A3Config(StrictModel):
     schema_version: str = Field(min_length=1)
     database: Path
     mock_fixture: Path
+    corpus_cutoff: date | None = None
     chunk_policy: ChunkPolicyConfig
     bm25: BM25Config
     embedding: EmbeddingConfig
