@@ -1,4 +1,5 @@
 import pytest
+from datetime import datetime, timezone
 
 from a3.config import WikiTopicConfig
 from a3.domain.models import Evidence
@@ -14,11 +15,15 @@ TOPICS = [WikiTopicConfig(slug="hypertension", title="Hypertension", synonyms=["
 
 
 def _manifest(evidence):
-    return create_manifest(evidence=evidence, chunk_policy_version=POLICY.version,
+    manifest = create_manifest(evidence=evidence, chunk_policy_version=POLICY.version,
         chunk_policy=POLICY.as_dict(), embedding_provider="offline-smoke", embedding_model="fake",
         embedding_revision="fixture", embedding_mode="dense", vector_distance="cosine",
         bm25_tokenizer_version="tok", wiki_builder_version="wiki-v1",
-        config_schema_version="config-v1", effective_config={"wiki": {"topics": [x.model_dump() for x in TOPICS]}})
+        config_schema_version="config-v1", effective_config={"corpus_cutoff": "2026-01-01",
+        "wiki": {"topics": [x.model_dump() for x in TOPICS]}})
+    # Pin the build timestamp so repeated builds are byte-identical.
+    manifest.created_at = datetime(2026, 1, 1, tzinfo=timezone.utc)
+    return manifest
 
 
 def test_index_and_deterministic_mock_pages_with_whitelisted_citations(tmp_path):
@@ -36,6 +41,9 @@ def test_index_and_deterministic_mock_pages_with_whitelisted_citations(tmp_path)
     assert all("MOCK / OFFLINE FIXTURE — NOT MEDICAL EVIDENCE" in text for text in first)
     assert all("[Evidence:" in text and "[Span:" in text for text in first[1:])
     assert lexical == lexical2 and "high blood pressure" in lexical[0].text
+    # 5.3 fixed structure: provenance must carry updated-at and data-cutoff fields.
+    assert all("- updated at: `2026-01-01T00:00:00+00:00`" in text for text in first)
+    assert all("- data cutoff: `2026-01-01`" in text for text in first)
 
 
 def test_validator_allows_dag_but_rejects_unknown_duplicate_and_cycle():

@@ -28,6 +28,12 @@ SQLite corpus 白名单；Mock Wiki 始终显示
 provider/model/revision/mode、向量距离、Wiki builder 版本和实际生效配置。存储路径不参与
 语义 index version 哈希，但仍记录在 `effective_config` 中。
 
+`config/a3.yaml` 的 `corpus_cutoff`（数据截止日期）属于配置驱动的语义值：写入
+`effective_config` 并参与 `index_version` 哈希。Wiki 每个主题页与索引页的 Provenance 固定包含
+`updated at`（构建时间，来自 `IndexManifest.created_at`）与 `data cutoff`（来自
+`corpus_cutoff`，未配置时为 `UNKNOWN`），满足实施规划 5.3 固定结构（更新时间、数据截止日期、
+生成模型和人工审核状态）。
+
 契约路径：`contracts/a3/v0.2/`。未来 LLM Wiki 接缝位于 `a3/wiki/generator.py`，其 Prompt
 和结构化输出 Schema 位于 `a3/wiki/prompts/` 与 `a3/wiki/schemas/`；当前并未绑定或冒充
 任何真实 LLM 生成器。

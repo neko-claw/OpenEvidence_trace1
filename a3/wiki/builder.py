@@ -44,8 +44,15 @@ class DeterministicOfflineWikiGenerator:
             "Navigation pages only; final support must return to whitelisted Evidence/Span records.", ""]
         lines.extend(f"- [{topic.title}]({topic.slug}.md)" for topic in topics)
         lines.extend(["", "## Provenance", "", f"- corpus version: `{manifest.corpus_version}`",
-            f"- index version: `{manifest.index_version}`", f"- builder: `{self.identifier}`", ""])
+            f"- index version: `{manifest.index_version}`", f"- builder: `{self.identifier}`",
+            f"- updated at: `{manifest.created_at.isoformat()}`",
+            f"- data cutoff: `{self._data_cutoff(manifest)}`", ""])
         return WikiPage(slug="_index", title="Evidence Wiki Index", content="\n".join(lines))
+
+    @staticmethod
+    def _data_cutoff(manifest: IndexManifest) -> str:
+        cutoff = (manifest.effective_config or {}).get("corpus_cutoff")
+        return str(cutoff) if cutoff else "UNKNOWN"
 
     def _topic_page(self, topic: WikiTopicConfig, evidence: Sequence[Evidence],
                     span_by_evidence: dict[str, list[EvidenceSpan]], manifest: IndexManifest,
@@ -75,7 +82,9 @@ class DeterministicOfflineWikiGenerator:
         lines.extend(["", "## Conflicts and uncertainty", "",
             "- Synthetic fixtures cannot establish clinical agreement or conflict.", "", "## Provenance", "",
             f"- corpus version: `{manifest.corpus_version}`", f"- index version: `{manifest.index_version}`",
-            f"- generation/builder version: `{self.identifier}`", "- review status: `MOCK / UNREVIEWED`", ""])
+            f"- generation/builder version: `{self.identifier}`",
+            f"- updated at: `{manifest.created_at.isoformat()}`",
+            f"- data cutoff: `{self._data_cutoff(manifest)}`", "- review status: `MOCK / UNREVIEWED`", ""])
         return WikiPage(slug=topic.slug, title=topic.title, content="\n".join(lines))
 
 

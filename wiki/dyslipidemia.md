@@ -40,6 +40,8 @@
 ## Provenance
 
 - corpus version: `dca4b3636abc7566e5e4028a1652f475710ac26c7b2f3e33a916f8d62cedde18`
-- index version: `bc7ba6caeefe1bcdb9fdb2a89fa9098d4067a1c368eaf484135600d61e1476d5`
+- index version: `b3e061b8a171b2e450729a2267bd78df8115c0aca6ab510133405621bd5057d2`
 - generation/builder version: `deterministic-offline-wiki@a3-wiki-v0.1`
+- updated at: `2026-08-11T16:20:27.230134+00:00`
+- data cutoff: `2026-01-01`
 - review status: `MOCK / UNREVIEWED`
