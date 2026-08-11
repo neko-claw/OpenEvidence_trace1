@@ -1,0 +1,18 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+*.egg-info/
+
+# 测试与运行产物
+.pytest_cache/
+artifacts/
+*.db
+*.sqlite
+
+# 敏感配置
+.env
+
+# 原始数据缓存（不提交）
+data/raw/

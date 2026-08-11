@@ -1,0 +1,13 @@
+[project]
+name = "clinical-evidence-retrieval"
+version = "0.1.0"
+description = "A4 retrieval and reranking contracts for clinical evidence"
+requires-python = ">=3.13"
+dependencies = [
+    "sentence-transformers>=4.0",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]
+addopts = "-ra"
