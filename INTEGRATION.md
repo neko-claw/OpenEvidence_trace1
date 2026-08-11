@@ -50,6 +50,34 @@ Replace/integrate at:
 
 Do not copy or invent the A2 MCP Tool Schema inside A5.
 
+### Implemented A2 contract — a2-evidence-v1
+
+- Formal schema: `a2/models/evidence.py`; field contract:
+  `docs/a2/EVIDENCE_SCHEMA.md`; field-by-field compatibility decisions:
+  `docs/a2/INTEGRATION_DIFF.md`.
+- Versioned runtime configuration: `config/a2.json`; approved guideline
+  manifest: `config/a2_guidelines.json`. Secrets are environment-only.
+- MCP server/client: `a2/mcp/server.py` and `a2/mcp/client.py`, pinned to
+  official Python SDK `mcp==2.0.0`. Tool/error contracts are documented in
+  `docs/a2/MCP_TOOLS.md` and `docs/a2/ERROR_CONTRACT.md`.
+- Tools: `search_pubmed`, `search_europe_pmc`, `search_trials`,
+  `search_guidelines`, `get_evidence`, and `validate_citation`. Every result is
+  the versioned structured envelope; unavailable citation verification remains
+  `UNKNOWN`.
+- Compatibility adapter: `a2/adapters/a5_evidence.py` maps only explicit
+  fields and keeps identifiers/hash/native metadata diagnostic. Score remains
+  `None`, spans remain `[]`, and real A2 records map with `mock=False`.
+- Retriever: `a2/adapters/a5_retriever.py` routes one A5 retrieval request to
+  exactly one MCP tool and retains `tool_call_index` plus upstream HTTP counts.
+- Tests: `tests/test_a2_models_storage.py`, `tests/test_a2_connectors.py`, and
+  `tests/test_a2_mcp_adapter_integration.py` are offline and include official
+  MCP direct transport plus an A5 finite-workflow integration path.
+- A5 workflow and public API are unchanged. Default/demo composition remains
+  mock/offline; real A2 stdio composition is explicit in `a2/composition.py`.
+- Remaining A3/A4 inputs: final span/chunk/PICO provenance from A3 and
+  normalized ranking score/rerank output from A4. A1 safety and A6 presentation
+  remain outside A2.
+
 ## A3 -> PICO, spans, and evidence hierarchy
 
 Required from A3:

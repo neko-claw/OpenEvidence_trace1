@@ -57,5 +57,8 @@ payload = run.model_dump(mode="json")
 
 Mock classes are wired only by `a5/bootstrap.py`; the workflow depends on
 `EvidenceRetriever`, `ClaimGenerator`, `ClaimVerifier`, `TextualSupportEvaluator`
-and `SafetyPolicy` ports. A2/A3/A4 production capabilities are deliberately not
-implemented here. See `INTEGRATION.md` and `docs/review_compliance.md`.
+and `SafetyPolicy` ports. A2 now provides opt-in multi-source connectors,
+SQLite/cache, a local MCP v2 boundary, and `A2MCPRetriever`; A3 provides its
+versioned evidence/index boundary. The default/demo composition remains fully
+offline and unchanged. A4 ranking remains external. See `docs/a2/README.md`,
+`INTEGRATION.md`, and `docs/review_compliance.md`.
