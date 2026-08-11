@@ -3,9 +3,21 @@ __pycache__/
 .pytest_cache/
 .pixi/
 .venv/
+venv/
 dist/
 build/
 *.egg-info/
+
+# 测试与运行产物
+artifacts/
+*.db
+*.sqlite
+
+# 敏感配置
+.env
+
+# 原始数据缓存（不提交）
+data/raw/
 
 # Local A5 progress log; update after every task and never commit it.
 /log.md
