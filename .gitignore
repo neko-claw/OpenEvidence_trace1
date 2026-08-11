@@ -3,6 +3,12 @@ __pycache__/
 .pytest_cache/
 .pixi/
 .venv/
+.env
+data/sqlite/*.db
+data/sqlite/*.db-*
+data/chroma/
+data/bm25/
+model-cache/
 dist/
 build/
 *.egg-info/

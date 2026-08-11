@@ -1,0 +1,24 @@
+schema_version: a3-config-v0.1
+database: data/sqlite/a3.db
+mock_fixture: data/fixtures/a3_mock_evidence.jsonl
+chunk_policy:
+  version: a3-chunk-v0.1
+  max_chars: 1200
+  overlap_chars: 150
+  natural_boundary_ratio: 0.60
+bm25:
+  tokenizer_version: a3-bm25-tokenizer-v0.1
+  root: data/bm25
+embedding:
+  provider: flagembedding
+  model: BAAI/bge-m3
+  revision: 5617a9f61b028005a4858fdac845db406aefb181
+  local_path_env: A3_BGE_M3_MODEL_PATH
+  mode: dense
+  normalize: true
+vector:
+  root: data/chroma
+  distance: cosine
+wiki:
+  builder_version: a3-wiki-v0.1
+  topics: [hypertension, dyslipidemia]

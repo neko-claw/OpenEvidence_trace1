@@ -23,7 +23,7 @@ dev = [
 ]
 
 [tool.setuptools.packages.find]
-include = ["ingestion*", "a5*"]
+include = ["ingestion*", "a3*", "a5*"]
 
 [tool.pytest.ini_options]
 addopts = "-q"
