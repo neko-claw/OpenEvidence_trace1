@@ -1,0 +1,28 @@
+{
+  "schema_version": "a2-config-v1",
+  "evidence_schema_version": "a2-evidence-v1",
+  "mcp_sdk_version": "2.0.0",
+  "mcp_protocol_version": "2026-07-28",
+  "http": {
+    "connect_timeout_seconds": 5.0,
+    "read_timeout_seconds": 20.0,
+    "total_timeout_seconds": 30.0,
+    "retry_count": 2,
+    "backoff_seconds": 0.25,
+    "user_agent": "OpenEvidence-A2/0.1"
+  },
+  "storage": {
+    "cache_directory": "data/a2/cache",
+    "sqlite_path": "data/a2/a2.sqlite3"
+  },
+  "default_result_limit": 10,
+  "max_result_limit": 50,
+  "max_queries": 8,
+  "max_query_length": 500,
+  "sources": {
+    "pubmed": {"enabled": true, "base_url": "https://eutils.ncbi.nlm.nih.gov/entrez/eutils", "requests_per_second": 3.0},
+    "europe_pmc": {"enabled": true, "base_url": "https://www.ebi.ac.uk/europepmc/webservices/rest", "requests_per_second": 5.0},
+    "clinical_trials": {"enabled": true, "base_url": "https://clinicaltrials.gov/api/v2", "requests_per_second": 3.0},
+    "guidelines": {"enabled": true, "manifest_path": "config/a2_guidelines.json"}
+  }
+}

@@ -4,6 +4,13 @@ __pycache__/
 .pixi/
 .venv/
 .env
+*.sqlite3
+*.sqlite3-*
+data/a2/
+*.mcp.log
+*.api-dump
+*.pdf
+!tests/fixtures/**/*.pdf
 data/sqlite/*.db
 data/sqlite/*.db-*
 data/chroma/
