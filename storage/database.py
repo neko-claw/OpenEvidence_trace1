@@ -263,6 +263,148 @@ class EvidenceDatabase:
 
         return result
 
+
+    def insert_chunk(
+        self,
+        chunk,
+        evidence_content_hash: str,
+    ) -> bool:
+        """
+        插入一个 Chunk。
+
+        True:
+            新 chunk 成功写入。
+
+        False:
+            chunk_id 已存在，
+            因此跳过重复数据。
+        """
+
+        cursor = self.conn.execute(
+            """
+            INSERT OR IGNORE INTO chunks (
+                chunk_id,
+                evidence_id,
+                evidence_content_hash,
+                text,
+                page,
+                section,
+                token_count,
+                content_hash
+            )
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+            """,
+            (
+                chunk.chunk_id,
+                chunk.evidence_id,
+                evidence_content_hash,
+                chunk.text,
+                chunk.page,
+                chunk.section,
+                chunk.token_count,
+                chunk.content_hash,
+            ),
+        )
+
+        self.conn.commit()
+
+        return cursor.rowcount == 1
+
+    def count_chunks(self) -> int:
+        """
+        返回 chunks 表总数量。
+        """
+
+        row = self.conn.execute(
+            """
+            SELECT COUNT(*) AS count
+            FROM chunks
+            """
+        ).fetchone()
+
+        return int(row["count"])
+
+    def list_latest_evidence(self) -> list[dict]:
+        """
+        返回每个来源稳定 ID 的最新 Evidence 版本。
+
+        SQLite 会保留旧版本，
+        但构建当前索引时只使用最新版本。
+        """
+
+        rows = self.conn.execute(
+            """
+            SELECT e.*
+            FROM evidence AS e
+            WHERE e.evidence_pk = (
+                SELECT e2.evidence_pk
+                FROM evidence AS e2
+                WHERE
+                    e2.source_type = e.source_type
+                    AND e2.stable_id = e.stable_id
+                ORDER BY e2.evidence_pk DESC
+                LIMIT 1
+            )
+            ORDER BY e.evidence_pk
+            """
+        ).fetchall()
+
+        results = []
+
+        for row in rows:
+            item = dict(row)
+
+            item["authors"] = json.loads(
+                item.pop("authors_json")
+            )
+
+            results.append(item)
+
+        return results
+
+    def list_current_chunks(self) -> list[dict]:
+        """
+        返回当前最新 Evidence 所对应的 chunks。
+
+        旧 Evidence 版本可以继续保存在数据库中，
+        但不会进入当前 BM25 / Vector 索引。
+        """
+
+        rows = self.conn.execute(
+            """
+            SELECT
+                c.*,
+                e.title,
+                e.source_type,
+                e.stable_id,
+                e.evidence_level,
+                e.population,
+                e.intervention,
+                e.comparator,
+                e.outcome
+            FROM chunks AS c
+            JOIN evidence AS e
+                ON e.id = c.evidence_id
+                AND e.content_hash
+                    = c.evidence_content_hash
+            WHERE e.evidence_pk = (
+                SELECT e2.evidence_pk
+                FROM evidence AS e2
+                WHERE
+                    e2.source_type = e.source_type
+                    AND e2.stable_id = e.stable_id
+                ORDER BY e2.evidence_pk DESC
+                LIMIT 1
+            )
+            ORDER BY c.chunk_pk
+            """
+        ).fetchall()
+
+        return [
+            dict(row)
+            for row in rows
+        ]
+
     def add_index_version(
         self,
         version: IndexVersion,
