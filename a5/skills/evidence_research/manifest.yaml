@@ -1,0 +1,12 @@
+{
+  "name": "evidence_research",
+  "version": "0.2.0",
+  "description": "Classify a question, produce a bounded search plan, and summarize retrieved evidence without inventing missing quality fields.",
+  "prompt_version": "0.2.0",
+  "prompt": "prompt_v0.2.0.md",
+  "input_schema": "input.schema.json",
+  "output_schema": "output.schema.json",
+  "fixture_path": "fixtures/contract.json",
+  "implementation": "a5.skills.evidence_research.implementation:EvidenceResearchSkill",
+  "tags": ["planning", "retrieval", "evidence-summary"]
+}

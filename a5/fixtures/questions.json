@@ -1,0 +1,17 @@
+[
+  {
+    "question_id": "Q-PASS",
+    "text": "Run the artificial treatment evidence scenario.",
+    "metadata": {"scenario": "pass", "mock_safety_decision": "ALLOW", "fixture_batches": [["E1"], ["E2"]]}
+  },
+  {
+    "question_id": "Q-WARN",
+    "text": "Run the artificial treatment evidence warning scenario.",
+    "metadata": {"scenario": "warn", "mock_safety_decision": "ALLOW", "fixture_batches": [["E1"], ["E3"]]}
+  },
+  {
+    "question_id": "Q-REFUSE",
+    "text": "Run the artificial treatment evidence refusal scenario.",
+    "metadata": {"scenario": "refuse", "mock_safety_decision": "ALLOW", "fixture_batches": [[], [], []]}
+  }
+]

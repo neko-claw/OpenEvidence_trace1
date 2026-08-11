@@ -2,10 +2,14 @@
 __pycache__/
 *.py[cod]
 .pytest_cache/
+dist/
+build/
+*.egg-info/
 
 # Local environments
 .conda-env/
 .venv/
+.pixi/
 
 # Secrets
 .env
@@ -15,5 +19,8 @@ data/sqlite/*.db
 data/chroma/
 data/bm25/
 
-# Generated artifacts
-artifacts/
+# Local A3 generated artifacts
+artifacts/import_errors.jsonl
+
+# Local A5 progress log; update after every task and never commit it.
+/log.md
