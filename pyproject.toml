@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "openevidence-mvp"
 version = "0.1.0"
-description = "OpenEvidence evidence assistant MVP with A5 trustworthy generation"
+description = "OpenEvidence evidence assistant MVP with A5 trustworthy generation and A4 retrieval/rerank"
 readme = "README.md"
 requires-python = ">=3.11,<3.13"
 dependencies = [
@@ -17,15 +17,16 @@ dependencies = [
 retrieval = [
   "rank-bm25>=0.2",
   "chromadb>=0.4",
+  "sentence-transformers>=4.0",
 ]
 dev = [
   "pytest>=8.2,<9",
 ]
 
 [tool.setuptools.packages.find]
-include = ["ingestion*", "a5*"]
+include = ["ingestion*", "a5*", "retrieval*", "scripts*"]
 
 [tool.pytest.ini_options]
-addopts = "-q"
+addopts = "-ra"
 testpaths = ["tests"]
 pythonpath = ["."]
