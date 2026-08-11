@@ -1,5 +1,5 @@
 {
-  "run_id": "RUN-d9efb0f2cb32",
+  "run_id": "RUN-32d282eeee13",
   "question": {
     "question_id": "Q-PASS",
     "text": "Run the artificial treatment evidence scenario.",
@@ -186,7 +186,7 @@
   "claims": [
     {
       "claim_id": "C1",
-      "run_id": "RUN-d9efb0f2cb32",
+      "run_id": "RUN-32d282eeee13",
       "text": "Artificial outcome A is improved",
       "criticality": "critical",
       "evidence_ids": [
@@ -213,7 +213,7 @@
     },
     {
       "claim_id": "C2",
-      "run_id": "RUN-d9efb0f2cb32",
+      "run_id": "RUN-32d282eeee13",
       "text": "Artificial outcome B is stable",
       "criticality": "important",
       "evidence_ids": [
@@ -316,10 +316,10 @@
   "decision": "PASS",
   "trace": [
     {
-      "run_id": "RUN-d9efb0f2cb32",
+      "run_id": "RUN-32d282eeee13",
       "state": "START",
       "event_type": "state",
-      "timestamp": "2026-08-11T16:24:57.900594Z",
+      "timestamp": "2026-08-11T16:39:19.380161Z",
       "gate": null,
       "skill": null,
       "tool": null,
@@ -330,15 +330,15 @@
       "evidence_ids": [],
       "claim_ids": [],
       "decision": null,
-      "latency_ms": 0.0017999991541728377,
+      "latency_ms": 0.0020000006770715117,
       "error": null,
       "details": {}
     },
     {
-      "run_id": "RUN-d9efb0f2cb32",
+      "run_id": "RUN-32d282eeee13",
       "state": "GATE0",
       "event_type": "gate",
-      "timestamp": "2026-08-11T16:24:57.900657Z",
+      "timestamp": "2026-08-11T16:39:19.380219Z",
       "gate": "Gate0@0.2.0",
       "skill": null,
       "tool": null,
@@ -349,7 +349,7 @@
       "evidence_ids": [],
       "claim_ids": [],
       "decision": "ALLOW",
-      "latency_ms": 0.027999998565064743,
+      "latency_ms": 0.026900001103058457,
       "error": null,
       "details": {
         "reason": "mock Gate0 decision=ALLOW; not an A1 medical policy",
@@ -357,10 +357,10 @@
       }
     },
     {
-      "run_id": "RUN-d9efb0f2cb32",
+      "run_id": "RUN-32d282eeee13",
       "state": "CLASSIFY",
       "event_type": "state",
-      "timestamp": "2026-08-11T16:24:57.900744Z",
+      "timestamp": "2026-08-11T16:39:19.380239Z",
       "gate": null,
       "skill": null,
       "tool": null,
@@ -371,17 +371,17 @@
       "evidence_ids": [],
       "claim_ids": [],
       "decision": null,
-      "latency_ms": 0.07419999747071415,
+      "latency_ms": 0.008700000762473792,
       "error": null,
       "details": {
         "question_type": "treatment_evidence"
       }
     },
     {
-      "run_id": "RUN-d9efb0f2cb32",
+      "run_id": "RUN-32d282eeee13",
       "state": "SELECT_SKILL",
       "event_type": "skill",
-      "timestamp": "2026-08-11T16:24:57.900768Z",
+      "timestamp": "2026-08-11T16:39:19.380258Z",
       "gate": null,
       "skill": "evidence_research@0.2.0",
       "tool": null,
@@ -392,17 +392,17 @@
       "evidence_ids": [],
       "claim_ids": [],
       "decision": null,
-      "latency_ms": 0.01349999729427509,
+      "latency_ms": 0.010799998563015833,
       "error": null,
       "details": {
         "route_reason": "question_type=treatment_evidence; stage=retrieval"
       }
     },
     {
-      "run_id": "RUN-d9efb0f2cb32",
+      "run_id": "RUN-32d282eeee13",
       "state": "PLAN",
       "event_type": "skill",
-      "timestamp": "2026-08-11T16:24:57.900853Z",
+      "timestamp": "2026-08-11T16:39:19.380335Z",
       "gate": null,
       "skill": "evidence_research@0.2.0",
       "tool": null,
@@ -415,7 +415,7 @@
       "evidence_ids": [],
       "claim_ids": [],
       "decision": null,
-      "latency_ms": 0.07389999882434495,
+      "latency_ms": 0.06620000203838572,
       "error": null,
       "details": {
         "agent_plan": {
@@ -453,10 +453,10 @@
       }
     },
     {
-      "run_id": "RUN-d9efb0f2cb32",
+      "run_id": "RUN-32d282eeee13",
       "state": "RETRIEVE",
       "event_type": "tool",
-      "timestamp": "2026-08-11T16:24:57.900907Z",
+      "timestamp": "2026-08-11T16:39:19.380385Z",
       "gate": null,
       "skill": "evidence_research@0.2.0",
       "tool": "mock_search",
@@ -472,7 +472,7 @@
       ],
       "claim_ids": [],
       "decision": null,
-      "latency_ms": 0.02600000152597204,
+      "latency_ms": 0.024900000425986946,
       "error": null,
       "details": {
         "diagnostics": {
@@ -486,10 +486,10 @@
       }
     },
     {
-      "run_id": "RUN-d9efb0f2cb32",
+      "run_id": "RUN-32d282eeee13",
       "state": "GATE2",
       "event_type": "gate",
-      "timestamp": "2026-08-11T16:24:57.901088Z",
+      "timestamp": "2026-08-11T16:39:19.380453Z",
       "gate": "Gate2@0.2.0",
       "skill": null,
       "tool": null,
@@ -502,7 +502,7 @@
       ],
       "claim_ids": [],
       "decision": "INSUFFICIENT",
-      "latency_ms": 0.16839999807416461,
+      "latency_ms": 0.05509999755304307,
       "error": null,
       "details": {
         "status": "INSUFFICIENT",
@@ -523,10 +523,10 @@
       }
     },
     {
-      "run_id": "RUN-d9efb0f2cb32",
+      "run_id": "RUN-32d282eeee13",
       "state": "RETRIEVE",
       "event_type": "tool",
-      "timestamp": "2026-08-11T16:24:57.901130Z",
+      "timestamp": "2026-08-11T16:39:19.380491Z",
       "gate": null,
       "skill": "evidence_research@0.2.0",
       "tool": "mock_search",
@@ -542,7 +542,7 @@
       ],
       "claim_ids": [],
       "decision": null,
-      "latency_ms": 0.016400001186411828,
+      "latency_ms": 0.015100002201506868,
       "error": null,
       "details": {
         "diagnostics": {
@@ -556,10 +556,10 @@
       }
     },
     {
-      "run_id": "RUN-d9efb0f2cb32",
+      "run_id": "RUN-32d282eeee13",
       "state": "GATE2",
       "event_type": "gate",
-      "timestamp": "2026-08-11T16:24:57.901184Z",
+      "timestamp": "2026-08-11T16:39:19.380534Z",
       "gate": "Gate2@0.2.0",
       "skill": null,
       "tool": null,
@@ -573,7 +573,7 @@
       ],
       "claim_ids": [],
       "decision": "SUFFICIENT",
-      "latency_ms": 0.03850000211969018,
+      "latency_ms": 0.03369999831193127,
       "error": null,
       "details": {
         "status": "SUFFICIENT",
@@ -591,10 +591,10 @@
       }
     },
     {
-      "run_id": "RUN-d9efb0f2cb32",
+      "run_id": "RUN-32d282eeee13",
       "state": "SUMMARIZE_EVIDENCE",
       "event_type": "skill",
-      "timestamp": "2026-08-11T16:24:57.901249Z",
+      "timestamp": "2026-08-11T16:39:19.380582Z",
       "gate": null,
       "skill": "evidence_research@0.2.0",
       "tool": null,
@@ -608,7 +608,7 @@
       ],
       "claim_ids": [],
       "decision": null,
-      "latency_ms": 0.055100001191021875,
+      "latency_ms": 0.038800000766059384,
       "error": null,
       "details": {
         "evidence_count": 2,
@@ -628,10 +628,10 @@
       }
     },
     {
-      "run_id": "RUN-d9efb0f2cb32",
+      "run_id": "RUN-32d282eeee13",
       "state": "GENERATE_CLAIMS",
       "event_type": "generation",
-      "timestamp": "2026-08-11T16:24:57.901339Z",
+      "timestamp": "2026-08-11T16:39:19.380624Z",
       "gate": null,
       "skill": "claim_generation@0.2.0",
       "tool": null,
@@ -645,15 +645,15 @@
         "C2"
       ],
       "decision": null,
-      "latency_ms": 0.07829999958630651,
+      "latency_ms": 0.033300002542091534,
       "error": null,
       "details": {}
     },
     {
-      "run_id": "RUN-d9efb0f2cb32",
+      "run_id": "RUN-32d282eeee13",
       "state": "CLAIM_SPLITTER",
       "event_type": "skill",
-      "timestamp": "2026-08-11T16:24:57.901402Z",
+      "timestamp": "2026-08-11T16:39:19.380681Z",
       "gate": null,
       "skill": "citation_audit@0.2.0",
       "tool": null,
@@ -667,17 +667,17 @@
         "C2"
       ],
       "decision": null,
-      "latency_ms": 0.05289999899105169,
+      "latency_ms": 0.048499998229090124,
       "error": null,
       "details": {
         "route_reason": "stage=claim_verification"
       }
     },
     {
-      "run_id": "RUN-d9efb0f2cb32",
+      "run_id": "RUN-32d282eeee13",
       "state": "AUDIT_CITATIONS",
       "event_type": "skill",
-      "timestamp": "2026-08-11T16:24:57.901725Z",
+      "timestamp": "2026-08-11T16:39:19.380919Z",
       "gate": null,
       "skill": "citation_audit@0.2.0",
       "tool": null,
@@ -691,7 +691,7 @@
         "C2"
       ],
       "decision": "PASS",
-      "latency_ms": 0.31039999885251746,
+      "latency_ms": 0.22739999985788018,
       "error": null,
       "details": {
         "approved": [
@@ -702,10 +702,10 @@
       }
     },
     {
-      "run_id": "RUN-d9efb0f2cb32",
+      "run_id": "RUN-32d282eeee13",
       "state": "GATE5",
       "event_type": "gate",
-      "timestamp": "2026-08-11T16:24:57.901796Z",
+      "timestamp": "2026-08-11T16:39:19.380995Z",
       "gate": "Gate5@0.2.0",
       "skill": "citation_audit@0.2.0",
       "tool": null,
@@ -719,7 +719,7 @@
         "C2"
       ],
       "decision": null,
-      "latency_ms": 0.050499998906161636,
+      "latency_ms": 0.06579999899258837,
       "error": null,
       "details": {
         "results": [
@@ -785,10 +785,10 @@
       }
     },
     {
-      "run_id": "RUN-d9efb0f2cb32",
+      "run_id": "RUN-32d282eeee13",
       "state": "GATE6",
       "event_type": "decision",
-      "timestamp": "2026-08-11T16:24:57.901832Z",
+      "timestamp": "2026-08-11T16:39:19.381029Z",
       "gate": "Gate6@0.2.0",
       "skill": null,
       "tool": null,
@@ -799,17 +799,17 @@
       "evidence_ids": [],
       "claim_ids": [],
       "decision": "PASS",
-      "latency_ms": 0.0020000006770715117,
+      "latency_ms": 0.0016000012692529708,
       "error": null,
       "details": {
         "reasons": []
       }
     },
     {
-      "run_id": "RUN-d9efb0f2cb32",
+      "run_id": "RUN-32d282eeee13",
       "state": "FINALIZE",
       "event_type": "decision",
-      "timestamp": "2026-08-11T16:24:57.901879Z",
+      "timestamp": "2026-08-11T16:39:19.381061Z",
       "gate": null,
       "skill": null,
       "tool": null,
@@ -826,17 +826,17 @@
         "C2"
       ],
       "decision": "PASS",
-      "latency_ms": 0.03789999755099416,
+      "latency_ms": 0.023299999156733975,
       "error": null,
       "details": {
         "limitations": []
       }
     },
     {
-      "run_id": "RUN-d9efb0f2cb32",
+      "run_id": "RUN-32d282eeee13",
       "state": "END",
       "event_type": "state",
-      "timestamp": "2026-08-11T16:24:57.901903Z",
+      "timestamp": "2026-08-11T16:39:19.381082Z",
       "gate": null,
       "skill": null,
       "tool": null,
@@ -847,10 +847,10 @@
       "evidence_ids": [],
       "claim_ids": [],
       "decision": "PASS",
-      "latency_ms": 0.0012999989849049598,
+      "latency_ms": 0.0008999995770864189,
       "error": null,
       "details": {
-        "run_latency_ms": 1.321
+        "run_latency_ms": 0.933
       }
     }
   ],
@@ -996,8 +996,8 @@
       "textual_support_evaluator": "exact_span_match@0.2.0"
     }
   },
-  "started_at": "2026-08-11T16:24:57.900565Z",
-  "finished_at": "2026-08-11T16:24:57.901886Z",
-  "latency_ms": 1.321,
+  "started_at": "2026-08-11T16:39:19.380134Z",
+  "finished_at": "2026-08-11T16:39:19.381067Z",
+  "latency_ms": 0.933,
   "error": null
 }

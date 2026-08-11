@@ -30,6 +30,7 @@ Contract rules enforced by this adapter:
 
 from __future__ import annotations
 
+from collections.abc import Callable, Sequence
 from datetime import datetime
 from hashlib import sha256
 import json
@@ -37,6 +38,7 @@ from typing import Any
 
 from a5.domain.models import (
     EvidenceRecord,
+    EvidenceSpan,
     Question,
     RetrievalRequest,
     RetrievalResult,
@@ -49,9 +51,23 @@ from retrieval.models import Query, SearchResult, SearchStatus
 from retrieval.ports import RetrievalServicePort
 from retrieval.query_plan import parse_query
 
+# Optional A3 span provider: chunk_id -> sequence of real A3 spans.  A3's
+# EvidenceSpan schema is authoritative (contracts/a3/v0.2); A4 never invents a
+# span schema or span IDs.  The provider may return any object exposing
+# span_id/text/chunk_id/page/section (duck-typed) so the adapter stays decoupled
+# from ``a3.domain.models`` imports while remaining compatible with them.
+SpanProvider = Callable[[str], Sequence[Any]]
+
 
 class A4EvidenceRetrieverAdapter:
-    """Adapter: ``a5.ports.EvidenceRetriever`` backed by A4's ``RetrievalService``."""
+    """Adapter: ``a5.ports.EvidenceRetriever`` backed by A4's ``RetrievalService``.
+
+    ``span_provider`` wires real A3 spans: when provided, selected chunks get
+    their real A3 spans mapped onto ``EvidenceRecord.spans`` and
+    ``diagnostics["span_status"] == "A3_AVAILABLE"``; without it, spans stay
+    empty and ``span_status == "UNKNOWN_A3_PENDING"``.  Span IDs are never
+    synthesized.
+    """
 
     def __init__(
         self,
@@ -59,14 +75,18 @@ class A4EvidenceRetrieverAdapter:
         config: RetrievalConfig | None = None,
         *,
         tool_name: str = "a4_evidence_retrieval",
+        span_provider: SpanProvider | None = None,
     ) -> None:
         if not callable(getattr(service, "search", None)):
             raise ValueError("service must provide a callable search method")
         if config is not None and not isinstance(config, RetrievalConfig):
             raise ValueError("config must be a RetrievalConfig or None")
+        if span_provider is not None and not callable(span_provider):
+            raise ValueError("span_provider must be callable or None")
         self._service = service
         self._config = config if config is not None else RetrievalConfig()
         self._tool_name = tool_name
+        self._span_provider = span_provider
         self.call_count = 0
 
     @property
@@ -184,6 +204,7 @@ class A4EvidenceRetrieverAdapter:
                 if evidence_id == chunk.evidence_id
             }
         )
+        spans = self._a3_spans_for(chunk)
         return EvidenceRecord(
             id=self._citation_id(chunk),
             content=chunk.text,
@@ -212,10 +233,31 @@ class A4EvidenceRetrieverAdapter:
             published_at=published_at,
             retrieval_score=score,
             evidence_level=chunk.evidence_level,
-            spans=[],  # A3 Span Schema pending; never synthesized
+            spans=spans,
             conflicts_with_ids=conflicts,
             mock=chunk.mock,
         )
+
+    def _a3_spans_for(self, chunk: Any) -> list[EvidenceSpan]:
+        """Real A3 spans only; never synthesized (A3 Span Schema is authoritative)."""
+        if self._span_provider is None:
+            return []
+        spans: list[EvidenceSpan] = []
+        for raw in self._span_provider(chunk.chunk_id) or ():
+            span_id = getattr(raw, "span_id", None)
+            text = getattr(raw, "text", None)
+            if not span_id or not text:
+                continue  # 缺字段的 span 保持缺席，不猜测
+            spans.append(
+                EvidenceSpan(
+                    span_id=str(span_id),
+                    text=str(text),
+                    chunk_id=getattr(raw, "chunk_id", None) or chunk.chunk_id,
+                    page=getattr(raw, "page", None),
+                    section=getattr(raw, "section", None),
+                )
+            )
+        return spans
 
     def _build_diagnostics(
         self,
@@ -250,7 +292,8 @@ class A4EvidenceRetrieverAdapter:
             "run_hash": result.run_hash,
             "config_snapshot": self._config_snapshot(),
             "config_hash": self._config_hash(),
-            "span_status": "UNKNOWN_A3_PENDING",
+            "span_status": "A3_AVAILABLE" if self._span_provider is not None else "UNKNOWN_A3_PENDING",
+            "span_provider": self._span_provider is not None,
             "alignment_hints": [
                 {
                     "claim_index": hint.claim_index,

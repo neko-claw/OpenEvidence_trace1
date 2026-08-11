@@ -256,6 +256,103 @@ def _validate_span_ranking(
     return _validate_ranked_ids(ranked_ids), _validate_span_qrels(span_qrels)
 
 
+# --- Real A3 span-level metrics (A3 Span Schema landed in contracts/a3/v0.2) ---
+# These operate on actual A3 EvidenceSpan IDs supplied with the ranked chunks;
+# they are NOT the chunk-level ``span_proxy_*`` metrics above.
+
+
+def _span_ids_of(ranked_chunks_or_objects: Sequence[object]) -> tuple[set[str], ...]:
+    """Extract real span IDs per ranked item (A3 EvidenceSpan duck-typing)."""
+    per_item: list[set[str]] = []
+    for item in ranked_chunks_or_objects:
+        spans = getattr(item, "spans", None)
+        if spans is None:
+            per_item.append(set())
+            continue
+        span_ids = {
+            str(getattr(span, "span_id", ""))
+            for span in spans
+            if getattr(span, "span_id", None)
+        }
+        per_item.append(span_ids)
+    return tuple(per_item)
+
+
+def _validate_real_span_qrels(span_qrels: Mapping[str, float]) -> dict[str, float]:
+    """Real span qrels: span_id -> nonnegative finite grade."""
+    if not isinstance(span_qrels, Mapping):
+        raise ValueError("span_qrels must map span IDs to nonnegative finite relevance")
+    normalized: dict[str, float] = {}
+    for span_id, grade in span_qrels.items():
+        if not isinstance(span_id, str) or not span_id.strip():
+            raise ValueError("span_qrels keys must be nonblank span IDs")
+        if not _finite_nonnegative(grade):
+            raise ValueError("span_qrels values must be nonnegative finite numbers")
+        normalized[span_id] = float(grade)
+    return normalized
+
+
+def span_recall_at_k(
+    ranked_chunks_or_objects: Sequence[object],
+    span_qrels: Mapping[str, float],
+    k: int,
+) -> float:
+    """Fraction of relevant A3 evidence spans retrieved in the top ``k``.
+
+    A span is retrieved when its real ``span_id`` belongs to one of the top
+    ``k`` ranked items' span collections.  Items without spans contribute
+    nothing (their spans are UNKNOWN, never guessed).
+    """
+    if not isinstance(k, int) or isinstance(k, bool) or k <= 0:
+        raise ValueError("k must be a positive integer")
+    if isinstance(ranked_chunks_or_objects, (str, bytes)) or not isinstance(ranked_chunks_or_objects, Sequence):
+        raise ValueError("ranked_chunks_or_objects must be a sequence")
+    relevant = {
+        span_id for span_id, grade in _validate_real_span_qrels(span_qrels).items() if grade > 0.0
+    }
+    if not relevant:
+        return 0.0
+    retrieved: set[str] = set()
+    for item_span_ids in _span_ids_of(ranked_chunks_or_objects)[:k]:
+        retrieved |= item_span_ids
+    return len(relevant.intersection(retrieved)) / len(relevant)
+
+
+def span_ndcg_at_k(
+    ranked_chunks_or_objects: Sequence[object],
+    span_qrels: Mapping[str, float],
+    k: int,
+) -> float:
+    """Linearly graded normalized DCG over real A3 evidence spans.
+
+    Each span gets its first-seen rank (the rank of the first ranked item that
+    contains it); spans not retrieved within the cutoff are excluded.
+    """
+    if not isinstance(k, int) or isinstance(k, bool) or k <= 0:
+        raise ValueError("k must be a positive integer")
+    if isinstance(ranked_chunks_or_objects, (str, bytes)) or not isinstance(ranked_chunks_or_objects, Sequence):
+        raise ValueError("ranked_chunks_or_objects must be a sequence")
+    qrels = _validate_real_span_qrels(span_qrels)
+    relevant = {span_id: grade for span_id, grade in qrels.items() if grade > 0.0}
+    if not relevant:
+        return 0.0
+    maximum = max(relevant.values())
+    ideal = sorted(relevant.values(), reverse=True)[:k]
+    ideal_dcg = _dcg(ideal, maximum)
+    if ideal_dcg == 0.0:
+        return 0.0
+    seen: set[str] = set()
+    observed: list[float] = []
+    for item_span_ids in _span_ids_of(ranked_chunks_or_objects)[:k]:
+        for span_id in sorted(item_span_ids):
+            if span_id in relevant and span_id not in seen:
+                seen.add(span_id)
+                observed.append(relevant[span_id])
+    if not observed:
+        return 0.0
+    return min(1.0, max(0.0, _dcg(observed, maximum) / ideal_dcg))
+
+
 def _validate_span_qrels(span_qrels: Mapping[str, SpanProxyQrel]) -> dict[str, SpanProxyQrel]:
     if not isinstance(span_qrels, Mapping):
         raise ValueError("span_qrels must map span IDs to (chunk_id, atomic_point_id, grade) triples")

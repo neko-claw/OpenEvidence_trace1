@@ -289,3 +289,39 @@ def test_span_proxy_qrels_validation_rejects_malformed_values() -> None:
             raise AssertionError("malformed span proxy qrels must be rejected")
         except ValueError:
             pass
+
+
+def test_real_span_recall_at_k_uses_a3_span_ids() -> None:
+    """真实 A3 span 粒度召回：span 命中 = span_id 属于前 k 项的 span 集合。"""
+    from retrieval.evaluation import span_recall_at_k
+
+    class Item:
+        def __init__(self, span_ids: list[str]) -> None:
+            self.spans = [type("S", (), {"span_id": sid})() for sid in span_ids]
+
+    ranked = [Item(["S1", "S2"]), Item(["S3"])]
+    assert span_recall_at_k(ranked, {"S1": 3.0, "S3": 2.0, "S9": 1.0}, 1) == 1 / 3
+    assert span_recall_at_k(ranked, {"S1": 3.0, "S3": 2.0}, 2) == 1.0
+    assert span_recall_at_k(ranked, {"S9": 1.0}, 2) == 0.0
+
+
+def test_real_span_recall_ignores_items_without_spans() -> None:
+    from retrieval.evaluation import span_recall_at_k
+
+    class NoSpans:
+        pass
+
+    assert span_recall_at_k([NoSpans()], {"S1": 3.0}, 1) == 0.0
+
+
+def test_real_span_ndcg_at_k_ranks_by_first_seen_position() -> None:
+    from retrieval.evaluation import span_ndcg_at_k
+
+    class Item:
+        def __init__(self, span_ids: list[str]) -> None:
+            self.spans = [type("S", (), {"span_id": sid})() for sid in span_ids]
+
+    perfect = [Item(["S1"]), Item(["S2"])]
+    assert span_ndcg_at_k(perfect, {"S1": 3.0, "S2": 1.0}, 2) == 1.0
+    reversed_order = [Item(["S2"]), Item(["S1"])]
+    assert span_ndcg_at_k(reversed_order, {"S1": 3.0, "S2": 1.0}, 2) < 1.0

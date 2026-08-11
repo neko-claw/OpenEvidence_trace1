@@ -378,3 +378,80 @@ def test_out_of_scope_question_returns_defensive_empty_with_reason() -> None:
     assert payload.diagnostics["status"] == "empty"
     assert "out_of_scope" in payload.diagnostics["degradation_codes"]
     assert payload.diagnostics["out_of_scope"] is True
+
+
+def test_a3_span_provider_maps_real_spans_and_flags_available() -> None:
+    """评审项 4：A3 Span Schema 已落地（contracts/a3/v0.2），真实 span 通过
+    provider 接入；A4 不定义 schema、不合成 span ID。"""
+    from a3.domain.models import EvidenceSpan as A3EvidenceSpan
+
+    chunk = _chunk("c1")
+    a3_span = A3EvidenceSpan(
+        span_id="S-A3-001",
+        evidence_id=chunk.evidence_id,
+        chunk_id=chunk.chunk_id,
+        text="Exact synthetic claim about the artificial outcome.",
+        char_start=0,
+        char_end=51,
+        document_char_start=10,
+        document_char_end=61,
+        chunk_content_hash="chunk-hash",
+        evidence_content_hash="evidence-hash",
+        content_hash="span-hash",
+        page=7,
+        section="mock results",
+    )
+    adapter = A4EvidenceRetrieverAdapter(
+        FakeService(_ok_result((chunk,))),
+        _config(),
+        span_provider=lambda chunk_id: [a3_span] if chunk_id == "c1" else [],
+    )
+
+    payload = adapter.retrieve(
+        _question(), _plan(), RetrievalRequest(source_type="pubmed", tool_call_index=1)
+    )
+
+    record = payload.evidence[0]
+    assert len(record.spans) == 1
+    assert record.spans[0].span_id == "S-A3-001"
+    assert record.spans[0].text == a3_span.text
+    assert record.spans[0].chunk_id == "c1"
+    assert record.spans[0].page == 7
+    assert record.spans[0].section == "mock results"
+    assert payload.diagnostics["span_status"] == "A3_AVAILABLE"
+
+
+def test_a3_span_provider_missing_span_stays_absent() -> None:
+    """provider 未返回该 chunk 的 span 时保持缺席（UNKNOWN），不猜测。"""
+    chunk = _chunk("c1")
+    adapter = A4EvidenceRetrieverAdapter(
+        FakeService(_ok_result((chunk,))),
+        _config(),
+        span_provider=lambda chunk_id: [],  # 该 chunk 无 span
+    )
+
+    payload = adapter.retrieve(
+        _question(), _plan(), RetrievalRequest(source_type="pubmed", tool_call_index=1)
+    )
+
+    assert payload.evidence[0].spans == []
+    assert payload.diagnostics["span_status"] == "A3_AVAILABLE"
+
+
+def test_span_provider_never_invents_span_ids_for_missing_fields() -> None:
+    class BrokenSpan:
+        """缺 span_id 的对象：adapter 必须跳过而非合成。"""
+
+        text = "some text"
+
+    adapter = A4EvidenceRetrieverAdapter(
+        FakeService(_ok_result((_chunk("c1"),))),
+        _config(),
+        span_provider=lambda chunk_id: [BrokenSpan()],
+    )
+
+    payload = adapter.retrieve(
+        _question(), _plan(), RetrievalRequest(source_type="pubmed", tool_call_index=1)
+    )
+
+    assert payload.evidence[0].spans == []
