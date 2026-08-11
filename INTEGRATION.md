@@ -17,20 +17,32 @@ Integration Diff and prefer a new adapter over changes to the workflow.
 
 ## A1 -> policy and termination
 
-Required from A1:
+Delivered in A1 contract v0.2:
 
-- frozen question types and classification rules;
-- allowed medical safety scope and escalation boundaries;
-- refusal rules and reason codes;
-- Agent termination policy.
+- fail-closed `SafetyPolicyInput/Output` Pydantic + JSON Schema contracts;
+- deterministic reference evaluator over normalized safety signals;
+- normalized `PASS | WARN | REFUSE` final decisions and separate reason codes;
+- executable retrieval/budget termination precedence;
+- `A1SafetyPolicyAdapter` for the existing A5 `SafetyPolicy` Port.
+
+Still required from A1/B2 before production or formal evaluation:
+
+- a validated free-text classifier that emits the normalized Gate0 signals;
+- final question-type classification and termination thresholds;
+- teacher-authored questions or a documented waiver;
+- gold/qrel, semantic de-duplication, source-group derivation audit, and
+  EXTERNAL license/provenance verification.
 
 Replace/integrate at:
 
 - `config/skills.yaml` classifier/routing policy;
-- `a5.adapters.default_safety_policy.DefaultFailClosedSafetyPolicy` via a new A1-backed
-  `SafetyPolicy` implementation;
+- compose `a1.adapters.A1SafetyPolicyAdapter` instead of
+  `a5.adapters.default_safety_policy.DefaultFailClosedSafetyPolicy` only when
+  normalized `a1_safety_signals` are supplied; absent signals remain UNKNOWN;
 - workflow early-finalization mapping only if A1 adds new explicit termination
   outcomes. Keep the state machine otherwise unchanged.
+
+Detailed mapping: `docs/a1/a1_a5_contract_crosswalk.md`.
 
 ## A2 -> Evidence and MCP
 

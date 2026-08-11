@@ -1,7 +1,7 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://openevidence.local/schemas/question.schema.json",
-  "title": "OpenEvidence Question v0.2",
+  "title": "OpenEvidence Question v0.3",
   "type": "object",
   "additionalProperties": false,
   "required": [
@@ -49,7 +49,7 @@
       "additionalProperties": false,
       "required": ["origin", "authoring_method", "candidate_sources"],
       "properties": {
-        "origin": {"enum": ["a1_blueprint", "teacher", "guideline", "literature", "public_benchmark"]},
+        "origin": {"enum": ["a1_blueprint", "teacher", "guideline", "literature", "public_benchmark", "public_benchmark_style"]},
         "authoring_method": {"type": "string"},
         "candidate_sources": {
           "type": "array",
@@ -59,19 +59,40 @@
             "required": ["source_type", "stable_id", "url", "role", "verification_status"],
             "properties": {
               "source_type": {"enum": ["pubmed", "clinicaltrials", "guideline", "official_health", "search_route", "safety_policy"]},
-              "stable_id": {"type": "string"},
-              "url": {"type": "string"},
+              "stable_id": {
+                "type": "string",
+                "minLength": 1,
+                "description": "For routing_only, this is an explicit routing key rather than an Evidence ID. All other roles require an upstream-verifiable stable source identifier."
+              },
+              "url": {
+                "type": ["string", "null"],
+                "format": "uri",
+                "minLength": 1,
+                "description": "May be null only for routing_only candidates. Empty strings are forbidden. The URL is discovery metadata, never a citation identity."
+              },
               "role": {
                 "enum": ["candidate_gold", "candidate_support", "candidate_conflict", "routing_only"],
                 "description": "candidate_gold 仅表示优先人工核验候选，不等于已经进入 gold_source_ids。"
               },
-              "verification_status": {"enum": ["source_exists_a1", "pending_a2_ingestion", "pending_b2_gold_review"]}
-            }
+              "verification_status": {"enum": ["source_exists_a1", "pending_a2_ingestion", "pending_b2_gold_review"]},
+              "published_at": {"type": ["string", "null"], "format": "date"},
+              "source_version": {"type": ["string", "null"]}
+            },
+            "allOf": [
+              {
+                "if": {"properties": {"role": {"const": "routing_only"}}, "required": ["role"]},
+                "else": {"properties": {"url": {"type": "string", "format": "uri", "minLength": 1}}}
+              }
+            ]
           }
         }
       }
     },
-    "source_group_id": {"type": "string", "pattern": "^SG-(DEV|TEST|STRESS|EXTERNAL|RESERVE)-(HTN|LIP)-[0-9]{2,3}$"},
+    "source_group_id": {
+      "type": "string",
+      "pattern": "^SG-[A-Z0-9][A-Z0-9_-]{2,63}$",
+      "description": "Derivation-group identity. It must be stable across translations/paraphrases and must not be derived from split membership. Existing v0.1 assignments remain pending a B2 derivation audit."
+    },
     "gold_source_ids": {
       "type": "array",
       "items": {"type": "string"},

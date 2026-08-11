@@ -1,0 +1,66 @@
+{
+  "$defs": {
+    "SafetyDecision": {
+      "enum": [
+        "ALLOW",
+        "DENY",
+        "UNKNOWN"
+      ],
+      "title": "SafetyDecision",
+      "type": "string"
+    },
+    "TerminationAction": {
+      "enum": [
+        "CONTINUE",
+        "RETRY",
+        "WARN",
+        "REFUSE"
+      ],
+      "title": "TerminationAction",
+      "type": "string"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "decision": {
+      "$ref": "#/$defs/SafetyDecision"
+    },
+    "policy_version": {
+      "pattern": "^a1-safety-v\\d+\\.\\d+$",
+      "title": "Policy Version",
+      "type": "string"
+    },
+    "reason_codes": {
+      "items": {
+        "type": "string"
+      },
+      "minItems": 1,
+      "title": "Reason Codes",
+      "type": "array"
+    },
+    "matched_rules": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Matched Rules",
+      "type": "array"
+    },
+    "termination_action": {
+      "$ref": "#/$defs/TerminationAction"
+    },
+    "user_message_key": {
+      "minLength": 1,
+      "title": "User Message Key",
+      "type": "string"
+    }
+  },
+  "required": [
+    "decision",
+    "policy_version",
+    "reason_codes",
+    "termination_action",
+    "user_message_key"
+  ],
+  "title": "SafetyPolicyOutput",
+  "type": "object"
+}
