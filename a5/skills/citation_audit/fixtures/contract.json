@@ -1,0 +1,17 @@
+{
+  "input": {
+    "claims": [],
+    "evidence": [],
+    "context": {"freshness_required": false, "run_date": "2026-08-11"}
+  },
+  "output": {
+    "atomic_claims": [],
+    "report": {
+      "decision": "REFUSE",
+      "verification_results": [],
+      "approved_claim_ids": [],
+      "rejected_claim_ids": [],
+      "reasons": ["unsupported_claim: no verifiable atomic claims were generated"]
+    }
+  }
+}

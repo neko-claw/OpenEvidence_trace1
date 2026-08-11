@@ -8,41 +8,32 @@ def trace_as_json(run: AgentRun, *, indent: int = 2) -> str:
 
 
 def render_trace(run: AgentRun) -> str:
-    lines = [f"AgentRun {run.run_id}"]
+    lines = [
+        f"AgentRun {run.run_id} agent={run.agent_version} gate_config={run.gate_config_version}"
+    ]
     for event in run.trace:
-        details: list[str] = [f"at={event.timestamp.isoformat()}"]
-        if event.selected_skill:
-            details.append(f"skill={event.selected_skill}")
-        if event.details.get("question_type"):
-            details.append(f"type={event.details['question_type']}")
-        if event.agent_plan:
-            search_plan = event.agent_plan.get("search_plan", {})
-            sources = search_plan.get("preferred_sources", [])
-            if sources:
-                details.append(f"sources={','.join(sources)}")
-        if event.tool:
-            details.append(f"tool={event.tool}")
-        if event.tool_input_summary:
-            summary = ",".join(
-                f"{key}={value}" for key, value in event.tool_input_summary.items()
+        fields = [f"event={event.event_type.value}", f"at={event.timestamp.isoformat()}"]
+        for label, value in (
+            ("gate", event.gate),
+            ("skill", event.skill),
+            ("tool", event.tool),
+            ("call", event.tool_call_index),
+            ("budget_remaining", event.tool_budget_remaining),
+            ("count", event.output_count),
+            ("decision", event.decision),
+        ):
+            if value is not None:
+                fields.append(f"{label}={value}")
+        if event.input_summary:
+            fields.append(
+                "input=" + ",".join(f"{key}={value}" for key, value in event.input_summary.items())
             )
-            details.append(f"input={summary}")
-        if event.tool_output_count is not None:
-            details.append(f"count={event.tool_output_count}")
-        if event.retrieved_evidence_ids:
-            details.append(f"evidence={','.join(event.retrieved_evidence_ids)}")
-        if event.generated_claim_ids:
-            details.append(f"claims={','.join(event.generated_claim_ids)}")
-        if event.verification_result:
-            verification = ",".join(
-                f"{claim_id}:{status}"
-                for claim_id, status in event.verification_result.items()
-            )
-            details.append(f"verify={verification}")
-        if event.final_decision:
-            details.append(f"decision={event.final_decision}")
+        if event.evidence_ids:
+            fields.append(f"evidence={','.join(event.evidence_ids)}")
+        if event.claim_ids:
+            fields.append(f"claims={','.join(event.claim_ids)}")
         if event.error:
-            details.append(f"error={event.error}")
-        details.append(f"latency_ms={event.latency_ms:.2f}")
-        lines.append(f"{event.state.value:<18} " + " ".join(details))
+            fields.append(f"error={event.error}")
+        fields.append(f"latency_ms={event.latency_ms:.2f}")
+        lines.append(f"{event.state.value:<22} " + " ".join(fields))
     return "\n".join(lines)

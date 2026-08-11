@@ -1,0 +1,19 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "EvidenceResearchInput",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["question"],
+  "properties": {
+    "question": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["text"],
+      "properties": {
+        "question_id": {"type": "string"},
+        "text": {"type": "string", "minLength": 1},
+        "metadata": {"type": "object"}
+      }
+    }
+  }
+}

@@ -1,28 +1,45 @@
 from __future__ import annotations
 
-from a5.domain.enums import SafetyStatus
+from a5.domain.enums import SafetyDecision
 from a5.domain.models import Question, SafetyAssessment
+from a5.runtime_config import load_runtime_config
 
 
-class DefaultSafetyPolicy:
-    """TEMPORARY DEVELOPMENT POLICY; must be replaced by A1 rules.
+class DefaultFailClosedSafetyPolicy:
+    """Temporary Gate0 policy: without an A1 decision, refuse as UNKNOWN."""
 
-    It deliberately does not invent medical safety rules. Tests/integrators may
-    explicitly set metadata.safety_allowed=false to exercise refusal behavior.
-    """
-
-    version = "temporary-a1-safety-v0.1"
+    def __init__(self, version: str | None = None) -> None:
+        gate_version = version or load_runtime_config().gates.gate0_version
+        self.version = f"default_fail_closed@{gate_version}"
 
     def assess(self, question: Question) -> SafetyAssessment:
-        explicitly_allowed = question.metadata.get("safety_allowed", True)
-        if explicitly_allowed is False:
-            return SafetyAssessment(
-                status=SafetyStatus.REFUSED,
-                reason="Question was explicitly rejected by the temporary policy input.",
-                policy_version=self.version,
-            )
+        del question
         return SafetyAssessment(
-            status=SafetyStatus.ALLOWED,
-            reason="Allowed for development only; final A1 medical policy is pending.",
+            decision=SafetyDecision.UNKNOWN,
+            reason="safety_unknown: A1 safety/scope policy has not supplied ALLOW",
             policy_version=self.version,
         )
+
+
+class FixtureSafetyPolicy:
+    """Offline-only adapter requiring an explicit fixture safety decision."""
+
+    def __init__(self, version: str | None = None) -> None:
+        gate_version = version or load_runtime_config().gates.gate0_version
+        self.version = f"mock_fixture_safety@{gate_version}"
+
+    def assess(self, question: Question) -> SafetyAssessment:
+        raw = question.metadata.get("mock_safety_decision", "UNKNOWN")
+        try:
+            decision = SafetyDecision(str(raw).upper())
+        except ValueError:
+            decision = SafetyDecision.UNKNOWN
+        return SafetyAssessment(
+            decision=decision,
+            reason=f"mock Gate0 decision={decision.value}; not an A1 medical policy",
+            policy_version=self.version,
+        )
+
+
+# Compatibility import for callers; semantics are now fail-closed.
+DefaultSafetyPolicy = DefaultFailClosedSafetyPolicy

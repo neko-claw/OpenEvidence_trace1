@@ -1,81 +1,61 @@
-# OpenEvidence A5 MVP
+# OpenEvidence A5 — Agent, Skill and trustworthy generation
 
-A5 is a Python 3.11, Pydantic-based finite-state workflow for evidence-bound
-claim generation and fail-closed publishing. The current repository is an
-offline integration skeleton: it does not retrieve real medical literature and
-must not be treated as a clinical system.
+A5 is a Python 3.11/Pydantic finite-state control layer. It provides versioned
+Skills, bounded retrieval orchestration, fail-closed gates, atomic claim
+verification and structured traces. It is an offline engineering MVP, not a
+clinical system and not a medical-effect evaluation.
 
-## What works now
+## Implemented control flow
 
-- Explicit workflow: `CLASSIFY -> PLAN -> SELECT_SKILL -> RETRIEVE ->
-  CHECK_EVIDENCE -> GENERATE_CLAIMS -> VERIFY_CLAIMS -> FINALIZE -> END`.
-- Replaceable Protocols for retrieval, claim generation, claim verification,
-  and safety policy.
-- `evidence_research@v0.1` produces a configurable search plan.
-- `citation_audit@v0.1` enforces citation presence and whitelist membership,
-  then aggregates claim results into `PASS`, `WARN`, or `REFUSE`.
-- Only verified atomic claims reach the final answer. A `WARN` answer omits
-  failed non-critical claims; any critical failure is `REFUSE`.
-- Pydantic `AgentRun` output includes state/tool/claim/verification/decision
-  events, per-step latency, errors, and JSON serialization.
-- Offline E1-E5 fixtures are visibly synthetic and all have `mock=true`.
+```text
+START -> Gate0 -> CLASSIFY -> SELECT_SKILL -> PLAN
+      -> RETRIEVE <-> Gate2 -> SUMMARIZE_EVIDENCE
+      -> GENERATE_CLAIMS -> CLAIM_SPLITTER -> AUDIT_CITATIONS
+      -> Gate5 -> Gate6 -> FINALIZE -> END
+```
 
-## What is temporary
+- Gate0 requires an explicit `ALLOW`; default `UNKNOWN` refuses before tools.
+- `ToolBudgetManager` checks before every retrieval call. Gate2 can retry the
+  next source, stop early when sufficient, or refuse on conflict/exhaustion.
+- Gate2 records count, score, source coverage/diversity, evidence level,
+  freshness and conflicts. Missing upstream fields stay UNKNOWN/null.
+- `ClaimSplitter` produces atomic claims. Gate5 checks Evidence/Span
+  whitelists, PICO/time consistency, conflicts and an injectable textual-support
+  evaluator. The P0 evaluator supports only exact normalized span matches;
+  unknown semantic entailment is `INSUFFICIENT`.
+- Gate6 uses criticality and uncertainty. Only supported claims reach the final
+  answer; failed non-critical claims produce `WARN`, while critical failures,
+  illegal IDs, safety failures and insufficient retrieval produce `REFUSE`.
 
-- `EvidenceRecord` is a **TEMPORARY COMPATIBILITY MODEL**, not the final A2/A3
-  Evidence schema.
-- `QuestionClassifierConfig` and `DefaultSafetyPolicy` are development defaults
-  awaiting A1.
-- `MockEvidenceRetriever` and `MockClaimGenerator` exist only to run the offline
-  workflow.
-- `RuleBasedClaimVerifier` checks citation mechanics and explicit fixture
-  markers. It performs no medical semantic inference.
+## Versioned assets
 
-## Run
+- Skill packages: `a5/skills/evidence_research/` and
+  `a5/skills/citation_audit/` contain manifest, prompt, input/output JSON Schema,
+  fixture and implementation.
+- Shared prompts live in `prompts/` and are checked against packaged prompts.
+- Runtime configuration lives in `config/agent.yaml`, `gates.yaml`,
+  `skills.yaml`, and `models.yaml`. These files use JSON syntax, which is valid
+  YAML, to avoid adding a YAML production dependency.
+- Every `AgentRun` records agent/Skill/Prompt/Gate versions and a full
+  `RuntimeConfigSnapshot`.
 
-With Pixi installed:
+## Run and verify
 
 ```powershell
 pixi run demo
 pixi run test
 ```
 
-Or in any activated Python 3.11 environment:
+The demo prints PASS, WARN and REFUSE runs and writes the PASS run to
+`artifacts/demo_trace.json` and `artifacts/demo_trace.txt`. The stable downstream
+entry remains:
 
-```powershell
-python -m pip install -r requirements.txt
-python main.py
-pytest
+```python
+run = answer(question, workflow=configured_workflow)
+payload = run.model_dump(mode="json")
 ```
 
-`python main.py` runs PASS, WARN, and REFUSE fixtures and prints the complete
-terminal trace. `AgentRun.model_dump_json()` or
-`a5.observability.trace.trace_as_json()` produces the A6/B4-friendly JSON form.
-
-## Architecture
-
-```text
-A5Workflow
-  |-- EvidenceRetriever       -> Mock today; A2 MCP / A4 RAG later
-  |-- ClaimGenerator          -> Mock today; structured LLM adapter later
-  |-- ClaimVerifier           -> Rule-based today; LLM/NLI/medical later
-  |-- SafetyPolicy            -> Temporary default today; A1 later
-  |-- EvidenceResearchSkill   -> configurable planning policy
-  `-- CitationAuditSkill      -> fail-closed publication gate
-```
-
-Mock classes are wired only in `a5/bootstrap.py`, the demo composition root.
-`a5/agent/workflow.py` imports no adapter package.
-
-## Decision semantics
-
-- `PASS`: non-empty evidence and every claim is supported, including all
-  critical claims.
-- `WARN`: all critical claims are supported; failed non-critical claims are
-  removed and limitations are displayed.
-- `REFUSE`: no valid evidence, no verifiable claims, illegal evidence ID,
-  unsupported/contradicted critical claim, unresolved critical conflict, safety
-  refusal, or workflow error.
-
-See [INTEGRATION.md](INTEGRATION.md) for upstream contracts and
-[docs/DESIGN_REFERENCES.md](docs/DESIGN_REFERENCES.md) for research grounding.
+Mock classes are wired only by `a5/bootstrap.py`; the workflow depends on
+`EvidenceRetriever`, `ClaimGenerator`, `ClaimVerifier`, `TextualSupportEvaluator`
+and `SafetyPolicy` ports. A2/A3/A4 production capabilities are deliberately not
+implemented here. See `INTEGRATION.md` and `docs/review_compliance.md`.

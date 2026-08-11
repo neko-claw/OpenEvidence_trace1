@@ -7,25 +7,24 @@ from a5.domain.models import AgentPlan, Claim, EvidenceRecord, Question
 
 
 class MockClaimGenerator:
-    """Deterministic offline generator driven only by explicit mock metadata."""
+    """Deterministic offline generator; candidate statements are not gold labels."""
 
     def generate(
         self,
         question: Question,
         evidence: Sequence[EvidenceRecord],
         plan: AgentPlan,
+        run_id: str,
     ) -> list[Claim]:
         del plan
         claims: list[Claim] = []
         seen: set[str] = set()
         for record in evidence:
-            raw_claims = record.source_metadata.get("mock_claims", [])
-            for raw_claim in raw_claims:
-                claim = Claim.model_validate(raw_claim)
+            for payload in record.source_metadata.get("mock_candidate_claims", []):
+                claim = Claim.model_validate({**payload, "run_id": run_id})
                 if claim.claim_id not in seen:
                     claims.append(claim)
                     seen.add(claim.claim_id)
-
         illegal_id = question.metadata.get("inject_illegal_evidence_id")
         if illegal_id and claims:
             payload: dict[str, Any] = claims[0].model_dump()

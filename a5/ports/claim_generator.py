@@ -13,6 +13,7 @@ class ClaimGenerator(Protocol):
         question: Question,
         evidence: Sequence[EvidenceRecord],
         plan: AgentPlan,
+        run_id: str,
     ) -> list[Claim]:
-        """Generate atomic claims citing only IDs from the supplied evidence."""
+        """Generate candidate claims using only supplied Evidence/Span IDs."""
         ...

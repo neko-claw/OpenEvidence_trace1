@@ -2,12 +2,12 @@ from __future__ import annotations
 
 from collections.abc import Sequence
 
-from a5.domain.enums import Decision
+from a5.domain.enums import Decision, VerificationStatus
 from a5.domain.models import CitationAuditReport, Claim, FinalAnswer
 
 
 class Finalizer:
-    """Render only verified claims; never asks an LLM to invent citations."""
+    """Gate6 renderer: only Gate5-supported atomic claims can be published."""
 
     def finalize(
         self,
@@ -21,30 +21,29 @@ class Finalizer:
             return FinalAnswer(
                 decision=decision,
                 text="Unable to provide an evidence-grounded answer for this request.",
-                limitations=[reason or "The fail-closed publication gate rejected this run."],
+                limitations=[reason or "The fail-closed release gate rejected this run."],
             )
-
         approved_ids = set(audit.approved_claim_ids if audit else [])
-        approved_claims = [claim for claim in claims if claim.claim_id in approved_ids]
+        approved = [
+            claim
+            for claim in claims
+            if claim.claim_id in approved_ids
+            and claim.decision is VerificationStatus.SUPPORTED
+        ]
         lines = [
             f"- {claim.text} [{', '.join(claim.evidence_ids)}]"
-            for claim in approved_claims
+            for claim in approved
         ]
-        limitations = list(audit.reasons if audit else [])
+        warnings = list(audit.reasons if audit else [])
         if decision is Decision.WARN:
-            lines.append("\nLimitations: one or more non-critical claims were omitted.")
-
-        cited_ids = list(
-            dict.fromkeys(
-                evidence_id
-                for claim in approved_claims
-                for evidence_id in claim.evidence_ids
-            )
-        )
+            warnings.append("One or more non-critical claims were omitted after Gate5.")
         return FinalAnswer(
             decision=decision,
             text="\n".join(lines),
-            included_claim_ids=[claim.claim_id for claim in approved_claims],
-            cited_evidence_ids=cited_ids,
-            limitations=limitations,
+            included_claim_ids=[claim.claim_id for claim in approved],
+            cited_evidence_ids=list(
+                dict.fromkeys(evidence_id for claim in approved for evidence_id in claim.evidence_ids)
+            ),
+            limitations=warnings,
+            warnings=warnings,
         )

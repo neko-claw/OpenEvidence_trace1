@@ -1,0 +1,22 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "CitationAuditOutput",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["atomic_claims", "report"],
+  "properties": {
+    "atomic_claims": {"type": "array", "items": {"type": "object"}},
+    "report": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["decision"],
+      "properties": {
+        "decision": {"enum": ["PASS", "WARN", "REFUSE"]},
+        "verification_results": {"type": "array", "items": {"type": "object"}},
+        "approved_claim_ids": {"type": "array", "items": {"type": "string"}},
+        "rejected_claim_ids": {"type": "array", "items": {"type": "string"}},
+        "reasons": {"type": "array", "items": {"type": "string"}}
+      }
+    }
+  }
+}

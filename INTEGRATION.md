@@ -26,8 +26,8 @@ Required from A1:
 
 Replace/integrate at:
 
-- `a5.skills.evidence_research.QuestionClassifierConfig`;
-- `a5.adapters.default_safety_policy.DefaultSafetyPolicy` via a new A1-backed
+- `config/skills.yaml` classifier/routing policy;
+- `a5.adapters.default_safety_policy.DefaultFailClosedSafetyPolicy` via a new A1-backed
   `SafetyPolicy` implementation;
 - workflow early-finalization mapping only if A1 adds new explicit termination
   outcomes. Keep the state machine otherwise unchanged.
@@ -61,8 +61,9 @@ Required from A3:
 
 Replace/integrate at:
 
-- Evidence compatibility adapter metadata mapping;
-- verifier metadata checks and provenance validation;
+- Evidence compatibility adapter mapping into `EvidenceSpan` and temporary
+  PICO/evidence-level fields;
+- `RuleBasedClaimVerifier` metadata/provenance checks;
 - optional A6 presentation fields on an output adapter.
 
 Do not expand the temporary `EvidenceRecord` into an assumed final schema before
@@ -81,8 +82,8 @@ Replace/integrate at:
 
 - add `A4RAGRetriever(EvidenceRetriever)` and normalize its response to
   `RetrievalResult`;
-- map A4 diagnostics into `RetrievalResult.diagnostics`, which already flows to
-  `ToolTrace.details`.
+- map A4 diagnostics into `RetrievalResult.diagnostics`; each normalized call
+  receives a `RetrievalRequest` with source and call index and flows to Trace.
 
 A5 will not implement BM25, vector search, RRF, reranking, or MMR.
 
@@ -95,8 +96,9 @@ run = answer(question, workflow=configured_workflow)
 payload = run.model_dump(mode="json")
 ```
 
-Primary fields are `decision`, `final_answer`, `retrieved_evidence`, `claims`,
-`verification_results`, `trace`, `error`, and timestamps/latency. A6 should show
+Primary fields are `decision`, `final_answer`, `evidence_sufficiency`,
+`evidence_summary`, `retrieved_evidence`, `claims`, `verification_results`,
+`trace`, runtime versions/config, `error`, and timestamps/latency. A6 should show
 limitations for `WARN` and the refusal reason for `REFUSE`.
 
 ## B4 <- A5 batch/evaluation contract
@@ -108,10 +110,12 @@ available for aggregation.
 
 ## Current temporary assumptions
 
-- question type strings and preferred source names are A5 development defaults;
-- fixture evidence support/contradiction markers are not semantic judgments;
-- an explicit `question.metadata.safety_allowed=false` exists only to test the
-  temporary refusal path;
+- question type strings, source routes and gate thresholds are labeled
+  development defaults in `config/`;
+- mock candidate statements drive generation only; the verifier never reads
+  fixture support/contradiction gold labels;
+- `question.metadata.mock_safety_decision` is consumed only by the offline
+  `FixtureSafetyPolicy`; default safety remains UNKNOWN/refuse;
 - no live LLM, MCP, RAG, medical NLI, data collection, or formal medical
   evaluation is present.
 

@@ -8,21 +8,28 @@ class InvalidStateTransition(RuntimeError):
     pass
 
 
-NORMAL_NEXT_STATE: dict[WorkflowState, WorkflowState] = {
-    WorkflowState.CLASSIFY: WorkflowState.PLAN,
-    WorkflowState.PLAN: WorkflowState.SELECT_SKILL,
-    WorkflowState.SELECT_SKILL: WorkflowState.RETRIEVE,
-    WorkflowState.RETRIEVE: WorkflowState.CHECK_EVIDENCE,
-    WorkflowState.CHECK_EVIDENCE: WorkflowState.GENERATE_CLAIMS,
-    WorkflowState.GENERATE_CLAIMS: WorkflowState.VERIFY_CLAIMS,
-    WorkflowState.VERIFY_CLAIMS: WorkflowState.FINALIZE,
-    WorkflowState.FINALIZE: WorkflowState.END,
+ALLOWED_TRANSITIONS: set[tuple[WorkflowState, WorkflowState]] = {
+    (WorkflowState.START, WorkflowState.GATE0),
+    (WorkflowState.GATE0, WorkflowState.CLASSIFY),
+    (WorkflowState.GATE0, WorkflowState.GATE6),
+    (WorkflowState.CLASSIFY, WorkflowState.SELECT_SKILL),
+    (WorkflowState.SELECT_SKILL, WorkflowState.PLAN),
+    (WorkflowState.PLAN, WorkflowState.RETRIEVE),
+    (WorkflowState.RETRIEVE, WorkflowState.GATE2),
+    (WorkflowState.GATE2, WorkflowState.RETRIEVE),
+    (WorkflowState.GATE2, WorkflowState.SUMMARIZE_EVIDENCE),
+    (WorkflowState.GATE2, WorkflowState.GATE6),
+    (WorkflowState.SUMMARIZE_EVIDENCE, WorkflowState.GENERATE_CLAIMS),
+    (WorkflowState.GENERATE_CLAIMS, WorkflowState.CLAIM_SPLITTER),
+    (WorkflowState.CLAIM_SPLITTER, WorkflowState.AUDIT_CITATIONS),
+    (WorkflowState.AUDIT_CITATIONS, WorkflowState.GATE5),
+    (WorkflowState.GATE5, WorkflowState.GATE6),
+    (WorkflowState.GATE6, WorkflowState.FINALIZE),
+    (WorkflowState.FINALIZE, WorkflowState.END),
 }
 
 
 class AgentStateMachine:
-    """Explicit state transition guard with fail-closed finalization shortcuts."""
-
     def __init__(self, run: AgentRun) -> None:
         self.run = run
 
@@ -34,9 +41,8 @@ class AgentStateMachine:
         source = self.state
         if source is WorkflowState.END:
             raise InvalidStateTransition("END is terminal")
-
-        allowed = NORMAL_NEXT_STATE.get(source) is target
-        fail_closed_shortcut = fail_closed and target is WorkflowState.FINALIZE
+        allowed = (source, target) in ALLOWED_TRANSITIONS
+        fail_closed_shortcut = fail_closed and target is WorkflowState.GATE6
         if not (allowed or fail_closed_shortcut):
             raise InvalidStateTransition(f"invalid transition: {source} -> {target}")
         self.run.state = target

@@ -1,22 +1,35 @@
 # Design references
 
-These sources informed architecture only. Their retrieval stacks, models, and
-benchmarks are not copied into this MVP.
+These sources informed control-flow and contract patterns only. No retrieval
+stack, model, benchmark, or large external implementation was copied.
 
-- [FActScore paper](https://arxiv.org/abs/2305.14251) motivates splitting an
-  answer into atomic, individually checkable facts. It also warns that factual
-  precision alone does not measure coverage and should be considered alongside
-  abstention and fact counts. A5 therefore generates `Claim[]` before prose and
-  records refusals and claim counts in `AgentRun`.
-- [ALCE paper](https://arxiv.org/abs/2305.14627) and
-  [official GitHub repository](https://github.com/princeton-nlp/ALCE) separate
-  answer correctness from citation quality. A5 likewise separates Claim
-  generation, evidence-ID validity, support verification, and final rendering.
-- [RAGChecker paper](https://arxiv.org/abs/2408.08067) and
-  [official GitHub repository](https://github.com/amazon-science/RAGChecker)
-  use claim-level entailment and diagnose retrieval/generation separately. A5
-  keeps retriever, generator, and verifier behind independent Protocols and
-  emits stage-specific traces.
+- [CRAG](https://arxiv.org/abs/2401.15884): evaluate retrieval quality before
+  generation and select a corrective action. A5 maps this to structured Gate2
+  `SUFFICIENT/INSUFFICIENT/CONFLICTED` plus `CONTINUE/RETRY/REFUSE`.
+- [FActScore](https://arxiv.org/abs/2305.14251) and its
+  [official repository](https://github.com/shmsw25/FActScore): split candidate
+  statements into atomic facts and verify each one independently.
+- [ALCE](https://arxiv.org/abs/2305.14627) and its
+  [official repository](https://github.com/princeton-nlp/ALCE): distinguish
+  citation validity, coverage and support. Gate5 binds every claim to the
+  current Evidence/Span whitelist.
+- [RAGChecker](https://arxiv.org/abs/2408.08067) and its
+  [official repository](https://github.com/amazon-science/RAGChecker): diagnose
+  retrieval and generation failures separately. A5 uses reason prefixes such
+  as `retrieval_insufficient`, `illegal_citation`, `missing_span`,
+  `pico_mismatch`, `unsupported_claim`, and `budget_exhausted`.
+- [OpenAI Agents SDK guardrails](https://openai.github.io/openai-agents-python/guardrails/)
+  and [tracing](https://openai.github.io/openai-agents-python/tracing/): explicit
+  tripwires and structured run events. A5 keeps a lightweight internal FSM and
+  trace rather than adding the SDK.
+- [MCP Python SDK](https://github.com/modelcontextprotocol/python-sdk): tools as
+  standardized boundaries. A5 defines a retriever port and leaves A2's real MCP
+  implementation upstream.
+- [LangGraph](https://github.com/langchain-ai/langgraph): explicit state and
+  transitions. A5 uses pure Python because the required graph is small and
+  bounded.
+- [Pydantic](https://docs.pydantic.dev/): runtime contracts and JSON Schema.
+  A5 validates fixtures with Pydantic and tests Schema root consistency.
 
-The current rule verifier does not reproduce entailment models from these
-projects. Semantic and medical validation remain explicit future adapters.
+`ExactSpanTextualSupportEvaluator` is deliberately limited. It does not
+reproduce NLI or medical inference from any referenced project.

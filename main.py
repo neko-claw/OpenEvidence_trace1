@@ -17,8 +17,10 @@ def load_demo_questions() -> list[Question]:
 
 def main() -> None:
     workflow = build_demo_workflow()
+    runs = []
     for question in load_demo_questions():
         run = answer(question, workflow=workflow)
+        runs.append(run)
         print("=" * 72)
         print(f"Question: {question.text}")
         print(f"Evidence: {[item.id for item in run.retrieved_evidence]}")
@@ -30,6 +32,16 @@ def main() -> None:
             print(f"Limitations: {run.final_answer.limitations}")
         print("Trace:")
         print(render_trace(run))
+    pass_run = next(run for run in runs if run.decision and run.decision.value == "PASS")
+    artifact_dir = Path(__file__).parent / "artifacts"
+    artifact_dir.mkdir(exist_ok=True)
+    (artifact_dir / "demo_trace.json").write_text(
+        pass_run.model_dump_json(indent=2), encoding="utf-8"
+    )
+    (artifact_dir / "demo_trace.txt").write_text(
+        render_trace(pass_run) + "\n", encoding="utf-8"
+    )
+    print(f"Demo trace artifacts: {artifact_dir}")
 
 
 if __name__ == "__main__":
