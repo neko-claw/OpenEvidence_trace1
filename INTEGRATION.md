@@ -87,6 +87,29 @@ Replace/integrate at:
 
 A5 will not implement BM25, vector search, RRF, reranking, or MMR.
 
+### A4 trust-tier metadata contract (evidence mixer seam)
+
+A4's Evidence Mixer splits RRF candidates into a verified pool and a
+`discovery` pool before reranking. The A4 adapter records the pool on every
+normalized `EvidenceRecord` in `source_metadata`; the keys live in
+`a5/domain/trust.py` and are imported, not re-declared, by both sides:
+
+- `trust_tier`: `"verified"` (PubMed/guideline/ClinicalTrials/Europe PMC rows,
+  or discovery rows promoted after PMID/DOI/NCT resolution) or
+  `"discovery"` (web/full-text/general-search candidates).
+- `verification_method`: e.g. `"pubmed_api"`, `"pubmed_pmid_resolution"`.
+- `original_source` + `promoted=true`: present only for promoted rows
+  (`promotion` is an action, not a third tier; the tier stays `verified`).
+
+`trust_tier` expresses how far the record was verified; `source_type`
+expresses where it came from. A5 never infers one from the other.
+
+Gate5 consumes it as `RuleBasedClaimVerifier`'s trust check (config flag
+`gate5.require_verified_for_critical`): a CRITICAL claim may only cite
+`trust_tier=verified` evidence, a missing tier is treated as not verified
+(fail-closed), and discovery evidence cannot independently support a CRITICAL
+claim. Non-critical claims may cite discovery evidence.
+
 ## A6 <- A5 UI contract
 
 A6 can call:

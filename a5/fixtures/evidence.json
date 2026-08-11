@@ -6,6 +6,8 @@
     "title": "Mock evidence E1",
     "source_metadata": {
       "mock_route": "guideline",
+      "trust_tier": "verified",
+      "verification_method": "mock_fixture",
       "mock_candidate_claims": [{
         "claim_id": "C1",
         "text": "Artificial outcome A is improved",
@@ -36,6 +38,8 @@
     "title": "Mock evidence E2",
     "source_metadata": {
       "mock_route": "systematic_review",
+      "trust_tier": "verified",
+      "verification_method": "mock_fixture",
       "mock_candidate_claims": [{
         "claim_id": "C2",
         "text": "Artificial outcome B is stable",
@@ -58,6 +62,8 @@
     "title": "Mock evidence E3",
     "source_metadata": {
       "mock_route": "primary_study",
+      "trust_tier": "verified",
+      "verification_method": "mock_fixture",
       "mock_candidate_claims": [{
         "claim_id": "C3",
         "text": "Artificial outcome C is definitively improved",
@@ -80,6 +86,8 @@
     "title": "Mock evidence E4",
     "source_metadata": {
       "mock_route": "systematic_review",
+      "trust_tier": "verified",
+      "verification_method": "mock_fixture",
       "mock_candidate_claims": [{
         "claim_id": "C4",
         "text": "Artificial outcome D is beneficial",
@@ -100,7 +108,9 @@
     "content": "Artificial outcome A is unchanged in a conflicting mock source.",
     "source_type": "systematic_review",
     "title": "Mock evidence E5",
-    "source_metadata": {"mock_route": "systematic_review", "mock_candidate_claims": []},
+    "source_metadata": {"mock_route": "systematic_review",
+      "trust_tier": "verified",
+      "verification_method": "mock_fixture", "mock_candidate_claims": []},
     "published_at": "2026-03-01T00:00:00Z",
     "retrieval_score": 0.85,
     "evidence_level": "systematic_review",

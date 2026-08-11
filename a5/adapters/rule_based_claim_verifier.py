@@ -4,7 +4,8 @@ import re
 from collections.abc import Sequence
 from typing import Any
 
-from a5.domain.enums import MatchStatus, VerificationStatus
+from a5.domain.enums import ClaimCriticality, MatchStatus, VerificationStatus
+from a5.domain.trust import TrustTier, trust_tier_of
 from a5.domain.models import (
     Claim,
     EvidenceRecord,
@@ -76,6 +77,7 @@ class RuleBasedClaimVerifier:
 
     The verifier never reads fixture support/contradiction labels. Unknown
     span/PICO/time/entailment data remains UNKNOWN and cannot become SUPPORTED.
+    Discovery-tier evidence cannot independently support a CRITICAL claim.
     """
 
     def __init__(
@@ -147,6 +149,22 @@ class RuleBasedClaimVerifier:
 
         textual = self._textual_support.evaluate(claim, cited)
         reasons.append(textual.reason)
+
+        non_verified = [
+            record.id
+            for record in cited
+            if trust_tier_of(record.source_metadata) is not TrustTier.VERIFIED
+        ]
+        trust_blocked = (
+            self.config.require_verified_for_critical
+            and claim.criticality is ClaimCriticality.CRITICAL
+            and bool(non_verified)
+        )
+        if trust_blocked:
+            reasons.append(
+                "unverified_critical: CRITICAL claim cites non-verified evidence: "
+                + ", ".join(sorted(non_verified))
+            )
         pico_blocked = self.config.require_pico_when_claim_specified and any(
             getattr(claim, field) is not None and match is not MatchStatus.MATCH
             for field, match in matches.items()
@@ -169,6 +187,7 @@ class RuleBasedClaimVerifier:
             or pico_blocked
             or time_blocked
             or entailment_blocked
+            or trust_blocked
             or textual.status is not VerificationStatus.SUPPORTED
         ):
             status = VerificationStatus.INSUFFICIENT

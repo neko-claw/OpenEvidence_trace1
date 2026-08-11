@@ -33,6 +33,7 @@ class Gate5Config(StrictModel):
     require_pico_when_claim_specified: bool
     require_time_when_fresh: bool
     supported_entailment_threshold: float = Field(ge=0.0, le=1.0)
+    require_verified_for_critical: bool = True
 
 
 class Gate6Config(StrictModel):
