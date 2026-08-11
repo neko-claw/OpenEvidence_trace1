@@ -9,3 +9,5 @@ build/
 
 # Local A5 progress log; update after every task and never commit it.
 /log.md
+/.worktrees/
+/.github_issue_updates/

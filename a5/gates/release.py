@@ -5,12 +5,14 @@ from collections.abc import Sequence
 from a5.domain.enums import (
     ClaimCriticality,
     Decision,
+    EvidenceIntegrityStatus,
     SafetyDecision,
     SufficiencyStatus,
     VerificationStatus,
 )
 from a5.domain.models import (
     Claim,
+    EvidenceIntegrityResult,
     EvidenceSufficiencyResult,
     SafetyAssessment,
     VerificationResult,
@@ -26,6 +28,7 @@ class ReleaseGate:
         self,
         *,
         safety: SafetyAssessment,
+        integrity: EvidenceIntegrityResult | None,
         sufficiency: EvidenceSufficiencyResult | None,
         claims: Sequence[Claim],
         results: Sequence[VerificationResult],
@@ -33,8 +36,13 @@ class ReleaseGate:
         reasons: list[str] = []
         if safety.decision is not SafetyDecision.ALLOW:
             return Decision.REFUSE, [f"safety_denied: Gate0={safety.decision.value}"]
+        if integrity is not None and integrity.status is EvidenceIntegrityStatus.REJECTED:
+            return Decision.REFUSE, list(dict.fromkeys(integrity.reasons))
         if sufficiency is None or sufficiency.status is not SufficiencyStatus.SUFFICIENT:
             details = sufficiency.reasons if sufficiency else ["Gate2 result missing"]
+            return Decision.REFUSE, list(dict.fromkeys(details))
+        if integrity is None or integrity.status is not EvidenceIntegrityStatus.ELIGIBLE:
+            details = integrity.reasons if integrity else ["Gate1 result missing"]
             return Decision.REFUSE, list(dict.fromkeys(details))
         if not claims:
             return Decision.REFUSE, ["unsupported_claim: no atomic claims"]

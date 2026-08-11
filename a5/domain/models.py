@@ -10,9 +10,12 @@ from a5.domain.enums import (
     ClaimCriticality,
     Decision,
     EventType,
+    EvidenceIntegrityStatus,
     FreshnessState,
     MatchStatus,
     RecommendedAction,
+    RetrievalScoreKind,
+    RetrievalScoreScope,
     SafetyDecision,
     SufficiencyStatus,
     UncertaintyLevel,
@@ -56,7 +59,16 @@ class EvidenceSpan(StrictModel):
     text: str = Field(min_length=1)
     chunk_id: str | None = None
     page: int | None = Field(default=None, ge=1)
+    raw_page: str | None = None
     section: str | None = None
+    char_start: int | None = Field(default=None, ge=0)
+    char_end: int | None = Field(default=None, ge=0)
+    offset_scope: str | None = None
+    document_char_start: int | None = Field(default=None, ge=0)
+    document_char_end: int | None = Field(default=None, ge=0)
+    span_content_hash: str | None = None
+    chunk_content_hash: str | None = None
+    evidence_content_hash: str | None = None
 
 
 class EvidenceRecord(StrictModel):
@@ -78,6 +90,9 @@ class EvidenceRecord(StrictModel):
     outcome: str | None = None
     published_at: datetime | None = None
     retrieval_score: float | None = Field(default=None, ge=0.0, le=1.0)
+    retrieval_score_kind: RetrievalScoreKind = RetrievalScoreKind.UNKNOWN
+    retrieval_score_scope: RetrievalScoreScope = RetrievalScoreScope.UNKNOWN
+    retrieval_score_calibrated: bool | None = None
     evidence_level: str | None = None
     spans: list[EvidenceSpan] = Field(default_factory=list)
     conflicts_with_ids: list[str] = Field(default_factory=list)
@@ -174,6 +189,8 @@ class VerificationResult(StrictModel):
     comparator_match: MatchStatus = MatchStatus.UNKNOWN
     outcome_match: MatchStatus = MatchStatus.UNKNOWN
     time_match: MatchStatus = MatchStatus.UNKNOWN
+    numeric_match: MatchStatus = MatchStatus.UNKNOWN
+    unit_match: MatchStatus = MatchStatus.UNKNOWN
     entailment_score: float | None = Field(default=None, ge=0.0, le=1.0)
     conflict_ids: list[str] = Field(default_factory=list)
     uncertainty: UncertaintyLevel = UncertaintyLevel.UNKNOWN
@@ -214,6 +231,8 @@ class RetrievalResult(StrictModel):
 class EvidenceSufficiencyMetrics(StrictModel):
     candidate_count: int = Field(ge=0)
     top_score: float | None = Field(default=None, ge=0.0, le=1.0)
+    top_ranking_score: float | None = Field(default=None, ge=0.0, le=1.0)
+    usable_quality_score_count: int = Field(default=0, ge=0)
     source_type_count: int = Field(ge=0)
     source_diversity: float | None = Field(default=None, ge=0.0, le=1.0)
     strongest_evidence_level: str | None = None
@@ -226,6 +245,21 @@ class EvidenceSufficiencyResult(StrictModel):
     reasons: list[str] = Field(default_factory=list)
     metrics: EvidenceSufficiencyMetrics
     recommended_action: RecommendedAction
+
+
+class EvidenceIntegrityItem(StrictModel):
+    evidence_id: str
+    status: EvidenceIntegrityStatus
+    reason_codes: list[str] = Field(default_factory=list)
+
+
+class EvidenceIntegrityResult(StrictModel):
+    status: EvidenceIntegrityStatus
+    eligible_evidence_ids: list[str] = Field(default_factory=list)
+    rejected_evidence_ids: list[str] = Field(default_factory=list)
+    unknown_evidence_ids: list[str] = Field(default_factory=list)
+    items: list[EvidenceIntegrityItem] = Field(default_factory=list)
+    reasons: list[str] = Field(default_factory=list)
 
 
 class ToolBudgetSnapshot(StrictModel):
@@ -289,6 +323,7 @@ class RuntimeConfigSnapshot(StrictModel):
     gates: dict[str, Any]
     skills: dict[str, Any]
     models: dict[str, Any]
+    integrations: dict[str, Any] = Field(default_factory=dict)
 
 
 class AgentRun(StrictModel):
@@ -299,6 +334,7 @@ class AgentRun(StrictModel):
     selected_skills: list[str] = Field(default_factory=list)
     agent_plan: AgentPlan | None = None
     safety_assessment: SafetyAssessment | None = None
+    evidence_integrity: EvidenceIntegrityResult | None = None
     evidence_sufficiency: EvidenceSufficiencyResult | None = None
     evidence_summary: EvidenceSummary | None = None
     retrieved_evidence: list[EvidenceRecord] = Field(default_factory=list)

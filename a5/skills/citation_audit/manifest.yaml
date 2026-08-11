@@ -1,9 +1,9 @@
 {
   "name": "citation_audit",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "Split candidate statements into atomic claims and audit claim-evidence bindings through Gate5.",
-  "prompt_version": "0.2.0",
-  "prompt": "prompt_v0.2.0.md",
+  "prompt_version": "0.3.0",
+  "prompt": "prompt_v0.3.0.md",
   "input_schema": "input.schema.json",
   "output_schema": "output.schema.json",
   "fixture_path": "fixtures/contract.json",

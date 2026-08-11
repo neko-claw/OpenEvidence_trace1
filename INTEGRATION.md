@@ -119,6 +119,30 @@ available for aggregation.
 - no live LLM, MCP, RAG, medical NLI, data collection, or formal medical
   evaluation is present.
 
+## Reviewed branch-contract adapters (2026-08-12)
+
+The non-frozen branch snapshots are isolated in `a5/adapters/provisional/`:
+
+- `A1QuestionAdapter` validates Question v0.2. `A1SafetyPolicyAdapter` consumes
+  only normalized `a1_safety_signals` and the reviewed Safety v0.2 output;
+  missing/invalid signals remain `UNKNOWN` and Gate0 refuses.
+- `A2EvidenceAdapter` mirrors frozen `a2-evidence-v1` and `A2MCPRetriever`
+  consumes the reviewed `ok/evidence/diagnostics/error/result` envelope.
+  `A2ToA3EvidenceAdapter` preserves the A2 content hash as upstream provenance
+  while leaving A3 to compute its own Evidence identity.
+- `A3EvidenceAdapter` converts the reviewed Evidence/Chunk/Span snapshot. It
+  validates hash/offset/ownership and never converts a chunk into a span.
+- `A4RAGRetriever` uses injected search/query factories, converts selected
+  chunks by Evidence ID, obtains locatable spans only through an A3 provider,
+  preserves status/version/conflicts, and never treats token overlap or an
+  uncalibrated rerank score as Gate2/Gate5 verification.
+
+Effective upstream snapshot versions, vocabulary maps, and the explicit
+reviewed-but-not-main-integrated status live in `config/integrations.yaml` and are copied
+into every `AgentRun.runtime_config_snapshot`. See
+`docs/A1_A2_A3_A4_A5_兼容性审查与实施报告.md` for the complete Integration Diff,
+method citations, known schema conflicts, and replacement points.
+
 ## Integration Diff template
 
 For each upstream delivery record:

@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from collections.abc import Sequence
-from datetime import datetime, timezone
+from datetime import date
 
 from a5.domain.enums import FreshnessState
 from a5.domain.models import (
@@ -50,6 +50,10 @@ class EvidenceResearchSkill:
 
     def classify(self, question: Question) -> str:
         config = self.runtime_config.skills.classifier
+        if question.metadata.get("a1_contract_validated") is True:
+            upstream_type = question.metadata.get("question_type")
+            if isinstance(upstream_type, str) and upstream_type in config.rules:
+                return upstream_type
         normalized = question.text.casefold()
         for question_type, keywords in config.keyword_types.items():
             if any(keyword.casefold() in normalized for keyword in keywords):
@@ -94,6 +98,7 @@ class EvidenceResearchSkill:
         evidence: Sequence[EvidenceRecord],
         *,
         freshness_required: bool,
+        as_of_date: date | None = None,
     ) -> EvidenceSummary:
         unique_sources = sorted({record.source_type for record in evidence})
         diversity = len(unique_sources) / len(evidence) if evidence else None
@@ -118,18 +123,26 @@ class EvidenceResearchSkill:
             freshness = FreshnessState.UNKNOWN
         else:
             max_age = self.runtime_config.gates.gate2.max_age_days
-            now = datetime.now(timezone.utc)
-            fresh_count = sum(
-                (now - record.published_at).days <= max_age
+            reference_date = as_of_date or date.today()
+            if any(
+                record.published_at.date() > reference_date
                 for record in evidence
                 if record.published_at is not None
-            )
-            freshness = (
-                FreshnessState.FRESH
-                if fresh_count / len(evidence)
-                >= self.runtime_config.gates.gate2.min_fresh_fraction
-                else FreshnessState.STALE
-            )
+            ):
+                freshness = FreshnessState.STALE
+                fresh_count = 0
+            else:
+                fresh_count = sum(
+                    (reference_date - record.published_at.date()).days <= max_age
+                    for record in evidence
+                    if record.published_at is not None
+                )
+                freshness = (
+                    FreshnessState.FRESH
+                    if fresh_count / len(evidence)
+                    >= self.runtime_config.gates.gate2.min_fresh_fraction
+                    else FreshnessState.STALE
+                )
         summary_text = (
             "No evidence retrieved; quality fields remain UNKNOWN."
             if not evidence

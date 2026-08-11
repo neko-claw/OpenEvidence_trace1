@@ -8,6 +8,7 @@ from a5.adapters.mock_claim_generator import MockClaimGenerator
 from a5.adapters.mock_evidence_retriever import MockEvidenceRetriever
 from a5.adapters.rule_based_claim_verifier import RuleBasedClaimVerifier
 from a5.agent.workflow import A5Workflow
+from a5.gates.evidence_integrity import EvidenceIntegrityGate
 from a5.runtime_config import RuntimeConfig, load_runtime_config
 
 
@@ -25,6 +26,7 @@ def _build(config: RuntimeConfig, *, demo: bool) -> A5Workflow:
             if demo
             else DefaultFailClosedSafetyPolicy(config.gates.gate0_version)
         ),
+        evidence_integrity=EvidenceIntegrityGate(config.gates.gate1, allow_mock=demo),
         runtime_config=config,
     )
 
