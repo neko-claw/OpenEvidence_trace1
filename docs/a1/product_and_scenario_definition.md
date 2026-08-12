@@ -3,7 +3,7 @@
 修订日期：2026-08-12
 v0.4 修订：区分 A1 结构冻结与正式评测冻结，明确 EXTERNAL benchmark-style 候选状态。
 v0.3 修订：题库扩展至 130 题（新增 STRESS/EXTERNAL/RESERVE），新增 dataset_manifest/qrel 契约。  
-依据：《OpenEvidence 风格的证据智能助手 MVP》《第三期可以提前准备的工作》与实施规划 v0.5。
+依据：《OpenEvidence 风格的证据智能助手 MVP》与实施规划 v0.5。
 
 ## 一句话定义
 

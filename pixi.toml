@@ -8,6 +8,7 @@ pydantic = ">=2.8,<3"
 pytest = ">=8.2,<9"
 pyyaml = ">=6,<7"
 jsonschema = ">=4.23,<5"
+streamlit = ">=1.57,<1.58"
 
 [tasks]
 demo = "python main.py"
@@ -25,6 +26,8 @@ a3-smoke-bm25 = "python -m a3.cli.search_bm25 hypertension --top-k 3"
 a3-smoke-vector = "python -m a3.cli.search_vector hypertension --top-k 3"
 a3-embedding-smoke = "python -m a3.cli.embedding_smoke"
 eval-preflight = { cmd = "python -m evaluation.cli {{ manifest }} {{ output }}", args = ["manifest", "output"] }
+app = "streamlit run app/main.py"
+a6-test = "python -m pytest tests/a6 --basetemp .a6-pytest-tmp -p no:cacheprovider"
 
 [pypi-dependencies]
 httpx = "==0.28.1"

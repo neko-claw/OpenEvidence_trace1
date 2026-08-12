@@ -33,6 +33,9 @@ class TerminationAction(StrEnum):
 class TopicScope(StrEnum):
     HYPERTENSION = "hypertension"
     DYSLIPIDEMIA = "dyslipidemia"
+    CARDIOVASCULAR = "cardiovascular"
+    CEREBROVASCULAR = "cerebrovascular"
+    DIABETES = "diabetes"
     OTHER = "other"
     UNKNOWN = "unknown"
 

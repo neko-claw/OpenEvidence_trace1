@@ -6,6 +6,7 @@ from deployment.track1_backend.service import (
     build_service,
     check_readiness,
 )
+from deployment.track1_backend.research_factory import build_research_dependencies
 
 __all__ = [
     "BackendReadiness",
@@ -14,4 +15,5 @@ __all__ = [
     "LiveCompositionUnavailable",
     "build_service",
     "check_readiness",
+    "build_research_dependencies",
 ]

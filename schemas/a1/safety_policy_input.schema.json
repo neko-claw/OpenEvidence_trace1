@@ -15,6 +15,9 @@
       "enum": [
         "hypertension",
         "dyslipidemia",
+        "cardiovascular",
+        "cerebrovascular",
+        "diabetes",
         "other",
         "unknown"
       ],

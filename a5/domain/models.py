@@ -362,6 +362,28 @@ class ToolTrace(StrictModel):
             return None
 
 
+class AnswerFinding(StrictModel):
+    finding_id: str = Field(min_length=1)
+    statement: str = Field(min_length=1)
+    claim_ids: list[str] = Field(min_length=1)
+    evidence_ids: list[str] = Field(min_length=1)
+    display_statement: str | None = None
+    display_language: str | None = None
+    applicability: str | None = None
+    certainty: str = "SUPPORTED_NOT_FORMALLY_GRADED"
+
+
+class StructuredAnswer(StrictModel):
+    direct_answer: str = Field(min_length=1)
+    direct_evidence_ids: list[str] = Field(default_factory=list)
+    findings: list[AnswerFinding] = Field(default_factory=list)
+    applicability: str = Field(min_length=1)
+    evidence_profile: list[str] = Field(default_factory=list)
+    uncertainties: list[str] = Field(default_factory=list)
+    composition_method: str = Field(min_length=1)
+    language: str = "zh-CN"
+
+
 class FinalAnswer(StrictModel):
     decision: Decision
     text: str
@@ -369,6 +391,7 @@ class FinalAnswer(StrictModel):
     cited_evidence_ids: list[str] = Field(default_factory=list)
     limitations: list[str] = Field(default_factory=list)
     warnings: list[str] = Field(default_factory=list)
+    structured: StructuredAnswer | None = None
 
 
 class RuntimeConfigSnapshot(StrictModel):

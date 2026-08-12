@@ -39,6 +39,86 @@
       "title": "AgentPlan",
       "type": "object"
     },
+    "AnswerFinding": {
+      "additionalProperties": false,
+      "properties": {
+        "finding_id": {
+          "minLength": 1,
+          "title": "Finding Id",
+          "type": "string"
+        },
+        "statement": {
+          "minLength": 1,
+          "title": "Statement",
+          "type": "string"
+        },
+        "claim_ids": {
+          "items": {
+            "type": "string"
+          },
+          "minItems": 1,
+          "title": "Claim Ids",
+          "type": "array"
+        },
+        "evidence_ids": {
+          "items": {
+            "type": "string"
+          },
+          "minItems": 1,
+          "title": "Evidence Ids",
+          "type": "array"
+        },
+        "display_statement": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Display Statement"
+        },
+        "display_language": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Display Language"
+        },
+        "applicability": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Applicability"
+        },
+        "certainty": {
+          "default": "SUPPORTED_NOT_FORMALLY_GRADED",
+          "title": "Certainty",
+          "type": "string"
+        }
+      },
+      "required": [
+        "finding_id",
+        "statement",
+        "claim_ids",
+        "evidence_ids"
+      ],
+      "title": "AnswerFinding",
+      "type": "object"
+    },
     "AtomicClaimPlan": {
       "additionalProperties": false,
       "properties": {
@@ -932,6 +1012,17 @@
           },
           "title": "Warnings",
           "type": "array"
+        },
+        "structured": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/StructuredAnswer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
         }
       },
       "required": [
@@ -1170,6 +1261,66 @@
         "max_tool_calls"
       ],
       "title": "SearchPlan",
+      "type": "object"
+    },
+    "StructuredAnswer": {
+      "additionalProperties": false,
+      "properties": {
+        "direct_answer": {
+          "minLength": 1,
+          "title": "Direct Answer",
+          "type": "string"
+        },
+        "direct_evidence_ids": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Direct Evidence Ids",
+          "type": "array"
+        },
+        "findings": {
+          "items": {
+            "$ref": "#/$defs/AnswerFinding"
+          },
+          "title": "Findings",
+          "type": "array"
+        },
+        "applicability": {
+          "minLength": 1,
+          "title": "Applicability",
+          "type": "string"
+        },
+        "evidence_profile": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Evidence Profile",
+          "type": "array"
+        },
+        "uncertainties": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Uncertainties",
+          "type": "array"
+        },
+        "composition_method": {
+          "minLength": 1,
+          "title": "Composition Method",
+          "type": "string"
+        },
+        "language": {
+          "default": "zh-CN",
+          "title": "Language",
+          "type": "string"
+        }
+      },
+      "required": [
+        "direct_answer",
+        "applicability",
+        "composition_method"
+      ],
+      "title": "StructuredAnswer",
       "type": "object"
     },
     "SufficiencyStatus": {

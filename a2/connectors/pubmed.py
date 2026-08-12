@@ -85,11 +85,21 @@ class PubMedConnector:
             if article_id.attrib.get("IdType") == "doi":
                 doi = normalize_doi(_text(article_id))
         published = _pubmed_date(node)
+        publication_types = [
+            "".join(item.itertext()).strip()
+            for item in node.findall(".//PublicationTypeList/PublicationType")
+            if "".join(item.itertext()).strip()
+        ]
+        evidence_level = _publication_level(publication_types)
         data: dict[str, Any] = {
             "id": f"PMID:{pmid}", "source_type": SourceType.PUBMED, "title": title,
             "abstract_or_chunk": content, "authors": authors, "published_at": published,
             "url": f"https://pubmed.ncbi.nlm.nih.gov/{pmid}/", "pmid": pmid, "doi": doi,
-            "source_metadata": {"journal": _text(node.find(".//Article/Journal/Title"))},
+            "evidence_level": evidence_level,
+            "source_metadata": {
+                "journal": _text(node.find(".//Article/Journal/Title")),
+                "publication_types": publication_types,
+            },
         }
         data["content_hash"] = compute_content_hash(data)
         return A2Evidence.model_validate(data)
@@ -117,3 +127,16 @@ def _pubmed_date(node: ET.Element) -> datetime | None:
         return datetime(int(year), month, int(day_text), tzinfo=timezone.utc)
     except ValueError:
         return datetime(int(year), month, 1, tzinfo=timezone.utc)
+
+
+def _publication_level(publication_types: list[str]) -> str:
+    folded = " ".join(publication_types).casefold()
+    if "guideline" in folded or "practice guideline" in folded:
+        return "guideline"
+    if "meta-analysis" in folded or "systematic review" in folded:
+        return "systematic_review"
+    if "randomized controlled trial" in folded or "controlled clinical trial" in folded:
+        return "controlled_study"
+    if "review" in folded:
+        return "review"
+    return "study"

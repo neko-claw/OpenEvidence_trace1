@@ -17,7 +17,8 @@ from a5.runtime_config import Gate5Config, load_runtime_config
 
 
 def _normalize(text: str) -> str:
-    return " ".join(re.findall(r"[\w]+", text.casefold()))
+    without_markup = re.sub(r"<[^>]+>", " ", text)
+    return " ".join(re.findall(r"[\w]+", without_markup.casefold()))
 
 
 class ExactSpanTextualSupportEvaluator:

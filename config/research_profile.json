@@ -1,0 +1,45 @@
+{
+  "profile_version": "public-evidence-research-v0.2.0",
+  "scope": {
+    "topics": [
+      "hypertension",
+      "dyslipidemia",
+      "cardiovascular",
+      "cerebrovascular",
+      "diabetes"
+    ],
+    "notice": "仅供教学研究，不用于临床诊疗"
+  },
+  "retrieval": {
+    "condition": "R1",
+    "min_candidates": 2,
+    "min_top_ranking_score": 0.55,
+    "min_source_types": 2,
+    "min_source_diversity": 0.25,
+    "accepted_evidence_levels": [
+      "guideline",
+      "systematic_review",
+      "controlled_study",
+      "review",
+      "clinical_trial_registry",
+      "study"
+    ],
+    "max_age_days": 3650,
+    "min_fresh_fraction": 0.25,
+    "max_conflicts": 0
+  },
+  "models": {
+    "ollama_base_url": "http://127.0.0.1:11434",
+    "generation_model": "qwen3:4b-instruct",
+    "verification_model": "qwen3:4b-instruct",
+    "request_timeout_seconds": 120.0,
+    "enable_local_answer_presentation": false,
+    "answer_presentation_model": "Qwen2.5-1.5B-Instruct",
+    "answer_presentation_model_path": ".local/models/Qwen2.5-1.5B-Instruct"
+  },
+  "generation": {
+    "max_claims": 4,
+    "min_span_chars": 45,
+    "max_span_chars": 520
+  }
+}

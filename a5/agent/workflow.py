@@ -1,6 +1,8 @@
 from __future__ import annotations
 
+from collections.abc import Mapping
 from datetime import date
+from typing import Any
 from time import perf_counter
 
 from a5.agent.budget import ToolBudgetManager
@@ -36,7 +38,7 @@ from a5.ports.evidence_retriever import EvidenceRetriever
 from a5.ports.evidence_integrity import EvidenceIntegrityEvaluator
 from a5.ports.safety_policy import SafetyPolicy
 from a5.runtime_config import RuntimeConfig, load_runtime_config
-from a5.skills.citation_audit import CitationAuditSkill
+from a5.skills.citation_audit import CitationAuditSkill, ClaimSplitter
 from a5.skills.evidence_research import EvidenceResearchSkill
 
 
@@ -53,28 +55,44 @@ class A5Workflow:
         runtime_config: RuntimeConfig | None = None,
         evidence_integrity: EvidenceIntegrityEvaluator | None = None,
         research_skill: EvidenceResearchSkill | None = None,
+        claim_splitter: ClaimSplitter | None = None,
+        sufficiency_gate: EvidenceSufficiencyGate | None = None,
         finalizer: Finalizer | None = None,
+        runtime_snapshot_extension: Mapping[str, Any] | None = None,
     ) -> None:
         self._config = runtime_config or load_runtime_config()
         self._retriever: EvidenceRetriever = retriever
         self._claim_generator: ClaimGenerator = claim_generator
         self._safety_policy: SafetyPolicy = safety_policy
         self._research_skill = research_skill or EvidenceResearchSkill(self._config)
-        self._audit_skill = CitationAuditSkill(claim_verifier, self._config)
+        self._audit_skill = CitationAuditSkill(
+            claim_verifier, self._config, splitter=claim_splitter
+        )
         self._router = SkillRouter(self._config)
         self._gate1: EvidenceIntegrityEvaluator = evidence_integrity or EvidenceIntegrityGate(
             self._config.gates.gate1
         )
-        self._gate2 = EvidenceSufficiencyGate(self._config.gates.gate2)
+        self._gate2 = sufficiency_gate or EvidenceSufficiencyGate(self._config.gates.gate2)
         self._gate4 = EvidenceConstrainedGenerationGate()
         self._gate6 = ReleaseGate(self._config.gates.gate6)
         self._finalizer = finalizer or Finalizer()
+        self._runtime_snapshot_extension = dict(runtime_snapshot_extension or {})
 
     def answer(self, question: Question | str) -> AgentRun:
         normalized = Question(text=question) if isinstance(question, str) else question
         if "as_of_date" not in normalized.metadata:
             normalized = normalized.model_copy(
                 update={"metadata": {**normalized.metadata, "as_of_date": utc_now().date().isoformat()}}
+            )
+        snapshot = self._config.snapshot()
+        if self._runtime_snapshot_extension:
+            snapshot = snapshot.model_copy(
+                update={
+                    "integrations": {
+                        **snapshot.integrations,
+                        **self._runtime_snapshot_extension,
+                    }
+                }
             )
         run = AgentRun(
             question=normalized,
@@ -85,7 +103,7 @@ class A5Workflow:
             },
             prompt_versions=dict(self._config.skills.prompt_versions),
             gate_config_version=self._config.gates.config_version,
-            runtime_config_snapshot=self._config.snapshot(),
+            runtime_config_snapshot=snapshot,
         )
         machine = AgentStateMachine(run)
         audit: CitationAuditReport | None = None
@@ -225,6 +243,7 @@ class A5Workflow:
                     freshness_required=run.agent_plan.search_plan.freshness_required,
                     budget_remaining=budget.remaining_tool_calls,
                     as_of_date=as_of_date,
+                    expected_evidence_types=run.agent_plan.search_plan.expected_evidence_types,
                 )
                 self._trace(
                     run,
@@ -442,7 +461,21 @@ class A5Workflow:
         machine.transition(WorkflowState.FINALIZE)
         started = perf_counter()
         run.decision = run.decision or Decision.REFUSE
-        run.final_answer = self._finalizer.finalize(run.decision, run.claims, audit, refusal_reason)
+        contextual = getattr(self._finalizer, "finalize_with_context", None)
+        if callable(contextual):
+            run.final_answer = contextual(
+                run.decision,
+                run.question,
+                run.agent_plan,
+                run.claims,
+                run.retrieved_evidence,
+                audit,
+                refusal_reason,
+            )
+        else:
+            run.final_answer = self._finalizer.finalize(
+                run.decision, run.claims, audit, refusal_reason
+            )
         self._trace(
             run,
             WorkflowState.FINALIZE,

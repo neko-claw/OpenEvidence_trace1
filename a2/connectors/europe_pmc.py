@@ -50,13 +50,17 @@ class EuropePMCConnector:
         content = str(item.get("abstractText") or title).strip()
         authors = [str(author.get("fullName")) for author in item.get("authorList", {}).get("author", []) if author.get("fullName")]
         published = _parse_date(item.get("firstPublicationDate") or item.get("electronicPublicationDate"))
+        publication_types = item.get("pubTypeList", {}).get("pubType", [])
+        publication_types = [str(value) for value in publication_types] if isinstance(publication_types, list) else []
+        evidence_level = _publication_level(publication_types)
         url_id = pmcid or pmid or native_id
         data: dict[str, Any] = {
             "id": f"EPMC:{source}:{native_id}", "source_type": SourceType.EUROPE_PMC,
             "title": title, "abstract_or_chunk": content, "authors": authors,
             "published_at": published, "url": f"https://europepmc.org/article/{source}/{url_id}",
             "pmid": pmid, "doi": normalize_doi(item.get("doi")),
-            "source_metadata": {"pmcid": pmcid, "journal": item.get("journalTitle"), "is_open_access": item.get("isOpenAccess"), "native_source": source, "native_id": native_id},
+            "evidence_level": evidence_level,
+            "source_metadata": {"pmcid": pmcid, "journal": item.get("journalTitle"), "is_open_access": item.get("isOpenAccess"), "native_source": source, "native_id": native_id, "publication_types": publication_types},
         }
         data["content_hash"] = compute_content_hash(data)
         return A2Evidence.model_validate(data)
@@ -72,3 +76,16 @@ def _parse_date(value: Any) -> datetime | None:
         except ValueError:
             continue
     return None
+
+
+def _publication_level(publication_types: list[str]) -> str:
+    folded = " ".join(publication_types).casefold()
+    if "guideline" in folded:
+        return "guideline"
+    if "meta-analysis" in folded or "systematic review" in folded:
+        return "systematic_review"
+    if "randomized controlled trial" in folded or "clinical trial" in folded:
+        return "controlled_study"
+    if "review" in folded:
+        return "review"
+    return "study"

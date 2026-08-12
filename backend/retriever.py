@@ -135,7 +135,9 @@ class CoordinatedEvidenceRetriever:
         lexical = A3BM25Index.build(evidence, chunks, spans, manifest)
         lexical_hits = lexical.search(search_text, config.bm25_top_k)
 
-        vector_root = self._index_root / f"tool-{request.tool_call_index}"
+        # Each question owns its transient index namespace. Concurrent user
+        # requests must never delete or overwrite another run's candidate pool.
+        vector_root = self._index_root / question.question_id / f"tool-{request.tool_call_index}"
         vector = ChromaVectorIndex(vector_root, manifest, self._embedding)
         vector.sync(evidence, chunks, spans)
         vector_hits = vector.search(search_text, config.vector_top_k)

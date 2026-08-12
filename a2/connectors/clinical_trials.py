@@ -57,6 +57,7 @@ class ClinicalTrialsConnector:
             "id": f"NCT:{nct_id}", "source_type": SourceType.CLINICAL_TRIALS,
             "title": title, "abstract_or_chunk": content, "published_at": _date(start_date),
             "url": f"https://clinicaltrials.gov/study/{nct_id}", "nct_id": nct_id,
+            "evidence_level": "clinical_trial_registry",
             "source_metadata": {
                 "api_version": "v2", "data_timestamp": data_timestamp,
                 "overall_status": status.get("overallStatus"), "conditions": conditions,

@@ -29,6 +29,7 @@ class EvidenceSufficiencyGate:
         freshness_required: bool,
         budget_remaining: int,
         as_of_date: date,
+        expected_evidence_types: Sequence[str] = (),
     ) -> EvidenceSufficiencyResult:
         candidate_count = len(evidence)
         ranking_scores = [
@@ -94,6 +95,13 @@ class EvidenceSufficiencyGate:
             reasons.append("retrieval_insufficient: source diversity below threshold")
         if strongest_level is None:
             reasons.append("retrieval_insufficient: strongest_evidence_level UNKNOWN/unaccepted")
+        if expected_evidence_types and not any(
+            record.evidence_level in expected_evidence_types for record in evidence
+        ):
+            reasons.append(
+                "retrieval_insufficient: required evidence type unavailable "
+                f"({', '.join(expected_evidence_types)})"
+            )
         if freshness_required and freshness is not FreshnessState.FRESH:
             reasons.append(f"retrieval_insufficient: freshness={freshness.value}")
         if len(conflict_pairs) > self.config.max_conflicts:

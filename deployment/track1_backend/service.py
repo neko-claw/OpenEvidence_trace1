@@ -14,7 +14,7 @@ from deployment.a2.health import check_a2_readiness
 from evaluation.preflight import check_manifest, load_manifest
 
 
-BackendMode = Literal["replay", "mock", "live"]
+BackendMode = Literal["replay", "mock", "research", "live"]
 
 
 class TraceSink(Protocol):
@@ -94,10 +94,10 @@ class BackendService:
         dependencies: BackendDependencies | None = None,
         trace_sink: TraceSink | None = None,
     ) -> None:
-        if mode == "live" and dependencies is None:
-            raise ValueError("live service requires explicit production dependencies")
-        if mode != "live" and dependencies is not None:
-            raise ValueError("replay/mock service cannot receive live dependencies")
+        if mode in {"research", "live"} and dependencies is None:
+            raise ValueError(f"{mode} service requires explicit dependencies")
+        if mode in {"replay", "mock"} and dependencies is not None:
+            raise ValueError("replay/mock service cannot receive injected dependencies")
         self.mode = mode
         self.config = config
         self.dependencies = dependencies
@@ -150,10 +150,21 @@ def build_service(
     trace_sink: TraceSink | None = None,
 ) -> BackendService:
     cfg = config or BackendServiceConfig()
-    if mode != "live":
+    if mode in {"replay", "mock"}:
         if dependencies_factory is not None:
             raise ValueError("replay/mock service cannot receive live dependencies")
         return BackendService(mode=mode, config=cfg, trace_sink=trace_sink)
+    if mode == "research":
+        if dependencies_factory is None:
+            from deployment.track1_backend.research_factory import build_research_dependencies
+
+            dependencies_factory = build_research_dependencies
+        return BackendService(
+            mode="research",
+            config=cfg,
+            dependencies=dependencies_factory(),
+            trace_sink=trace_sink,
+        )
     readiness = check_readiness(cfg)
     if not readiness.live_ready:
         raise LiveCompositionUnavailable(readiness)

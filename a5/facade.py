@@ -10,7 +10,7 @@ from a5.bootstrap import build_demo_workflow
 from a5.domain.enums import Decision, SafetyDecision, UIReasonCode, VerificationStatus
 from a5.domain.models import AgentRun, AgentRunView, EvidenceCardView, Question
 
-BackendMode = Literal["replay", "mock", "live"]
+BackendMode = Literal["replay", "mock", "research", "live"]
 ReplayCase = Literal["PASS", "WARN", "REFUSE", "ERROR"]
 
 
@@ -49,12 +49,12 @@ def answer_text(
                 },
             )
         )
-    if mode != "live":
+    if mode not in {"research", "live"}:
         raise ValueError(f"unsupported backend mode: {mode}")
     if dependencies is None:
-        raise ValueError("live mode requires injected BackendDependencies")
+        raise ValueError(f"{mode} mode requires injected BackendDependencies")
     run = dependencies.workflow.answer(question)
-    if any(record.mock for record in run.retrieved_evidence):
+    if mode == "live" and any(record.mock for record in run.retrieved_evidence):
         run.decision = Decision.REFUSE
         run.error = "LiveModeMockEvidenceError: live workflow returned mock evidence"
         if run.final_answer is not None:

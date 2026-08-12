@@ -4,6 +4,12 @@
   "prompt": "a1/classifiers/assets/safety_classifier_v0.1.0.md",
   "min_confidence": 0.85,
   "timeout_seconds": 5.0,
-  "allowed_topics": ["hypertension", "dyslipidemia"],
+  "allowed_topics": [
+    "hypertension",
+    "dyslipidemia",
+    "cardiovascular",
+    "cerebrovascular",
+    "diabetes"
+  ],
   "unknown_action": "REFUSE"
 }

@@ -84,6 +84,7 @@ class GuidelinesConnector:
                 "source_type": SourceType.GUIDELINE, "title": item["guideline_name"],
                 "abstract_or_chunk": text, "published_at": published,
                 "url": item["source_url"], "guideline_name": item["guideline_name"], "page": index,
+                "evidence_level": "guideline",
                 "source_metadata": {"organization": item["organization"], "version": str(item["version"]), "license_or_usage_note": item["license_or_usage_note"], "manifest_id": item["manifest_id"]},
             }
             data["content_hash"] = compute_content_hash(data)
