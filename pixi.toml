@@ -16,6 +16,7 @@ backend-test = "python -m pytest tests/test_backend_*.py --basetemp .backend-pyt
 backend-demo = "python -m backend.demo"
 a2-smoke = "python -m a2.smoke"
 a2-mcp = "python -m a2.mcp.server"
+a2-health = "python -m deployment.a2.server --health"
 a3-test = "python -m pytest tests/test_a3_*.py --basetemp .a3-pytest-tmp -p no:cacheprovider"
 a3-build = "python -m a3.cli.build_all"
 a3-build-offline = "python -m a3.cli.build_all --offline-smoke"
