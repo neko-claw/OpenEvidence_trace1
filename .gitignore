@@ -1,6 +1,9 @@
 __pycache__/
 *.py[cod]
 .pytest_cache/
+.pytest-tmp/
+.backend-pytest-tmp/
+.a3-pytest-tmp/
 .pixi/
 .venv/
 .env
