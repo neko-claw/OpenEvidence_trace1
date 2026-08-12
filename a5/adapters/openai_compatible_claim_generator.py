@@ -44,18 +44,18 @@ class OpenAICompatibleClaimGenerator:
         span_owner = {
             span.span_id: record.id for record in evidence for span in record.spans
         }
-        response = self._transport.complete(
-            model=self._model,
-            messages=(
-                {"role": "system", "content": self._prompt},
-                {"role": "user", "content": self._input_json(question, evidence, plan)},
-            ),
-            response_schema=ClaimGenerationOutput.model_json_schema(),
-        )
         try:
+            response = self._transport.complete(
+                model=self._model,
+                messages=(
+                    {"role": "system", "content": self._prompt},
+                    {"role": "user", "content": self._input_json(question, evidence, plan)},
+                ),
+                response_schema=ClaimGenerationOutput.model_json_schema(),
+            )
             generated = ClaimGenerationOutput.model_validate(response)
         except Exception as exc:
-            raise ClaimGenerationError("structured_output_invalid") from exc
+            raise ClaimGenerationError("structured_generation_failed_closed") from exc
         claim_ids: set[str] = set()
         claims: list[Claim] = []
         for payload in generated.claims:

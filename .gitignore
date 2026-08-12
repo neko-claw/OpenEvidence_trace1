@@ -7,6 +7,7 @@ __pycache__/
 .a1-phase-pytest/
 .a2-phase-pytest/
 .evaluation-phase-pytest/
+.a5-phase-pytest/
 .pixi/
 .venv/
 .env

@@ -34,21 +34,21 @@ class OpenAICompatibleSemanticEvaluator:
             for span in record.spans
             if span.span_id in cited_span_ids
         ]
-        response = self._transport.complete(
-            model=self._model,
-            messages=(
-                {"role": "system", "content": self._prompt},
-                {
-                    "role": "user",
-                    "content": json.dumps({"claim": claim.text, "cited_spans": spans}, ensure_ascii=False),
-                },
-            ),
-            response_schema=SemanticVerificationOutput.model_json_schema(),
-        )
         try:
+            response = self._transport.complete(
+                model=self._model,
+                messages=(
+                    {"role": "system", "content": self._prompt},
+                    {
+                        "role": "user",
+                        "content": json.dumps({"claim": claim.text, "cited_spans": spans}, ensure_ascii=False),
+                    },
+                ),
+                response_schema=SemanticVerificationOutput.model_json_schema(),
+            )
             output = SemanticVerificationOutput.model_validate(response)
         except Exception:
-            return self._insufficient("semantic_output_invalid")
+            return self._insufficient("semantic_transport_or_output_invalid")
         if set(output.used_span_ids) - cited_span_ids:
             return self._insufficient("semantic_span_whitelist_violation")
         if output.status is SemanticSupportStatus.CONTRADICTED:

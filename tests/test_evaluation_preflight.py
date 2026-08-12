@@ -7,6 +7,7 @@ def test_pending_formal_manifests_fail_closed() -> None:
     for path in (
         "evaluation/a3_embedding/manifest.json",
         "evaluation/a4_ablation/manifest.json",
+        "evaluation/a5_verification/manifest.json",
     ):
         result = check_manifest(load_manifest(path))
         assert result.status == "BLOCKED_EXTERNAL"

@@ -10,14 +10,14 @@ from a5.adapters.openai_compatible_claim_generator import (
     ClaimGenerationError,
     OpenAICompatibleClaimGenerator,
 )
-from a5.adapters.rule_based_claim_verifier import ExactSpanTextualSupportEvaluator
+from a5.adapters.rule_based_claim_verifier import ExactSpanTextualSupportEvaluator, RuleBasedClaimVerifier
 from a5.adapters.semantic_claim_verifier import (
     CompositeTextualSupportEvaluator,
     OpenAICompatibleSemanticEvaluator,
 )
 from a5.bootstrap import build_demo_workflow
 from a5.domain.enums import Decision, VerificationStatus, WorkflowState
-from a5.domain.models import AgentPlan, AgentRun, AgentRunView, EvidenceRecord, Question, SearchPlan
+from a5.domain.models import AgentPlan, AgentRun, AgentRunView, EvidenceRecord, Question, SearchPlan, VerificationContext
 from a5.facade import answer_text, to_ui_view
 from a5.gates.evidence_sufficiency import EvidenceSufficiencyGate
 from a5.runtime_config import load_runtime_config
@@ -35,6 +35,12 @@ class StaticTransport:
     def complete(self, **request):
         self.calls.append(request)
         return self.response
+
+
+class BrokenTransport:
+    def complete(self, **request):
+        del request
+        raise TimeoutError("transport timeout")
 
 
 def evidence() -> EvidenceRecord:
@@ -101,6 +107,13 @@ def test_structured_generator_fails_closed(changes: dict[str, object], reason: s
         )
 
 
+def test_generator_transport_exception_fails_closed() -> None:
+    with pytest.raises(ClaimGenerationError, match="structured_generation_failed_closed"):
+        generator(BrokenTransport()).generate(
+            Question(text="synthetic"), [evidence()], plan(), "RUN-X"
+        )
+
+
 def test_independent_semantic_unknown_never_becomes_supported() -> None:
     semantic = OpenAICompatibleSemanticEvaluator(
         transport=StaticTransport(
@@ -114,6 +127,63 @@ def test_independent_semantic_unknown_never_becomes_supported() -> None:
     )[0]
     composite = CompositeTextualSupportEvaluator(ExactSpanTextualSupportEvaluator(), semantic)
     assert composite.evaluate(claim, [evidence()]).status is VerificationStatus.INSUFFICIENT
+
+
+def test_independent_semantic_transport_failure_is_insufficient() -> None:
+    semantic = OpenAICompatibleSemanticEvaluator(
+        transport=BrokenTransport(),
+        model="independent-test-model",
+        prompt_path=ROOT / "prompts/semantic_verification_v0.4.0.md",
+    )
+    claim = generator(StaticTransport(generated_payload())).generate(
+        Question(text="synthetic"), [evidence()], plan(), "RUN-X"
+    )[0]
+    assert semantic.evaluate(claim, [evidence()]).status is VerificationStatus.INSUFFICIENT
+
+
+def test_semantic_supported_cannot_override_deterministic_span_failure() -> None:
+    semantic = OpenAICompatibleSemanticEvaluator(
+        transport=StaticTransport(
+            {
+                "status": "SUPPORTED",
+                "entailment_score": 0.99,
+                "used_span_ids": ["S-E1"],
+                "reason": "semantic match",
+            }
+        ),
+        model="independent-test-model",
+        prompt_path=ROOT / "prompts/semantic_verification_v0.4.0.md",
+    )
+    composite = CompositeTextualSupportEvaluator(ExactSpanTextualSupportEvaluator(), semantic)
+    verifier = RuleBasedClaimVerifier(textual_support=composite)
+    claim = generator(StaticTransport(generated_payload())).generate(
+        Question(text="synthetic"), [evidence()], plan(), "RUN-X"
+    )[0].model_copy(update={"evidence_span_ids": []})
+    result = verifier.verify(claim, [evidence()], VerificationContext())
+    assert result.status is VerificationStatus.INSUFFICIENT
+    assert result.span_check.value == "UNKNOWN"
+
+
+def test_semantic_supported_cannot_override_conflict() -> None:
+    semantic = OpenAICompatibleSemanticEvaluator(
+        transport=StaticTransport(
+            {
+                "status": "SUPPORTED",
+                "entailment_score": 0.99,
+                "used_span_ids": ["S-E1"],
+                "reason": "semantic match",
+            }
+        ),
+        model="independent-test-model",
+        prompt_path=ROOT / "prompts/semantic_verification_v0.4.0.md",
+    )
+    composite = CompositeTextualSupportEvaluator(ExactSpanTextualSupportEvaluator(), semantic)
+    verifier = RuleBasedClaimVerifier(textual_support=composite)
+    claim = generator(StaticTransport(generated_payload())).generate(
+        Question(text="synthetic"), [evidence()], plan(), "RUN-X"
+    )[0].model_copy(update={"conflict_ids": ["CONFLICT"]})
+    result = verifier.verify(claim, [evidence()], VerificationContext())
+    assert result.status is VerificationStatus.CONTRADICTED
 
 
 class CountingSplitter:
