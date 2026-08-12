@@ -102,8 +102,23 @@ class RetrievalService:
         timings = {stage: 0 for stage in _STAGES}
         reasons: list[str] = []
 
-        bm25, bm25_operational = self._search_bm25(query, timings, reasons)
-        vector, vector_operational = self._search_vector(query, timings, reasons)
+        bm25, bm25_operational, bm25_version_stale = self._search_bm25(query, timings, reasons)
+        vector, vector_operational, vector_version_stale = self._search_vector(query, timings, reasons)
+
+        if bm25_version_stale or vector_version_stale:
+            # 设计 spec §9：索引版本不一致 → 停止执行 failed（round2 P1 修复）。
+            # 返回非冻结版本候选说明检索的索引不是预期发布版本，fail-closed；
+            # 下游不得把结果误解为部分可用（AGENTS.md fail-closed 原则）。
+            timings["total"] = _elapsed_ms(started)
+            return self._result(
+                query,
+                SearchStatus.FAILED,
+                (),
+                (),
+                reasons,
+                timings,
+                codes=[ReasonCode.INDEX_VERSION_MISMATCH.value],
+            )
 
         if not bm25_operational and not vector_operational:
             timings["total"] = _elapsed_ms(started)
@@ -215,8 +230,20 @@ class RetrievalService:
                 stage_latency_ms=timings,
                 pool_hash=_pool_hash(query, (), (), ()),
             )
-        bm25, bm25_operational = self._search_bm25(query, timings, reasons)
-        vector, vector_operational = self._search_vector(query, timings, reasons)
+        bm25, bm25_operational, bm25_version_stale = self._search_bm25(query, timings, reasons)
+        vector, vector_operational, vector_version_stale = self._search_vector(query, timings, reasons)
+        if bm25_version_stale or vector_version_stale:
+            # 设计 spec §9：索引版本不一致 → fail-closed；池路径同样不得降级为部分可用。
+            return InitialCandidatePool(
+                query_id=query.query_id,
+                index_version=self._config.index_version,
+                corpus_version=self._config.corpus_version,
+                degradation_reasons=("index_version_mismatch",),
+                bm25_operational=False,
+                vector_operational=False,
+                stage_latency_ms=timings,
+                pool_hash=_pool_hash(query, (), (), ()),
+            )
         stage_started = perf_counter()
         fused = fuse_rrf(
             bm25=bm25,
@@ -356,40 +383,48 @@ class RetrievalService:
 
     def _search_bm25(
         self, query: Query, timings: dict[str, int], reasons: list[str]
-    ) -> tuple[list[ScoredChunk], bool]:
+    ) -> tuple[list[ScoredChunk], bool, bool]:
+        """Return (candidates, operational, version_stale)."""
         started = perf_counter()
         try:
             raw = self._bm25_index.search(_bm25_query_text(query), self._config.bm25_top_k)
-            candidates, excluded = _intake_candidates(raw, "bm25", self._config, query)
+            candidates, version_excluded, excluded = _intake_candidates(raw, "bm25", self._config, query)
+            if version_excluded:
+                reasons.append(f"bm25 channel index_version mismatch ({version_excluded} candidate(s))")
+                return candidates, False, True
             if excluded:
                 reasons.append(f"bm25 channel excluded {excluded} invalid or stale candidate(s)")
-            return candidates, True
+            return candidates, True, False
         except Exception as error:
             reasons.append(_failure_reason("bm25", error))
-            return [], False
+            return [], False, False
         finally:
             timings["bm25"] = _elapsed_ms(started)
 
     def _search_vector(
         self, query: Query, timings: dict[str, int], reasons: list[str]
-    ) -> tuple[list[ScoredChunk], bool]:
+    ) -> tuple[list[ScoredChunk], bool, bool]:
+        """Return (candidates, operational, version_stale)."""
         started = perf_counter()
         try:
             if self._vector_search is None:
                 reasons.append("vector_unavailable")
-                return [], False
+                return [], False, False
             if self._query_vector_provider is None:
                 reasons.append("vector_unavailable")
-                return [], False
+                return [], False, False
             query_vector = self._query_vector_provider(query)
             raw = self._vector_search.search(query_vector, self._config.vector_top_k)
-            candidates, excluded = _intake_candidates(raw, "vector", self._config, query)
+            candidates, version_excluded, excluded = _intake_candidates(raw, "vector", self._config, query)
+            if version_excluded:
+                reasons.append(f"vector channel index_version mismatch ({version_excluded} candidate(s))")
+                return candidates, False, True
             if excluded:
                 reasons.append(f"vector channel excluded {excluded} invalid or stale candidate(s)")
-            return candidates, True
+            return candidates, True, False
         except Exception as error:
             reasons.append(_failure_reason("vector", error))
-            return [], False
+            return [], False, False
         finally:
             timings["vector"] = _elapsed_ms(started)
 
@@ -541,22 +576,29 @@ def _pool_hash(
 
 def _intake_candidates(
     raw: object, expected_stage: str, config: RetrievalConfig, query: Query
-) -> tuple[list[ScoredChunk], int]:
+) -> tuple[list[ScoredChunk], int, int]:
     """Keep only immutable, live candidates tied to this fixed index release.
 
-    Returns ``(candidates, excluded)`` where ``excluded`` counts candidates
-    that are invalid or stale (tombstoned, malformed, version mismatch, or
-    duplicate).  Candidates that fail the *intended per-query metadata filters*
-    (domain / source type / evidence level / latest window) are skipped
-    silently: that is normal query behavior, not a degradation, and must not
-    inflate the degradation reasons.
+    Returns ``(candidates, version_excluded, excluded)``.  Candidates whose
+    index/corpus version differs from the frozen config are counted separately
+    (``version_excluded``): per 设计 spec §9 a version mismatch fails the whole
+    request instead of degrading to PARTIAL (round2 P1).  Other invalid or
+    stale candidates (tombstoned, malformed, duplicate) count as ``excluded``.
+    Candidates that fail the *intended per-query metadata filters* (domain /
+    source type / evidence level / latest window) are skipped silently: that
+    is normal query behavior, not a degradation, and must not inflate the
+    degradation reasons.
     """
     if isinstance(raw, (str, bytes)) or not isinstance(raw, Sequence):
         raise ValueError(f"{expected_stage} channel returned a non-sequence candidate collection")
     candidates: list[ScoredChunk] = []
+    version_excluded = 0
     excluded = 0
     seen: set[str] = set()
     for item in raw:
+        if _has_version_mismatch(item, expected_stage, config):
+            version_excluded += 1
+            continue
         if not _is_valid_scored_chunk(item, expected_stage, config):
             excluded += 1
             continue
@@ -568,7 +610,22 @@ def _intake_candidates(
             continue  # intended per-query metadata filtering, not degradation
         seen.add(chunk.chunk_id)
         candidates.append(item)
-    return candidates, excluded
+    return candidates, version_excluded, excluded
+
+
+def _has_version_mismatch(item: object, expected_stage: str, config: RetrievalConfig) -> bool:
+    """Whether a structurally valid candidate comes from a different index release.
+
+    A version-mismatched candidate means the searched index is not the frozen
+    one (设计 spec §9: 索引版本不一致 → failed).  Structurally invalid records
+    are *not* reported here so they keep the ordinary excluded path.
+    """
+    if not isinstance(item, ScoredChunk) or item.stage != expected_stage:
+        return False
+    chunk = item.chunk
+    if not isinstance(chunk, EvidenceChunk):
+        return False
+    return chunk.index_version != config.index_version or chunk.corpus_version != config.corpus_version
 
 
 def _is_valid_scored_chunk(item: object, expected_stage: str, config: RetrievalConfig) -> bool:
@@ -759,6 +816,8 @@ def _reason_codes(reasons: Sequence[str]) -> tuple[str, ...]:
             codes.append(ReasonCode.VECTOR_UNAVAILABLE.value)
         elif reason.startswith("bm25 channel excluded") or reason.startswith("vector channel excluded"):
             codes.append(ReasonCode.EXCLUDED_INVALID.value)
+        elif "index_version mismatch" in reason or reason == "index_version_mismatch":
+            codes.append(ReasonCode.INDEX_VERSION_MISMATCH.value)
         else:
             codes.append(ReasonCode.PIPELINE_FAILED.value)
     return tuple(dict.fromkeys(codes))

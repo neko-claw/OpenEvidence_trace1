@@ -27,6 +27,9 @@ def adapt_k(query: Query, config: RetrievalConfig) -> tuple[int, int, tuple[str,
 
     # Rule 2: broad or multi-PICO questions recall per claim and merge, so
     # the fused pool needs a larger rerank input.
+    # round2 P2 差异记录：规划 §4.3.4 的意图是“按原子主张分路召回后适当增大
+    # K0”；P0 的融合池受 fusion_top_k 硬上限约束，此处增大的是 K1（rerank
+    # 输入）而非 K0。P1 按 atomic_claims 分路召回后再改为增大 K0。
     filled_pico = sum(
         1
         for values in (

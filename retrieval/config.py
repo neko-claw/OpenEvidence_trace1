@@ -75,7 +75,7 @@ class RetrievalConfig:
     vector_top_k: int = 50
     fusion_top_k: int = 80
     rerank_top_k: int = 25
-    selection_top_k: int = 6
+    selection_top_k: int = 8  # 与冻结 config/retrieval-p0-v1.yaml 一致（round2 P2 修复）
     rrf_k: int = 60
     max_chunks_per_document: int = 2
     max_chunks_per_source: int = 4

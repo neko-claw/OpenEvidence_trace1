@@ -146,4 +146,4 @@ def test_adapt_k_keeps_defaults_for_generic_questions() -> None:
     query = _query(question_type="generic", freshness="generic", text="一般问题")
     k1, k2, actions = adapt_k(query, RetrievalConfig())
 
-    assert (k1, k2) == (25, 6)
+    assert (k1, k2) == (25, 8)

@@ -116,6 +116,7 @@ class ReasonCode(str, Enum):
     NO_CANDIDATES = "no_candidates"
     PROVENANCE_UNKNOWN = "provenance_unknown"
     SPAN_UNAVAILABLE = "span_unavailable_a3_pending"
+    INDEX_VERSION_MISMATCH = "index_version_mismatch"
 
 
 @dataclass(frozen=True, slots=True)

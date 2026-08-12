@@ -284,15 +284,13 @@ def test_search_warns_when_final_selection_is_from_one_source(evidence_chunks: t
     assert "single source" in result.retrieval_warning.casefold()
 
 
-def test_search_excludes_tombstoned_or_wrong_version_candidates(evidence_chunks: tuple[EvidenceChunk, ...]) -> None:
+def test_search_excludes_tombstoned_candidates_and_keeps_partial(evidence_chunks: tuple[EvidenceChunk, ...]) -> None:
     live = _indexed_chunks(evidence_chunks)[0]
     stale = replace(live, chunk_id="stale", is_tombstoned=True)
-    wrong_version = replace(live, chunk_id="wrong-version", index_version="other")
     vector = _StaticSearch(
         [
             ScoredChunk(chunk=live, score=0.9, rank=1, stage="vector"),
             ScoredChunk(chunk=stale, score=0.8, rank=2, stage="vector"),
-            ScoredChunk(chunk=wrong_version, score=0.7, rank=3, stage="vector"),
         ]
     )
     service = RetrievalService(_FailingSearch(), vector, lambda _query: (1.0, 0.0), _config())
@@ -301,6 +299,55 @@ def test_search_excludes_tombstoned_or_wrong_version_candidates(evidence_chunks:
 
     assert result.status is SearchStatus.PARTIAL
     assert result.selected_chunks == (live,)
+
+
+def test_search_fails_closed_on_index_version_mismatch(evidence_chunks: tuple[EvidenceChunk, ...]) -> None:
+    """设计 spec §9：索引版本不一致 → failed（round2 P1 修复）。
+
+    任一通道返回非冻结索引版本的候选即 fail-closed：整库过期时下游不得把
+    结果误解为部分可用（AGENTS.md fail-closed 原则）。
+    """
+    from retrieval.models import ReasonCode
+
+    live = _indexed_chunks(evidence_chunks)[0]
+    wrong_version = replace(live, chunk_id="wrong-version", index_version="other")
+    vector = _StaticSearch(
+        [
+            ScoredChunk(chunk=live, score=0.9, rank=1, stage="vector"),
+            ScoredChunk(chunk=wrong_version, score=0.7, rank=2, stage="vector"),
+        ]
+    )
+    service = RetrievalService(_FailingSearch(), vector, lambda _query: (1.0, 0.0), _config())
+
+    result = service.search(Query(query_id="q-version-mismatch", text="amlodipine"))
+
+    assert result.status is SearchStatus.FAILED
+    assert result.selected_chunks == ()
+    assert result.degradation_codes == (ReasonCode.INDEX_VERSION_MISMATCH.value,)
+    assert any("index_version mismatch" in reason for reason in result.degradation_reasons)
+
+
+def test_initial_pool_fails_closed_on_index_version_mismatch(evidence_chunks: tuple[EvidenceChunk, ...]) -> None:
+    """池路径（backend/R0-R3）同样 fail-closed：版本不一致不得降级为部分可用。"""
+    from retrieval.models import ReasonCode, RetrievalCondition
+
+    live = _indexed_chunks(evidence_chunks)[0]
+    wrong_version = replace(live, chunk_id="wrong-version", index_version="other")
+    vector = _StaticSearch(
+        [
+            ScoredChunk(chunk=live, score=0.9, rank=1, stage="vector"),
+            ScoredChunk(chunk=wrong_version, score=0.7, rank=2, stage="vector"),
+        ]
+    )
+    service = RetrievalService(_FailingSearch(), vector, lambda _query: (1.0, 0.0), _config())
+    query = Query(query_id="q-version-mismatch-pool", text="amlodipine")
+
+    pool = service.retrieve_initial_pool(query)
+    result = service.search_from_pool(query, pool, RetrievalCondition.R1)
+
+    assert pool.degradation_reasons == ("index_version_mismatch",)
+    assert result.status is SearchStatus.FAILED
+    assert result.degradation_codes == (ReasonCode.INDEX_VERSION_MISMATCH.value,)
 
 
 def test_search_excludes_a_candidate_mutated_after_contract_validation(

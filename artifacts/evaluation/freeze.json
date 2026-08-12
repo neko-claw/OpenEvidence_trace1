@@ -1,5 +1,5 @@
 {
-  "frozen_at": "2026-08-11T19:32:12+00:00",
+  "frozen_at": "2026-08-12T07:19:34+00:00",
   "chosen_k": {
     "k0": 80,
     "k1": 25,
@@ -23,7 +23,7 @@
   },
   "dev_metrics": {
     "recall_at_50_pool_mean": 1.0,
-    "ndcg_at_8_ranking_mean": 0.7501404820605191,
+    "ndcg_at_8_ranking_mean": 0.7513597953372507,
     "span_proxy_recall_at_8_mean": 1.0,
     "claim_chunk_coverage_at_8_mean": 1.0
   },

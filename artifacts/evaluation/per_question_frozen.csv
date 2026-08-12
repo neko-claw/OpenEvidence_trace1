@@ -1,9 +1,9 @@
 question_id,question_type,status,recall_at_50_pool,ndcg_at_8_ranking,mrr_ranking,span_proxy_recall_at_8,span_proxy_ndcg_at_8,claim_chunk_coverage_at_8,selected_count,context_tokens,latency_ms,warning
-dev-001,guideline,ok,1.0,0.981253240513409,1.0,1.0,1.0,1.0,3,1443,2,Claim 2 lacks aligning evidence (INSUFFICIENT). Adaptive K adjustments: small_k_for_guideline.
-dev-002,latest_trial,ok,1.0,0.6787622294601762,0.5,1.0,1.0,1.0,3,705,1,Adaptive K adjustments: small_k_for_latest.
-dev-003,therapy,ok,1.0,0.7115379465980094,1.0,1.0,1.0,1.0,8,2876,2,Claim 1 lacks aligning evidence (INSUFFICIENT). Adaptive K adjustments: large_k_for_multi_pico.
-dev-004,therapy,ok,1.0,0.9327783893101108,1.0,1.0,1.0,1.0,8,2891,2,Claim 1 lacks aligning evidence (INSUFFICIENT). Conflicting evidence detected: time. Adaptive K adjustments: large_k_for_multi_pico.
-dev-005,guideline,ok,1.0,0.5561350261081361,0.3333333333333333,1.0,1.0,1.0,3,677,1,Adaptive K adjustments: small_k_for_guideline.
-dev-006,therapy,ok,1.0,0.9079364505194774,1.0,1.0,0.9134015924715545,1.0,8,1706,2,
-dev-007,therapy,ok,1.0,0.7899980042460358,1.0,1.0,1.0,1.0,8,1330,1,Adaptive K adjustments: large_k_for_multi_pico.
-dev-008,guideline,ok,1.0,0.44272256972879825,0.25,1.0,1.0,1.0,3,581,1,Adaptive K adjustments: small_k_for_guideline.
+dev-001,guideline,ok,1.0,0.981253240513409,1.0,1.0,1.0,1.0,3,1443,7,Claim 2 lacks aligning evidence (INSUFFICIENT). Adaptive K adjustments: small_k_for_guideline.
+dev-002,latest_trial,ok,1.0,0.6787622294601762,0.5,1.0,1.0,1.0,3,705,2,Adaptive K adjustments: small_k_for_latest.
+dev-003,therapy,ok,1.0,0.7115379465980094,1.0,1.0,1.0,1.0,8,2876,3,Claim 1 lacks aligning evidence (INSUFFICIENT). Adaptive K adjustments: large_k_for_multi_pico.
+dev-004,therapy,ok,1.0,0.9327783893101108,1.0,1.0,1.0,1.0,8,2891,4,Claim 1 lacks aligning evidence (INSUFFICIENT). Conflicting evidence detected: time. Adaptive K adjustments: large_k_for_multi_pico.
+dev-005,guideline,ok,1.0,0.5658895323219886,0.3333333333333333,1.0,1.0,1.0,3,547,4,Adaptive K adjustments: small_k_for_guideline.
+dev-006,therapy,ok,1.0,0.9079364505194774,1.0,1.0,0.9134015924715545,1.0,8,1706,5,
+dev-007,therapy,ok,1.0,0.7899980042460358,1.0,1.0,1.0,1.0,8,1330,4,Adaptive K adjustments: large_k_for_multi_pico.
+dev-008,guideline,ok,1.0,0.44272256972879825,0.25,1.0,1.0,1.0,3,581,3,Adaptive K adjustments: small_k_for_guideline.

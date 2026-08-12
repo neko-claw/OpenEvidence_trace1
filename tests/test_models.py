@@ -52,7 +52,7 @@ def test_default_config_is_valid_and_uses_p0_defaults() -> None:
         config.fusion_top_k,
         config.rerank_top_k,
         config.selection_top_k,
-    ) == (50, 50, 80, 25, 6)
+    ) == (50, 50, 80, 25, 8)
     assert config.rrf_k == 60
     assert config.max_chunks_per_document == 2
     assert config.max_chunks_per_source == 4

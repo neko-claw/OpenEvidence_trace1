@@ -28,7 +28,10 @@ Replay/mock A6 integration is ready; live construction is deliberately blocked.
 
 ## Actual acceptance results
 
-- `pixi run test`: **534 passed, 3 skipped**; skipped tests are opt-in live-network tests and are not counted as live pass.
+- `pixi run test`: **540 passed, 3 skipped**；skipped tests are opt-in live-network tests and are not counted as live pass。
+  （2026-08-12 晚于恢复快照：按 main bea6304/a4850e2 回补 A4 rerank round2/round3 三处 P1 ——
+  契约 question_type 优先、source_quality 表驱动加权、时效特征仅明确需求时激活；索引版本不一致
+  改为 fail-closed FAILED；移植 5 条契约/回归测试，重生成 smoke artifacts。）
 - `pixi run demo`: **PASS / WARN / REFUSE** (mock-only).
 - `pixi run backend-demo`: **PASS** (mock A1→A2 MCP→A3→A4→A5 coordination).
 - `A2_LIVE_TESTS=1 ... tests/test_a2_live.py`: **3 passed** (PubMed, Europe PMC, ClinicalTrials).

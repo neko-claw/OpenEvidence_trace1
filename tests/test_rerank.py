@@ -74,8 +74,12 @@ def test_rank_reallocates_unavailable_pico_weight_instead_of_penalizing_candidat
     assert ranks[1].candidate.feature_scores["pico_match"] is None
     # Available weights are semantic + lexical + evidence + source = 0.75;
     # the unavailable PICO and freshness weights are redistributed, not scored as zero.
+    # 加权槽位 w6*source_quality（round2 P1）：pubmed 在 source_quality_table 中为 0.9，
+    # provenance 完整性（source_reliability）仅留档不参与加权（规划 §4.2/§4.5）。
+    assert ranks[0].candidate.feature_scores["source_quality"] == pytest.approx(0.9)
+    assert ranks[0].candidate.feature_scores["source_reliability"] == pytest.approx(2 / 3)
     assert ranks[0].candidate.rerank_score == pytest.approx(
-        (0.30 + 0.20 + 0.15 * 0.20 + 0.10 * (2 / 3)) / 0.75
+        (0.30 + 0.20 + 0.15 * 0.20 + 0.10 * 0.9) / 0.75
     )
     assert ranks[0].candidate.rerank_score > ranks[1].candidate.rerank_score
 
@@ -180,6 +184,95 @@ def test_source_reliability_measures_provenance_completeness_not_evidence_level(
     by_id = {log.candidate.chunk.chunk_id: log for log in ranks}
     assert by_id["guideline"].candidate.feature_scores["source_reliability"] == pytest.approx(2 / 3)
     assert by_id["guideline"].candidate.feature_scores["source_reliability"] == by_id["observational"].candidate.feature_scores["source_reliability"]
+
+
+def test_question_type_contract_field_wins_over_text_derivation() -> None:
+    """round2 P1：契约字段优先于原文推导。
+
+    评测方直接构造 question_type="latest_trial" 而文本无关键词时，题型分类与
+    时效特征必须以 Query.question_type 为准：证据映射走 latest_trial（RCT 优先
+    于指南），freshness 特征生效且权重提升。
+    """
+    query = Query(query_id="q-contract", text="hypertension evidence", question_type="latest_trial")
+    ranks = FeatureReranker(RetrievalConfig()).rank(
+        query,
+        [
+            _candidate("a-rct", chunk=_chunk("a-rct", evidence_level="rct", published_at="2026-08-01"), bm25_raw_score=2.0, vector_raw_score=0.8),
+            _candidate("z-guideline", chunk=_chunk("z-guideline", evidence_level="guideline", published_at="2026-08-01"), bm25_raw_score=2.0, vector_raw_score=0.8),
+        ],
+    )
+
+    by_id = {log.candidate.chunk.chunk_id: log for log in ranks}
+    assert [log.candidate.chunk.chunk_id for log in ranks] == ["a-rct", "z-guideline"]
+    assert by_id["a-rct"].candidate.feature_scores["evidence_level"] == 1.0
+    assert by_id["a-rct"].candidate.feature_scores["freshness"] is not None
+    assert by_id["a-rct"].candidate.feature_scores["freshness"] > 0.0
+
+
+def test_question_type_contract_drives_freshness_feature_for_latest_trial() -> None:
+    """round2 P1：契约 latest_trial 即使文本无 latest 关键词也启用 freshness。"""
+    query = Query(query_id="q-contract-fresh", text="amlodipine blood pressure", question_type="latest_trial")
+    ranks = FeatureReranker(RetrievalConfig()).rank(
+        query,
+        [
+            _candidate("dated", chunk=_chunk("dated", published_at="2026-08-01"), bm25_raw_score=2.0),
+            _candidate("undated", chunk=_chunk("undated"), bm25_raw_score=1.0),
+        ],
+    )
+
+    by_id = {log.candidate.chunk.chunk_id: log for log in ranks}
+    assert by_id["dated"].candidate.feature_scores["freshness"] is not None
+    assert by_id["undated"].candidate.feature_scores["freshness"] is None
+    assert [log.candidate.chunk.chunk_id for log in ranks] == ["dated", "undated"]
+
+
+def test_question_type_contract_wins_for_guideline_without_keywords() -> None:
+    """round2 P1：契约 guideline 不再被原文推导覆盖。"""
+    query = Query(query_id="q-contract-guide", text="hypertension management", question_type="guideline")
+    ranks = FeatureReranker(RetrievalConfig()).rank(
+        query,
+        [
+            _candidate("a-rct", chunk=_chunk("a-rct", evidence_level="rct"), bm25_raw_score=2.0, vector_raw_score=0.8),
+            _candidate("z-guideline", chunk=_chunk("z-guideline", evidence_level="guideline"), bm25_raw_score=2.0, vector_raw_score=0.8),
+        ],
+    )
+
+    assert [log.candidate.chunk.chunk_id for log in ranks] == ["z-guideline", "a-rct"]
+
+
+def test_old_authoritative_guideline_keeps_lead_over_recent_rct() -> None:
+    """round3 P1：纯指南类问题（无时效词）不再触发 freshness 衰减。
+
+    修复前（round2 契约优先改动将激活范围扩大到 freshness=current）
+    “高血压指南推荐的治疗”下 2015 权威指南（evidence_level=1.0）会被
+    2024 RCT 反超（0.882 < 0.909）；修复后时效特征不激活，证据等级主导，
+    指南保持领先（规划 §4.2 “旧但权威”反例要求）。
+    """
+    query = Query(
+        query_id="q-guideline-pure",
+        text="高血压指南推荐的治疗",
+        question_type="guideline",
+        freshness="current",
+    )
+    old_guideline = _candidate(
+        "g2015",
+        chunk=_chunk("g2015", evidence_level="guideline", source_type="guideline", published_at="2015-06-01"),
+        bm25_raw_score=2.0,
+        vector_raw_score=0.8,
+    )
+    recent_rct = _candidate(
+        "r2024",
+        chunk=_chunk("r2024", evidence_level="rct", source_type="pubmed", published_at="2024-06-01"),
+        bm25_raw_score=2.0,
+        vector_raw_score=0.8,
+    )
+    ranks = FeatureReranker(RetrievalConfig()).rank(query, [old_guideline, recent_rct])
+
+    by_id = {log.candidate.chunk.chunk_id: log for log in ranks}
+    assert [log.candidate.chunk.chunk_id for log in ranks] == ["g2015", "r2024"]
+    assert by_id["g2015"].candidate.feature_scores["freshness"] is None
+    assert by_id["r2024"].candidate.feature_scores["freshness"] is None
+    assert by_id["g2015"].candidate.rerank_score > by_id["r2024"].candidate.rerank_score
 
 
 @pytest.mark.parametrize("query_text", ["latest hypertension guideline", "最新高血压指南"])
