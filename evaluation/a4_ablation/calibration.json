@@ -1,0 +1,14 @@
+{
+  "version": "a4-quality-calibration-v0.1.0",
+  "status": "PENDING_EXTERNAL_GOLD",
+  "score_kind": "QUALITY",
+  "score_scope": "CROSS_QUERY",
+  "calibrated": false,
+  "method": null,
+  "model_id": null,
+  "model_revision": null,
+  "calibration_dataset_id": null,
+  "ece": null,
+  "brier": null,
+  "threshold": null
+}

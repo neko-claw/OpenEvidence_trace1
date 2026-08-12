@@ -1,0 +1,11 @@
+{
+  "evaluation_version": "a3-embedding-eval-v0.1.0",
+  "candidates": [
+    {"id": "lexical-only", "provider": "a3-bm25", "revision": "a3-bm25-tokenizer-v0.1"},
+    {"id": "BAAI/bge-m3", "provider": "flagembedding", "revision": "5617a9f61b028005a4858fdac845db406aefb181", "status": "candidate_only"},
+    {"id": null, "provider": null, "revision": null, "status": "BLOCKED_EXTERNAL_SECOND_BASELINE"}
+  ],
+  "required_metrics": ["Recall@50", "latency_p50_ms", "latency_p95_ms", "throughput", "memory", "vram", "index_size", "build_time", "rebuild_hash"],
+  "required_subsets": ["overall", "zh", "en", "medical_terminology"],
+  "selection_status": "PENDING_EXTERNAL_DATA_AND_MODEL_ACCESS"
+}

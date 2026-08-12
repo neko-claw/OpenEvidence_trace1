@@ -6,6 +6,7 @@ __pycache__/
 .a3-pytest-tmp/
 .a1-phase-pytest/
 .a2-phase-pytest/
+.evaluation-phase-pytest/
 .pixi/
 .venv/
 .env
