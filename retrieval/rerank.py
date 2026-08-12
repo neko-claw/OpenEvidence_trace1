@@ -485,6 +485,10 @@ def _percentile_scores(candidates: Sequence[Candidate], field_name: str) -> dict
 
 
 def _classify_query(query: Query) -> str:
+    # 契约字段优先（round2 P1 修复）：上游/评测方已解析的 question_type 不再从
+    # 原文二次推导；P0 无 diagnosis/prognosis 专属证据表，映射到 generic。
+    if query.question_type != "generic":
+        return query.question_type if query.question_type in _EVIDENCE_SCORES else "generic"
     tokens = _tokens(query.text)
     normalized_text = query.text.casefold()
     has_latest = bool(tokens & _LATEST_TERMS) or any(term in normalized_text for term in _CJK_LATEST_TERMS)
@@ -542,6 +546,10 @@ def _freshness(query: Query, chunk: EvidenceChunk) -> float | None:
 
 
 def _is_freshness_requested(query: Query) -> bool:
+    # 契约字段优先（round2 P1 修复）：freshness=current/latest 或
+    # question_type=latest_trial 即使原文无关键词也启用时效特征。
+    if query.freshness in {"current", "latest"} or query.question_type == "latest_trial":
+        return True
     tokens = _tokens(query.text)
     normalized_text = query.text.casefold()
     return bool(tokens & _LATEST_TERMS) or any(term in normalized_text for term in _CJK_LATEST_TERMS)
@@ -558,6 +566,20 @@ def _source_reliability(chunk: EvidenceChunk) -> float:
 
 
 def _weighted_score(features: Mapping[str, float | None], config: RetrievalConfig, query_type: str = "generic") -> float:
+    """Weighted feature score per 规划 §4.2/§4.5 (round2 P1 修复).
+
+    rerank-p0-v1 口径裁决（写入 rerank_config_version 变更说明）：
+
+    - 加权公式与规划 §4.2 对齐，六项为
+      semantic/lexical/pico_match/evidence_level/freshness/source_quality；
+      ``feature_weights.source_reliability``（0.10）槽位承载规划公式的
+      w6*source_quality，得分由 ``source_quality_table`` 表驱动。
+    - redundancy 由 MMR 承担（(1-lambda)*max_similarity + 单文献/单来源硬上限），
+      静态分不重复扣 −0.15，避免双重惩罚（6.6 消融决策，见
+      tests/test_rerank_features.py::test_redundancy_feature_is_diagnostic_only_*）。
+    - rrf/title_abstract/fulltext/source_reliability 仍计算并留档供诊断，
+      不参与加权：规划 §4.2 步骤 3 的候选特征列表与步骤 4 公式的差异。
+    """
     weights = config.feature_weights
     freshness_weight = weights.freshness
     # 4.2: freshness is not one-size-fits-all — latest-trial questions raise
@@ -571,7 +593,7 @@ def _weighted_score(features: Mapping[str, float | None], config: RetrievalConfi
         "pico_match": weights.pico_match,
         "evidence_level": weights.evidence_level,
         "freshness": freshness_weight,
-        "source_reliability": weights.source_reliability,
+        "source_quality": weights.source_reliability,
     }
     available = {name: value for name, value in features.items() if value is not None}
     scorable = {name: value for name, value in available.items() if name in configured}

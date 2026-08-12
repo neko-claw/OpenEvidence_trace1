@@ -105,6 +105,7 @@ class ReasonCode(str, Enum):
     PIPELINE_FAILED = "pipeline_failed"
     EXCLUDED_INVALID = "excluded_invalid"
     NO_CANDIDATES = "no_candidates"
+    INDEX_VERSION_MISMATCH = "index_version_mismatch"
     PROVENANCE_UNKNOWN = "provenance_unknown"
     SPAN_UNAVAILABLE = "span_unavailable_a3_pending"
 

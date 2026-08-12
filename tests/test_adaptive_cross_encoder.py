@@ -117,4 +117,5 @@ def test_adapt_k_keeps_defaults_for_generic_questions() -> None:
     query = _query(question_type="generic", freshness="generic", text="一般问题")
     k1, k2, actions = adapt_k(query, RetrievalConfig())
 
-    assert (k1, k2) == (25, 6)
+    # selection_top_k 默认 8，与冻结 config/retrieval-p0-v1.yaml 一致（round2 P2 修复）。
+    assert (k1, k2) == (25, 8)
