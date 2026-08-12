@@ -553,6 +553,10 @@ A6 只能通过 `app/services/agent_service.py` 调用该公共服务。其他 U
 
 详细工程映射见 `docs/backend_integration_architecture.md` 与 `docs/DESIGN_REFERENCES.md`。
 
+从仓库检查、A1–A6 集成、主要碰壁与修复，到本地/GitHub/Community Cloud
+部署和岗位交接的完整记录，见
+[`docs/project_deployment_report.md`](docs/project_deployment_report.md)。
+
 ## 当前完成度与生产边界
 
 已具备：
