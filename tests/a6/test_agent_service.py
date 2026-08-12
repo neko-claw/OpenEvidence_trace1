@@ -47,3 +47,9 @@ def test_service_has_no_final_answer_cache() -> None:
     source = Path("app/services/agent_service.py").read_text(encoding="utf-8")
     assert "@st.cache_data" not in source
     assert source.count("@st.cache_resource") == 1
+
+
+def test_cloud_requirements_cover_default_research_imports() -> None:
+    requirements = Path("requirements.txt").read_text(encoding="utf-8").casefold()
+    assert "rank-bm25" in requirements
+    assert "chromadb" in requirements
