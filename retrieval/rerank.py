@@ -546,9 +546,16 @@ def _freshness(query: Query, chunk: EvidenceChunk) -> float | None:
 
 
 def _is_freshness_requested(query: Query) -> bool:
-    # 契约字段优先（round2 P1 修复）：freshness=current/latest 或
-    # question_type=latest_trial 即使原文无关键词也启用时效特征。
-    if query.freshness in {"current", "latest"} or query.question_type == "latest_trial":
+    # round3 修正：时效特征只在明确表达时效需求时激活，避免“一刀切”。
+    # 1) 契约层 freshness=latest（最新试验硬时效）；
+    # 2) question_type=latest_trial（契约驱动的 latest 试验，即使原文无关键词）；
+    # 3) 原文含最新/近期/当前/新近等时效词（覆盖“最新指南”类）。
+    # 纯指南类问题（query_plan 因“指南”自动映射 freshness=current、文本无时效词）
+    # 不再触发 10 年线性衰减：否则 0.10 的 freshness 权重会把“旧但权威”的
+    # 指南压到近期 RCT 之后（规划 §4.2 要求保留“旧但权威”反例，round2 修复
+    # 曾把激活范围扩大到所有 freshness=current 查询导致该回归，见
+    # tests/test_rerank.py::test_old_authoritative_guideline_keeps_lead_over_recent_rct）。
+    if query.freshness == "latest" or query.question_type == "latest_trial":
         return True
     tokens = _tokens(query.text)
     normalized_text = query.text.casefold()

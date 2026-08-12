@@ -68,3 +68,25 @@
 python -m pytest          # 384 passed
 python -m scripts.run_dev_eval   # 冻结配置 smoke 评测（指标口径不变）
 ```
+
+## Round 3 修正（2026-08-12，合并至 main 后）
+
+### 【P1】round2 修复 ③ 的副作用：freshness 激活范围过大导致"旧但权威"指南被反超 — 已修正
+
+- **现象**：round2 把 `_is_freshness_requested` 激活范围扩大到所有
+  `freshness in {current, latest}` 查询；而 `query_plan` 因"指南"字样把
+  纯指南类问题映射为 `freshness="current"`，使指南类问题意外启用 10 年线性
+  衰减。实测"高血压指南推荐的治疗"下 2015 权威指南（evidence_level=1.0、
+  source_quality=1.0，得分 0.882）被 2024 RCT（0.7/0.9，得分 0.909）反超；
+  修复前（freshness=None、权重重分配）指南 1.0 > RCT 0.927。与规划 §4.2
+  "证据等级与时效性不是对所有问题一刀切"及"旧但权威"反例要求冲突。
+- **修正**：`retrieval/rerank.py::_is_freshness_requested` 仅在
+  1) `freshness="latest"`（最新试验硬时效）、2) `question_type="latest_trial"`
+  （契约驱动，即使原文无关键词）、3) 原文含最新/近期/当前/新近等时效词
+  （覆盖"最新指南"类）时激活；纯指南类问题（文本无时效词）不再触发衰减，
+  证据等级恢复主导。
+- **回归测试**：`tests/test_rerank.py::test_old_authoritative_guideline_keeps_lead_over_recent_rct`
+  （断言 2015 指南排名在 2024 RCT 之前且 freshness 均为 None）。
+- **遗留口径**："最新指南"类问题（含时效词 + 指南）仍启用时效特征，与
+  纯指南类行为的差异是刻意的；如需为指南类设置更缓的衰减窗口（而非禁用），
+  列为 P1 增强项，须在开发集上验证。

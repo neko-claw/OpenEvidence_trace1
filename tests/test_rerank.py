@@ -234,6 +234,41 @@ def test_question_type_contract_wins_for_guideline_without_keywords() -> None:
     assert [log.candidate.chunk.chunk_id for log in ranks] == ["z-guideline", "a-rct"]
 
 
+def test_old_authoritative_guideline_keeps_lead_over_recent_rct() -> None:
+    """round3 P1：纯指南类问题（无时效词）不再触发 freshness 衰减。
+
+    修复前（round2 契约优先改动将激活范围扩大到 freshness=current）
+    “高血压指南推荐的治疗”下 2015 权威指南（evidence_level=1.0）会被
+    2024 RCT 反超（0.882 < 0.909）；修复后时效特征不激活，证据等级主导，
+    指南保持领先（规划 §4.2 “旧但权威”反例要求）。
+    """
+    query = Query(
+        query_id="q-guideline-pure",
+        text="高血压指南推荐的治疗",
+        question_type="guideline",
+        freshness="current",
+    )
+    old_guideline = _candidate(
+        "g2015",
+        chunk=_chunk("g2015", evidence_level="guideline", source_type="guideline", published_at="2015-06-01"),
+        bm25_raw_score=2.0,
+        vector_raw_score=0.8,
+    )
+    recent_rct = _candidate(
+        "r2024",
+        chunk=_chunk("r2024", evidence_level="rct", source_type="pubmed", published_at="2024-06-01"),
+        bm25_raw_score=2.0,
+        vector_raw_score=0.8,
+    )
+    ranks = FeatureReranker(RetrievalConfig()).rank(query, [old_guideline, recent_rct])
+
+    by_id = {log.candidate.chunk.chunk_id: log for log in ranks}
+    assert [log.candidate.chunk.chunk_id for log in ranks] == ["g2015", "r2024"]
+    assert by_id["g2015"].candidate.feature_scores["freshness"] is None
+    assert by_id["r2024"].candidate.feature_scores["freshness"] is None
+    assert by_id["g2015"].candidate.rerank_score > by_id["r2024"].candidate.rerank_score
+
+
 @pytest.mark.parametrize("query_text", ["latest hypertension guideline", "最新高血压指南"])
 def test_explicit_guideline_intent_does_not_use_latest_trial_mapping(query_text: str) -> None:
     query = Query(query_id="q-guideline", text=query_text)
