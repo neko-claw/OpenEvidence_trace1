@@ -1,0 +1,9 @@
+{
+  "version": "a1-safety-classifier-v0.1.0",
+  "policy_status": "PENDING_REVIEW",
+  "prompt": "a1/classifiers/assets/safety_classifier_v0.1.0.md",
+  "min_confidence": 0.85,
+  "timeout_seconds": 5.0,
+  "allowed_topics": ["hypertension", "dyslipidemia"],
+  "unknown_action": "REFUSE"
+}

@@ -64,7 +64,7 @@ class A1SafetyPolicyAdapter:
             return SafetyAssessment(
                 decision=A5SafetyDecision.UNKNOWN,
                 reason=f"safety_contract_invalid: {type(exc).__name__}",
-                policy_version=self.policy.version,
+                policy_version=self._effective_version(self.policy.version),
             )
 
         decision_map = {
@@ -75,5 +75,11 @@ class A1SafetyPolicyAdapter:
         return SafetyAssessment(
             decision=decision_map[result.decision],
             reason="; ".join(result.reason_codes),
-            policy_version=result.policy_version,
+            policy_version=self._effective_version(result.policy_version),
         )
+
+    def _effective_version(self, policy_version: str) -> str:
+        classifier_version = getattr(self.classifier, "version", None)
+        if isinstance(classifier_version, str) and classifier_version:
+            return f"{policy_version}+{classifier_version}"
+        return policy_version

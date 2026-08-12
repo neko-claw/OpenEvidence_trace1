@@ -4,6 +4,7 @@ __pycache__/
 .pytest-tmp/
 .backend-pytest-tmp/
 .a3-pytest-tmp/
+.a1-phase-pytest/
 .pixi/
 .venv/
 .env
