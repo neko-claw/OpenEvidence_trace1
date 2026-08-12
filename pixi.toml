@@ -1,0 +1,35 @@
+[workspace]
+channels = ["conda-forge"]
+platforms = ["win-64"]
+
+[dependencies]
+python = "3.11.*"
+pydantic = ">=2.8,<3"
+pytest = ">=8.2,<9"
+pyyaml = ">=6,<7"
+jsonschema = ">=4.23,<5"
+
+[tasks]
+demo = "python main.py"
+test = "pytest --basetemp .tmp/pytest -p no:cacheprovider"
+backend-test = "pytest tests/test_backend_*.py --basetemp .tmp/backend-pytest -p no:cacheprovider"
+backend-demo = "python -m backend.demo"
+a2-smoke = "python -m a2.smoke"
+a2-mcp = "python -m a2.mcp.server"
+a3-test = "pytest tests/test_a3_*.py --basetemp .tmp/a3-pytest -p no:cacheprovider"
+a3-build = "python -m a3.cli.build_all"
+a3-build-offline = "python -m a3.cli.build_all --offline-smoke"
+a3-build-wiki = "python -m a3.cli.build_wiki --offline-smoke"
+a3-smoke-bm25 = "python -m a3.cli.search_bm25 hypertension --top-k 3"
+a3-smoke-vector = "python -m a3.cli.search_vector hypertension --top-k 3"
+a3-embedding-smoke = "python -m a3.cli.embedding_smoke"
+
+[pypi-dependencies]
+httpx = "==0.28.1"
+mcp = "==2.0.0"
+pymupdf = ">=1.24, <2"
+rank-bm25 = ">=0.2.2, <0.3"
+chromadb = ">=1.5.9, <2"
+flagembedding = ">=1.4.0, <2"
+modelscope-hub = ">=0.2.0, <0.3"
+pyyaml = ">=6.0.3, <7"

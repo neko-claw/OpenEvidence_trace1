@@ -1,0 +1,1613 @@
+{
+  "run_id": "RUN-c5c20d70fab0",
+  "question": {
+    "question_id": "MOCK-BACKEND-QUESTION",
+    "text": "请检索治疗证据；这是合成协同测试，不是医学问题回答。",
+    "metadata": {
+      "as_of_date": "2026-08-11",
+      "a1_safety_signals": {
+        "topic": "hypertension",
+        "acute_emergency": false,
+        "personal_diagnosis": false,
+        "personalized_prescribing_or_dose_change": false,
+        "prompt_injection_or_fabricated_reference": false,
+        "identifiable_personal_data": false,
+        "special_population": "none"
+      }
+    }
+  },
+  "state": "END",
+  "selected_skill": "citation_audit@0.3.0",
+  "selected_skills": [
+    "evidence_research@0.2.0",
+    "citation_audit@0.3.0"
+  ],
+  "agent_plan": {
+    "question_type": "treatment_evidence",
+    "selected_skill": "evidence_research@0.2.0",
+    "search_plan": {
+      "queries": [
+        "请检索治疗证据；这是合成协同测试，不是医学问题回答。"
+      ],
+      "preferred_sources": [
+        "guideline",
+        "systematic_review",
+        "primary_study"
+      ],
+      "freshness_required": true,
+      "expected_evidence_types": [
+        "guideline",
+        "systematic_review",
+        "controlled_study"
+      ],
+      "max_tool_calls": 3
+    },
+    "policy_version": "temporary-a1-default-0.2.0",
+    "evidence_summary": {
+      "evidence_count": 2,
+      "evidence_ids": [
+        "MOCK-BACKEND-GUIDELINE::MOCK-BACKEND-GUIDELINE:c24e287faaca:0000",
+        "MOCK-BACKEND-REVIEW::MOCK-BACKEND-REVIEW:9612f30c4ba0:0000"
+      ],
+      "source_types": [
+        "guideline",
+        "pubmed"
+      ],
+      "source_diversity": 1.0,
+      "strongest_evidence_level": "guideline",
+      "freshness_summary": "FRESH",
+      "conflicts_detected": false,
+      "summary_text": "2 evidence record(s) from 2 source type(s); strongest level=guideline; freshness=FRESH; conflicts=0."
+    }
+  },
+  "safety_assessment": {
+    "decision": "ALLOW",
+    "reason": "safety_scope_allowed",
+    "policy_version": "a1-safety-v0.2"
+  },
+  "evidence_integrity": {
+    "status": "ELIGIBLE",
+    "eligible_evidence_ids": [
+      "MOCK-BACKEND-GUIDELINE::MOCK-BACKEND-GUIDELINE:c24e287faaca:0000",
+      "MOCK-BACKEND-REVIEW::MOCK-BACKEND-REVIEW:9612f30c4ba0:0000"
+    ],
+    "rejected_evidence_ids": [],
+    "unknown_evidence_ids": [],
+    "items": [
+      {
+        "evidence_id": "MOCK-BACKEND-GUIDELINE::MOCK-BACKEND-GUIDELINE:c24e287faaca:0000",
+        "status": "ELIGIBLE",
+        "reason_codes": [
+          "mock_fixture_allowed"
+        ]
+      },
+      {
+        "evidence_id": "MOCK-BACKEND-REVIEW::MOCK-BACKEND-REVIEW:9612f30c4ba0:0000",
+        "status": "ELIGIBLE",
+        "reason_codes": [
+          "mock_fixture_allowed"
+        ]
+      }
+    ],
+    "reasons": [
+      "mock_fixture_allowed"
+    ]
+  },
+  "evidence_sufficiency": {
+    "status": "SUFFICIENT",
+    "reasons": [],
+    "metrics": {
+      "candidate_count": 2,
+      "top_score": 0.92,
+      "top_ranking_score": 0.9393939393939396,
+      "usable_quality_score_count": 2,
+      "source_type_count": 2,
+      "source_diversity": 1.0,
+      "strongest_evidence_level": "guideline",
+      "freshness_state": "FRESH",
+      "conflict_count": 0
+    },
+    "recommended_action": "CONTINUE"
+  },
+  "evidence_summary": {
+    "evidence_count": 2,
+    "evidence_ids": [
+      "MOCK-BACKEND-GUIDELINE::MOCK-BACKEND-GUIDELINE:c24e287faaca:0000",
+      "MOCK-BACKEND-REVIEW::MOCK-BACKEND-REVIEW:9612f30c4ba0:0000"
+    ],
+    "source_types": [
+      "guideline",
+      "pubmed"
+    ],
+    "source_diversity": 1.0,
+    "strongest_evidence_level": "guideline",
+    "freshness_summary": "FRESH",
+    "conflicts_detected": false,
+    "summary_text": "2 evidence record(s) from 2 source type(s); strongest level=guideline; freshness=FRESH; conflicts=0."
+  },
+  "atomic_claim_plan": {
+    "question_id": "MOCK-BACKEND-QUESTION",
+    "allowed_evidence_ids": [
+      "MOCK-BACKEND-GUIDELINE::MOCK-BACKEND-GUIDELINE:c24e287faaca:0000",
+      "MOCK-BACKEND-REVIEW::MOCK-BACKEND-REVIEW:9612f30c4ba0:0000"
+    ],
+    "allowed_span_ids": [
+      "MOCK-BACKEND-GUIDELINE:c24e287faaca:0000:s000",
+      "MOCK-BACKEND-REVIEW:9612f30c4ba0:0000:s000"
+    ],
+    "prompt_version": "0.4.0",
+    "output_contract": "ClaimGenerationOutput",
+    "constraints": [
+      "one_verifiable_fact_per_claim",
+      "evidence_id_whitelist",
+      "evidence_span_id_whitelist",
+      "no_external_reference_generation"
+    ]
+  },
+  "generation_constraints": {
+    "status": "ACCEPTED",
+    "accepted_claim_ids": [
+      "MOCK-CLAIM-1"
+    ],
+    "rejected_claim_ids": [],
+    "reasons": []
+  },
+  "retrieved_evidence": [
+    {
+      "id": "MOCK-BACKEND-GUIDELINE::MOCK-BACKEND-GUIDELINE:c24e287faaca:0000",
+      "content": "Synthetic fixture: intervention A improved mock outcome B in mock adults.",
+      "source_type": "guideline",
+      "title": "[MOCK] Synthetic guideline source",
+      "source_metadata": {
+        "citation_id": "MOCK-BACKEND-GUIDELINE::MOCK-BACKEND-GUIDELINE:c24e287faaca:0000",
+        "evidence_id": "MOCK-BACKEND-GUIDELINE",
+        "chunk_id": "MOCK-BACKEND-GUIDELINE:c24e287faaca:0000",
+        "stable_id": "upstream:MOCK-BACKEND-GUIDELINE",
+        "index_version": "d4c55252c8d361fb55a35025e02338b3cb743311c3bfaa4cf06585b92e3b8d3e",
+        "corpus_version": "1c8972a7b0dc12c93cf977f30f819c0cef1aeca2a3722ff4365b2c4f5620531a",
+        "chunk_policy_version": "track1-a3-chunk-v0.1",
+        "embedding_model": "MOCK-EMBEDDING-NOT-FOR-MEDICAL-USE",
+        "embedding_revision": "fixture-v1",
+        "evidence_content_hash": "c24e287faacaa2cc2fbaa024f681795fe239bbfff60576cc6cdd75f7ed26f584",
+        "chunk_content_hash": "58c084386618e1d07b45d167828616f3f2e57b0af56fa184c3dc6eb7c30f187a",
+        "provenance_unknown": false,
+        "page": "",
+        "section": "",
+        "ranking_score": 0.9393939393939396,
+        "ranking_score_kind": "RANKING",
+        "ranking_score_scope": "QUERY_LOCAL",
+        "ranking_score_calibrated": false,
+        "url": null,
+        "fetched_at": "2026-08-11T00:00:00+00:00",
+        "content_hash": "c24e287faacaa2cc2fbaa024f681795fe239bbfff60576cc6cdd75f7ed26f584",
+        "tombstone": false,
+        "source_integrity": "a4_a3_provenance_validated",
+        "a2_provenance": {
+          "a2_schema_version": "a2-evidence-v1",
+          "a2_content_hash": "7be2d05b98d013edd926bda5cda324b0b1e6fd4388728ec7f2aa708064685a71",
+          "a2_source_type": "guideline",
+          "a2_fetched_at": "2026-08-11T00:00:00+00:00",
+          "a2_source_metadata": {
+            "fixture_purpose": "backend_coordination",
+            "aliases": [
+              "MOCK-BACKEND-GUIDELINE"
+            ],
+            "source_records": {
+              "guideline": {
+                "fixture_purpose": "backend_coordination"
+              }
+            }
+          },
+          "fixture": true
+        }
+      },
+      "population": null,
+      "intervention": null,
+      "comparator": null,
+      "outcome": null,
+      "published_at": "2025-08-01T00:00:00",
+      "retrieval_score": 0.92,
+      "retrieval_score_kind": "QUALITY",
+      "retrieval_score_scope": "CROSS_QUERY",
+      "retrieval_score_calibrated": true,
+      "evidence_level": "guideline",
+      "spans": [
+        {
+          "span_id": "MOCK-BACKEND-GUIDELINE:c24e287faaca:0000:s000",
+          "text": "Synthetic fixture: intervention A improved mock outcome B in mock adults.",
+          "chunk_id": "MOCK-BACKEND-GUIDELINE:c24e287faaca:0000",
+          "page": null,
+          "raw_page": null,
+          "section": null,
+          "char_start": null,
+          "char_end": null,
+          "offset_scope": null,
+          "document_char_start": null,
+          "document_char_end": null,
+          "span_content_hash": null,
+          "chunk_content_hash": null,
+          "evidence_content_hash": null
+        }
+      ],
+      "conflicts_with_ids": [],
+      "mock": true
+    },
+    {
+      "id": "MOCK-BACKEND-REVIEW::MOCK-BACKEND-REVIEW:9612f30c4ba0:0000",
+      "content": "Synthetic fixture: an independent mock review discusses intervention A and mock outcome B.",
+      "source_type": "pubmed",
+      "title": "[MOCK] Synthetic review source",
+      "source_metadata": {
+        "citation_id": "MOCK-BACKEND-REVIEW::MOCK-BACKEND-REVIEW:9612f30c4ba0:0000",
+        "evidence_id": "MOCK-BACKEND-REVIEW",
+        "chunk_id": "MOCK-BACKEND-REVIEW:9612f30c4ba0:0000",
+        "stable_id": "upstream:MOCK-BACKEND-REVIEW",
+        "index_version": "fcd7c7e0f53792ecf2638b64d05efd4a883cdb03af0e356e9e85bb0903b2b83a",
+        "corpus_version": "97efe9b03d0342e359d62a3ce166e92bba67635166bd9487fbe9b23483b47f67",
+        "chunk_policy_version": "track1-a3-chunk-v0.1",
+        "embedding_model": "MOCK-EMBEDDING-NOT-FOR-MEDICAL-USE",
+        "embedding_revision": "fixture-v1",
+        "evidence_content_hash": "9612f30c4ba0f0d5cbe12d82f42196cf55f29dd7c647b42f9d519bb9dab2d84c",
+        "chunk_content_hash": "f8eacccd42710fe474cccbb7fdb16f793331909264149480ee43df718f2f7f40",
+        "provenance_unknown": false,
+        "page": "",
+        "section": "",
+        "ranking_score": 0.9257575757575759,
+        "ranking_score_kind": "RANKING",
+        "ranking_score_scope": "QUERY_LOCAL",
+        "ranking_score_calibrated": false,
+        "url": null,
+        "fetched_at": "2026-08-11T00:00:00+00:00",
+        "content_hash": "9612f30c4ba0f0d5cbe12d82f42196cf55f29dd7c647b42f9d519bb9dab2d84c",
+        "tombstone": false,
+        "source_integrity": "a4_a3_provenance_validated",
+        "a2_provenance": {
+          "a2_schema_version": "a2-evidence-v1",
+          "a2_content_hash": "ed4845d3cc167786b8db47f7be9256e56607ae53e67758252474c6c85805b425",
+          "a2_source_type": "pubmed",
+          "a2_fetched_at": "2026-08-11T00:00:00+00:00",
+          "a2_source_metadata": {
+            "fixture_purpose": "backend_coordination",
+            "aliases": [
+              "MOCK-BACKEND-REVIEW"
+            ],
+            "source_records": {
+              "pubmed": {
+                "fixture_purpose": "backend_coordination"
+              }
+            }
+          },
+          "fixture": true
+        }
+      },
+      "population": null,
+      "intervention": null,
+      "comparator": null,
+      "outcome": null,
+      "published_at": "2025-07-01T00:00:00",
+      "retrieval_score": 0.92,
+      "retrieval_score_kind": "QUALITY",
+      "retrieval_score_scope": "CROSS_QUERY",
+      "retrieval_score_calibrated": true,
+      "evidence_level": "systematic_review",
+      "spans": [
+        {
+          "span_id": "MOCK-BACKEND-REVIEW:9612f30c4ba0:0000:s000",
+          "text": "Synthetic fixture: an independent mock review discusses intervention A and mock outcome B.",
+          "chunk_id": "MOCK-BACKEND-REVIEW:9612f30c4ba0:0000",
+          "page": null,
+          "raw_page": null,
+          "section": null,
+          "char_start": null,
+          "char_end": null,
+          "offset_scope": null,
+          "document_char_start": null,
+          "document_char_end": null,
+          "span_content_hash": null,
+          "chunk_content_hash": null,
+          "evidence_content_hash": null
+        }
+      ],
+      "conflicts_with_ids": [],
+      "mock": true
+    }
+  ],
+  "claims": [
+    {
+      "claim_id": "MOCK-CLAIM-1",
+      "run_id": "RUN-c5c20d70fab0",
+      "text": "Synthetic fixture: intervention A improved mock outcome B in mock adults",
+      "criticality": "critical",
+      "evidence_ids": [
+        "MOCK-BACKEND-GUIDELINE::MOCK-BACKEND-GUIDELINE:c24e287faaca:0000"
+      ],
+      "evidence_span_ids": [
+        "MOCK-BACKEND-GUIDELINE:c24e287faaca:0000:s000"
+      ],
+      "uncertainty": "LOW",
+      "entailment_score": 1.0,
+      "population": null,
+      "intervention": null,
+      "comparator": null,
+      "outcome": null,
+      "as_of_date": null,
+      "population_match": "UNKNOWN",
+      "intervention_match": "UNKNOWN",
+      "comparator_match": "UNKNOWN",
+      "outcome_match": "UNKNOWN",
+      "time_match": "MATCH",
+      "conflict_ids": [],
+      "verification_method": "exact_span_match@0.2.0",
+      "decision": "SUPPORTED"
+    }
+  ],
+  "verification_results": [
+    {
+      "claim_id": "MOCK-CLAIM-1",
+      "status": "SUPPORTED",
+      "evidence_ids": [
+        "MOCK-BACKEND-GUIDELINE::MOCK-BACKEND-GUIDELINE:c24e287faaca:0000"
+      ],
+      "evidence_span_ids": [
+        "MOCK-BACKEND-GUIDELINE:c24e287faaca:0000:s000"
+      ],
+      "checked_evidence_ids": [
+        "MOCK-BACKEND-GUIDELINE::MOCK-BACKEND-GUIDELINE:c24e287faaca:0000"
+      ],
+      "illegal_evidence_ids": [],
+      "illegal_span_ids": [],
+      "citation_valid": true,
+      "span_check": "MATCH",
+      "population_match": "UNKNOWN",
+      "intervention_match": "UNKNOWN",
+      "comparator_match": "UNKNOWN",
+      "outcome_match": "UNKNOWN",
+      "time_match": "MATCH",
+      "numeric_match": "UNKNOWN",
+      "unit_match": "UNKNOWN",
+      "entailment_score": 1.0,
+      "conflict_ids": [],
+      "uncertainty": "LOW",
+      "verification_method": "exact_span_match@0.2.0",
+      "reasons": [
+        "textual_support: exact normalized claim text found in cited span"
+      ]
+    }
+  ],
+  "final_answer": {
+    "decision": "PASS",
+    "text": "- Synthetic fixture: intervention A improved mock outcome B in mock adults [MOCK-BACKEND-GUIDELINE::MOCK-BACKEND-GUIDELINE:c24e287faaca:0000]",
+    "included_claim_ids": [
+      "MOCK-CLAIM-1"
+    ],
+    "cited_evidence_ids": [
+      "MOCK-BACKEND-GUIDELINE::MOCK-BACKEND-GUIDELINE:c24e287faaca:0000"
+    ],
+    "limitations": [],
+    "warnings": []
+  },
+  "decision": "PASS",
+  "trace": [
+    {
+      "run_id": "RUN-c5c20d70fab0",
+      "state": "START",
+      "event_type": "state",
+      "timestamp": "2026-08-11T22:48:40.095016Z",
+      "gate": null,
+      "skill": null,
+      "tool": null,
+      "tool_call_index": null,
+      "tool_budget_remaining": null,
+      "input_summary": null,
+      "output_count": null,
+      "evidence_ids": [],
+      "claim_ids": [],
+      "decision": null,
+      "latency_ms": 0.0010999792721122503,
+      "error": null,
+      "details": {}
+    },
+    {
+      "run_id": "RUN-c5c20d70fab0",
+      "state": "GATE0",
+      "event_type": "gate",
+      "timestamp": "2026-08-11T22:48:40.095016Z",
+      "gate": "Gate0@0.2.0",
+      "skill": null,
+      "tool": null,
+      "tool_call_index": null,
+      "tool_budget_remaining": null,
+      "input_summary": null,
+      "output_count": null,
+      "evidence_ids": [],
+      "claim_ids": [],
+      "decision": "ALLOW",
+      "latency_ms": 0.06550000398419797,
+      "error": null,
+      "details": {
+        "reason": "safety_scope_allowed",
+        "policy": "a1-safety-v0.2"
+      }
+    },
+    {
+      "run_id": "RUN-c5c20d70fab0",
+      "state": "CLASSIFY",
+      "event_type": "state",
+      "timestamp": "2026-08-11T22:48:40.095016Z",
+      "gate": null,
+      "skill": null,
+      "tool": null,
+      "tool_call_index": null,
+      "tool_budget_remaining": null,
+      "input_summary": null,
+      "output_count": null,
+      "evidence_ids": [],
+      "claim_ids": [],
+      "decision": null,
+      "latency_ms": 0.008000002708286047,
+      "error": null,
+      "details": {
+        "question_type": "treatment_evidence"
+      }
+    },
+    {
+      "run_id": "RUN-c5c20d70fab0",
+      "state": "SELECT_SKILL",
+      "event_type": "skill",
+      "timestamp": "2026-08-11T22:48:40.095016Z",
+      "gate": null,
+      "skill": "evidence_research@0.2.0",
+      "tool": null,
+      "tool_call_index": null,
+      "tool_budget_remaining": null,
+      "input_summary": null,
+      "output_count": null,
+      "evidence_ids": [],
+      "claim_ids": [],
+      "decision": null,
+      "latency_ms": 0.006400019628927112,
+      "error": null,
+      "details": {
+        "route_reason": "question_type=treatment_evidence; stage=retrieval"
+      }
+    },
+    {
+      "run_id": "RUN-c5c20d70fab0",
+      "state": "PLAN",
+      "event_type": "skill",
+      "timestamp": "2026-08-11T22:48:40.095016Z",
+      "gate": null,
+      "skill": "evidence_research@0.2.0",
+      "tool": null,
+      "tool_call_index": null,
+      "tool_budget_remaining": null,
+      "input_summary": {
+        "question_type": "treatment_evidence"
+      },
+      "output_count": null,
+      "evidence_ids": [],
+      "claim_ids": [],
+      "decision": null,
+      "latency_ms": 0.04149999585933983,
+      "error": null,
+      "details": {
+        "agent_plan": {
+          "question_type": "treatment_evidence",
+          "selected_skill": "evidence_research@0.2.0",
+          "search_plan": {
+            "queries": [
+              "请检索治疗证据；这是合成协同测试，不是医学问题回答。"
+            ],
+            "preferred_sources": [
+              "guideline",
+              "systematic_review",
+              "primary_study"
+            ],
+            "freshness_required": true,
+            "expected_evidence_types": [
+              "guideline",
+              "systematic_review",
+              "controlled_study"
+            ],
+            "max_tool_calls": 3
+          },
+          "policy_version": "temporary-a1-default-0.2.0",
+          "evidence_summary": {
+            "evidence_count": 0,
+            "evidence_ids": [],
+            "source_types": [],
+            "source_diversity": null,
+            "strongest_evidence_level": null,
+            "freshness_summary": "UNKNOWN",
+            "conflicts_detected": false,
+            "summary_text": "No evidence retrieved; quality fields remain UNKNOWN."
+          }
+        }
+      }
+    },
+    {
+      "run_id": "RUN-c5c20d70fab0",
+      "state": "RETRIEVE",
+      "event_type": "tool",
+      "timestamp": "2026-08-11T22:48:40.603602Z",
+      "gate": null,
+      "skill": "evidence_research@0.2.0",
+      "tool": "a2_mcp_a3_index_a4_rerank",
+      "tool_call_index": 1,
+      "tool_budget_remaining": 2,
+      "input_summary": {
+        "source_type": "guideline",
+        "query_count": 1
+      },
+      "output_count": 1,
+      "evidence_ids": [
+        "MOCK-BACKEND-GUIDELINE::MOCK-BACKEND-GUIDELINE:c24e287faaca:0000"
+      ],
+      "claim_ids": [],
+      "decision": null,
+      "latency_ms": 510.0797000050079,
+      "error": null,
+      "details": {
+        "diagnostics": {
+          "adapter": "A4EvidenceRetrieverAdapter",
+          "tool_call_index": 1,
+          "requested_source": "guideline",
+          "query_count": 1,
+          "status": "ok",
+          "degradation_reasons": [],
+          "degradation_codes": [],
+          "retrieval_warning": "Final selection is from a single source. Claim 1 lacks aligning evidence (INSUFFICIENT). Claim 2 lacks aligning evidence (INSUFFICIENT).",
+          "latency_ms": 0,
+          "stage_latency_ms": {
+            "bm25": 0,
+            "vector": 0,
+            "fusion": 0,
+            "rerank": 0,
+            "mmr": 0,
+            "total": 0
+          },
+          "versions": {
+            "index_version": "d4c55252c8d361fb55a35025e02338b3cb743311c3bfaa4cf06585b92e3b8d3e",
+            "corpus_version": "1c8972a7b0dc12c93cf977f30f819c0cef1aeca2a3722ff4365b2c4f5620531a",
+            "rerank_config_version": "p0-v1",
+            "reason_code_version": "reason-codes-v1"
+          },
+          "ranking_score_semantics": {
+            "kind": "RANKING",
+            "scope": "QUERY_LOCAL",
+            "calibrated": false
+          },
+          "quality_score_semantics": {
+            "kind": "QUALITY",
+            "scope": "CROSS_QUERY",
+            "calibrated": true,
+            "count": 1
+          },
+          "run_hash": "4fd7a659d30c37b71decd068ec7aa26482091be8090d719607cea61dbd190d92",
+          "config_snapshot": {
+            "rerank_config_version": "p0-v1",
+            "index_version": "d4c55252c8d361fb55a35025e02338b3cb743311c3bfaa4cf06585b92e3b8d3e",
+            "corpus_version": "1c8972a7b0dc12c93cf977f30f819c0cef1aeca2a3722ff4365b2c4f5620531a",
+            "selection_top_k": 6,
+            "mmr_lambda": 0.75,
+            "low_top_rerank_score": 0.35,
+            "default_as_of_date": "2026-08-11",
+            "citation_id_rule": "evidence_id::chunk_id",
+            "alignment_threshold_version": "p0-v1",
+            "reason_code_version": "reason-codes-v1",
+            "weights": {
+              "semantic": 0.3,
+              "lexical": 0.2,
+              "pico_match": 0.15,
+              "evidence_level": 0.15,
+              "freshness": 0.1,
+              "source_reliability": 0.1
+            }
+          },
+          "config_hash": "4d61c9a8d1405cce28b4edcf19b7027cf5d1a01be3a8f1bdbf7d2d1aad6239c5",
+          "span_status": "A3_AVAILABLE",
+          "span_provider": true,
+          "alignment_hints": [
+            {
+              "claim_index": 0,
+              "claim_text": "请检索治疗证据",
+              "decision": "INSUFFICIENT",
+              "evidence_ids": [],
+              "reason": "max token overlap 0.00",
+              "method": "token_overlap_heuristic",
+              "threshold_version": "p0-v1"
+            },
+            {
+              "claim_index": 1,
+              "claim_text": "这是合成协同测试，不是医学问题回答",
+              "decision": "INSUFFICIENT",
+              "evidence_ids": [],
+              "reason": "max token overlap 0.00",
+              "method": "token_overlap_heuristic",
+              "threshold_version": "p0-v1"
+            }
+          ],
+          "out_of_scope": false,
+          "pipeline": [
+            "A2_MCP",
+            "A2_TO_A3",
+            "A3_INDEX",
+            "A4_RETRIEVAL"
+          ],
+          "a2": {
+            "backend_config_version": "track1-backend-config-v0.1",
+            "backend_config_hash": "725ca7ead0c04c0993145d0ab337b4be4ce9e0984c539dc492343ed8e84ef86b",
+            "source_alias": "guideline",
+            "tool_call_index": 1,
+            "query_count": 1,
+            "result_limit": 50,
+            "tool_called": true,
+            "result_count": 1,
+            "a2_diagnostics": {
+              "tool_name": "search_guidelines",
+              "source": "guideline",
+              "cache_hit": false,
+              "result_count": 1,
+              "upstream_request_count": 0,
+              "retry_count": 0,
+              "latency_ms": 5.1626999920699745,
+              "schema_version": "a2-evidence-v1",
+              "upstream_api_version": null
+            }
+          },
+          "a3": {
+            "index_version": "d4c55252c8d361fb55a35025e02338b3cb743311c3bfaa4cf06585b92e3b8d3e",
+            "corpus_version": "1c8972a7b0dc12c93cf977f30f819c0cef1aeca2a3722ff4365b2c4f5620531a",
+            "chunk_policy_version": "track1-a3-chunk-v0.1",
+            "embedding_provider": "FixtureEmbeddingProvider",
+            "embedding_model": "MOCK-EMBEDDING-NOT-FOR-MEDICAL-USE",
+            "embedding_revision": "fixture-v1",
+            "evidence_count": 1,
+            "chunk_count": 1,
+            "span_count": 1
+          },
+          "retrieval_condition": "R1",
+          "initial_candidate_pool_hash": "92d7f2e686b3d22476758af76e6176d02fb5f1894f608c66d66a8c06e5808154"
+        }
+      }
+    },
+    {
+      "run_id": "RUN-c5c20d70fab0",
+      "state": "GATE1",
+      "event_type": "gate",
+      "timestamp": "2026-08-11T22:48:40.603602Z",
+      "gate": "Gate1@0.3.0",
+      "skill": null,
+      "tool": null,
+      "tool_call_index": null,
+      "tool_budget_remaining": 2,
+      "input_summary": null,
+      "output_count": null,
+      "evidence_ids": [
+        "MOCK-BACKEND-GUIDELINE::MOCK-BACKEND-GUIDELINE:c24e287faaca:0000"
+      ],
+      "claim_ids": [],
+      "decision": "ELIGIBLE",
+      "latency_ms": 0.03589998232200742,
+      "error": null,
+      "details": {
+        "status": "ELIGIBLE",
+        "eligible_evidence_ids": [
+          "MOCK-BACKEND-GUIDELINE::MOCK-BACKEND-GUIDELINE:c24e287faaca:0000"
+        ],
+        "rejected_evidence_ids": [],
+        "unknown_evidence_ids": [],
+        "items": [
+          {
+            "evidence_id": "MOCK-BACKEND-GUIDELINE::MOCK-BACKEND-GUIDELINE:c24e287faaca:0000",
+            "status": "ELIGIBLE",
+            "reason_codes": [
+              "mock_fixture_allowed"
+            ]
+          }
+        ],
+        "reasons": [
+          "mock_fixture_allowed"
+        ]
+      }
+    },
+    {
+      "run_id": "RUN-c5c20d70fab0",
+      "state": "GATE2",
+      "event_type": "gate",
+      "timestamp": "2026-08-11T22:48:40.603602Z",
+      "gate": "Gate2@0.3.0",
+      "skill": null,
+      "tool": null,
+      "tool_call_index": null,
+      "tool_budget_remaining": 2,
+      "input_summary": null,
+      "output_count": null,
+      "evidence_ids": [
+        "MOCK-BACKEND-GUIDELINE::MOCK-BACKEND-GUIDELINE:c24e287faaca:0000"
+      ],
+      "claim_ids": [],
+      "decision": "INSUFFICIENT",
+      "latency_ms": 0.04529999569058418,
+      "error": null,
+      "details": {
+        "status": "INSUFFICIENT",
+        "reasons": [
+          "retrieval_insufficient: candidate_count below threshold",
+          "retrieval_insufficient: source coverage below threshold"
+        ],
+        "metrics": {
+          "candidate_count": 1,
+          "top_score": 0.92,
+          "top_ranking_score": 0.9393939393939396,
+          "usable_quality_score_count": 1,
+          "source_type_count": 1,
+          "source_diversity": 1.0,
+          "strongest_evidence_level": "guideline",
+          "freshness_state": "FRESH",
+          "conflict_count": 0
+        },
+        "recommended_action": "RETRY"
+      }
+    },
+    {
+      "run_id": "RUN-c5c20d70fab0",
+      "state": "RETRIEVE",
+      "event_type": "tool",
+      "timestamp": "2026-08-11T22:48:40.661395Z",
+      "gate": null,
+      "skill": "evidence_research@0.2.0",
+      "tool": "a2_mcp_a3_index_a4_rerank",
+      "tool_call_index": 2,
+      "tool_budget_remaining": 1,
+      "input_summary": {
+        "source_type": "systematic_review",
+        "query_count": 1
+      },
+      "output_count": 1,
+      "evidence_ids": [
+        "MOCK-BACKEND-REVIEW::MOCK-BACKEND-REVIEW:9612f30c4ba0:0000"
+      ],
+      "claim_ids": [],
+      "decision": null,
+      "latency_ms": 59.648499998729676,
+      "error": null,
+      "details": {
+        "diagnostics": {
+          "adapter": "A4EvidenceRetrieverAdapter",
+          "tool_call_index": 2,
+          "requested_source": "systematic_review",
+          "query_count": 1,
+          "status": "ok",
+          "degradation_reasons": [],
+          "degradation_codes": [],
+          "retrieval_warning": "Final selection is from a single source. Claim 1 lacks aligning evidence (INSUFFICIENT). Claim 2 lacks aligning evidence (INSUFFICIENT).",
+          "latency_ms": 0,
+          "stage_latency_ms": {
+            "bm25": 0,
+            "vector": 0,
+            "fusion": 0,
+            "rerank": 0,
+            "mmr": 0,
+            "total": 0
+          },
+          "versions": {
+            "index_version": "fcd7c7e0f53792ecf2638b64d05efd4a883cdb03af0e356e9e85bb0903b2b83a",
+            "corpus_version": "97efe9b03d0342e359d62a3ce166e92bba67635166bd9487fbe9b23483b47f67",
+            "rerank_config_version": "p0-v1",
+            "reason_code_version": "reason-codes-v1"
+          },
+          "ranking_score_semantics": {
+            "kind": "RANKING",
+            "scope": "QUERY_LOCAL",
+            "calibrated": false
+          },
+          "quality_score_semantics": {
+            "kind": "QUALITY",
+            "scope": "CROSS_QUERY",
+            "calibrated": true,
+            "count": 1
+          },
+          "run_hash": "f591866c546d3c7eba0e6180f1deac6a1cfe3a7278d4d31261e5fef9471eeef8",
+          "config_snapshot": {
+            "rerank_config_version": "p0-v1",
+            "index_version": "fcd7c7e0f53792ecf2638b64d05efd4a883cdb03af0e356e9e85bb0903b2b83a",
+            "corpus_version": "97efe9b03d0342e359d62a3ce166e92bba67635166bd9487fbe9b23483b47f67",
+            "selection_top_k": 6,
+            "mmr_lambda": 0.75,
+            "low_top_rerank_score": 0.35,
+            "default_as_of_date": "2026-08-11",
+            "citation_id_rule": "evidence_id::chunk_id",
+            "alignment_threshold_version": "p0-v1",
+            "reason_code_version": "reason-codes-v1",
+            "weights": {
+              "semantic": 0.3,
+              "lexical": 0.2,
+              "pico_match": 0.15,
+              "evidence_level": 0.15,
+              "freshness": 0.1,
+              "source_reliability": 0.1
+            }
+          },
+          "config_hash": "c62d748028c1e711d6c38d4d6ced419775eea7bc01ed62c25e315438be33cc86",
+          "span_status": "A3_AVAILABLE",
+          "span_provider": true,
+          "alignment_hints": [
+            {
+              "claim_index": 0,
+              "claim_text": "请检索治疗证据",
+              "decision": "INSUFFICIENT",
+              "evidence_ids": [],
+              "reason": "max token overlap 0.00",
+              "method": "token_overlap_heuristic",
+              "threshold_version": "p0-v1"
+            },
+            {
+              "claim_index": 1,
+              "claim_text": "这是合成协同测试，不是医学问题回答",
+              "decision": "INSUFFICIENT",
+              "evidence_ids": [],
+              "reason": "max token overlap 0.00",
+              "method": "token_overlap_heuristic",
+              "threshold_version": "p0-v1"
+            }
+          ],
+          "out_of_scope": false,
+          "pipeline": [
+            "A2_MCP",
+            "A2_TO_A3",
+            "A3_INDEX",
+            "A4_RETRIEVAL"
+          ],
+          "a2": {
+            "backend_config_version": "track1-backend-config-v0.1",
+            "backend_config_hash": "725ca7ead0c04c0993145d0ab337b4be4ce9e0984c539dc492343ed8e84ef86b",
+            "source_alias": "systematic_review",
+            "tool_call_index": 2,
+            "query_count": 1,
+            "result_limit": 50,
+            "tool_called": true,
+            "result_count": 1,
+            "a2_diagnostics": {
+              "tool_name": "search_pubmed",
+              "source": "pubmed",
+              "cache_hit": false,
+              "result_count": 1,
+              "upstream_request_count": 0,
+              "retry_count": 0,
+              "latency_ms": 4.415500006871298,
+              "schema_version": "a2-evidence-v1",
+              "upstream_api_version": null
+            }
+          },
+          "a3": {
+            "index_version": "fcd7c7e0f53792ecf2638b64d05efd4a883cdb03af0e356e9e85bb0903b2b83a",
+            "corpus_version": "97efe9b03d0342e359d62a3ce166e92bba67635166bd9487fbe9b23483b47f67",
+            "chunk_policy_version": "track1-a3-chunk-v0.1",
+            "embedding_provider": "FixtureEmbeddingProvider",
+            "embedding_model": "MOCK-EMBEDDING-NOT-FOR-MEDICAL-USE",
+            "embedding_revision": "fixture-v1",
+            "evidence_count": 1,
+            "chunk_count": 1,
+            "span_count": 1
+          },
+          "retrieval_condition": "R1",
+          "initial_candidate_pool_hash": "8377ea9aebefc458ea317dd20b8b605e27a9ef9a428bf735fd91ceee8d941100"
+        }
+      }
+    },
+    {
+      "run_id": "RUN-c5c20d70fab0",
+      "state": "GATE1",
+      "event_type": "gate",
+      "timestamp": "2026-08-11T22:48:40.661395Z",
+      "gate": "Gate1@0.3.0",
+      "skill": null,
+      "tool": null,
+      "tool_call_index": null,
+      "tool_budget_remaining": 1,
+      "input_summary": null,
+      "output_count": null,
+      "evidence_ids": [
+        "MOCK-BACKEND-GUIDELINE::MOCK-BACKEND-GUIDELINE:c24e287faaca:0000",
+        "MOCK-BACKEND-REVIEW::MOCK-BACKEND-REVIEW:9612f30c4ba0:0000"
+      ],
+      "claim_ids": [],
+      "decision": "ELIGIBLE",
+      "latency_ms": 0.036699988413602114,
+      "error": null,
+      "details": {
+        "status": "ELIGIBLE",
+        "eligible_evidence_ids": [
+          "MOCK-BACKEND-GUIDELINE::MOCK-BACKEND-GUIDELINE:c24e287faaca:0000",
+          "MOCK-BACKEND-REVIEW::MOCK-BACKEND-REVIEW:9612f30c4ba0:0000"
+        ],
+        "rejected_evidence_ids": [],
+        "unknown_evidence_ids": [],
+        "items": [
+          {
+            "evidence_id": "MOCK-BACKEND-GUIDELINE::MOCK-BACKEND-GUIDELINE:c24e287faaca:0000",
+            "status": "ELIGIBLE",
+            "reason_codes": [
+              "mock_fixture_allowed"
+            ]
+          },
+          {
+            "evidence_id": "MOCK-BACKEND-REVIEW::MOCK-BACKEND-REVIEW:9612f30c4ba0:0000",
+            "status": "ELIGIBLE",
+            "reason_codes": [
+              "mock_fixture_allowed"
+            ]
+          }
+        ],
+        "reasons": [
+          "mock_fixture_allowed"
+        ]
+      }
+    },
+    {
+      "run_id": "RUN-c5c20d70fab0",
+      "state": "GATE2",
+      "event_type": "gate",
+      "timestamp": "2026-08-11T22:48:40.661395Z",
+      "gate": "Gate2@0.3.0",
+      "skill": null,
+      "tool": null,
+      "tool_call_index": null,
+      "tool_budget_remaining": 1,
+      "input_summary": null,
+      "output_count": null,
+      "evidence_ids": [
+        "MOCK-BACKEND-GUIDELINE::MOCK-BACKEND-GUIDELINE:c24e287faaca:0000",
+        "MOCK-BACKEND-REVIEW::MOCK-BACKEND-REVIEW:9612f30c4ba0:0000"
+      ],
+      "claim_ids": [],
+      "decision": "SUFFICIENT",
+      "latency_ms": 0.04320000880397856,
+      "error": null,
+      "details": {
+        "status": "SUFFICIENT",
+        "reasons": [],
+        "metrics": {
+          "candidate_count": 2,
+          "top_score": 0.92,
+          "top_ranking_score": 0.9393939393939396,
+          "usable_quality_score_count": 2,
+          "source_type_count": 2,
+          "source_diversity": 1.0,
+          "strongest_evidence_level": "guideline",
+          "freshness_state": "FRESH",
+          "conflict_count": 0
+        },
+        "recommended_action": "CONTINUE"
+      }
+    },
+    {
+      "run_id": "RUN-c5c20d70fab0",
+      "state": "SUMMARIZE_EVIDENCE",
+      "event_type": "skill",
+      "timestamp": "2026-08-11T22:48:40.661395Z",
+      "gate": null,
+      "skill": "evidence_research@0.2.0",
+      "tool": null,
+      "tool_call_index": null,
+      "tool_budget_remaining": null,
+      "input_summary": null,
+      "output_count": 2,
+      "evidence_ids": [
+        "MOCK-BACKEND-GUIDELINE::MOCK-BACKEND-GUIDELINE:c24e287faaca:0000",
+        "MOCK-BACKEND-REVIEW::MOCK-BACKEND-REVIEW:9612f30c4ba0:0000"
+      ],
+      "claim_ids": [],
+      "decision": null,
+      "latency_ms": 0.039700011257082224,
+      "error": null,
+      "details": {
+        "evidence_count": 2,
+        "evidence_ids": [
+          "MOCK-BACKEND-GUIDELINE::MOCK-BACKEND-GUIDELINE:c24e287faaca:0000",
+          "MOCK-BACKEND-REVIEW::MOCK-BACKEND-REVIEW:9612f30c4ba0:0000"
+        ],
+        "source_types": [
+          "guideline",
+          "pubmed"
+        ],
+        "source_diversity": 1.0,
+        "strongest_evidence_level": "guideline",
+        "freshness_summary": "FRESH",
+        "conflicts_detected": false,
+        "summary_text": "2 evidence record(s) from 2 source type(s); strongest level=guideline; freshness=FRESH; conflicts=0."
+      }
+    },
+    {
+      "run_id": "RUN-c5c20d70fab0",
+      "state": "GATE3",
+      "event_type": "gate",
+      "timestamp": "2026-08-11T22:48:40.661395Z",
+      "gate": "Gate3@0.4.0",
+      "skill": "claim_generation@0.4.0",
+      "tool": null,
+      "tool_call_index": null,
+      "tool_budget_remaining": null,
+      "input_summary": null,
+      "output_count": null,
+      "evidence_ids": [],
+      "claim_ids": [],
+      "decision": null,
+      "latency_ms": 0.01580000389367342,
+      "error": null,
+      "details": {
+        "question_id": "MOCK-BACKEND-QUESTION",
+        "allowed_evidence_ids": [
+          "MOCK-BACKEND-GUIDELINE::MOCK-BACKEND-GUIDELINE:c24e287faaca:0000",
+          "MOCK-BACKEND-REVIEW::MOCK-BACKEND-REVIEW:9612f30c4ba0:0000"
+        ],
+        "allowed_span_ids": [
+          "MOCK-BACKEND-GUIDELINE:c24e287faaca:0000:s000",
+          "MOCK-BACKEND-REVIEW:9612f30c4ba0:0000:s000"
+        ],
+        "prompt_version": "0.4.0",
+        "output_contract": "ClaimGenerationOutput",
+        "constraints": [
+          "one_verifiable_fact_per_claim",
+          "evidence_id_whitelist",
+          "evidence_span_id_whitelist",
+          "no_external_reference_generation"
+        ]
+      }
+    },
+    {
+      "run_id": "RUN-c5c20d70fab0",
+      "state": "GATE4",
+      "event_type": "generation",
+      "timestamp": "2026-08-11T22:48:40.666119Z",
+      "gate": "Gate4@0.4.0",
+      "skill": "claim_generation@0.4.0",
+      "tool": null,
+      "tool_call_index": null,
+      "tool_budget_remaining": null,
+      "input_summary": null,
+      "output_count": 1,
+      "evidence_ids": [],
+      "claim_ids": [
+        "MOCK-CLAIM-1"
+      ],
+      "decision": "ACCEPTED",
+      "latency_ms": 1.2049999786540866,
+      "error": null,
+      "details": {
+        "status": "ACCEPTED",
+        "accepted_claim_ids": [
+          "MOCK-CLAIM-1"
+        ],
+        "rejected_claim_ids": [],
+        "reasons": []
+      }
+    },
+    {
+      "run_id": "RUN-c5c20d70fab0",
+      "state": "GENERATE_CLAIMS",
+      "event_type": "generation",
+      "timestamp": "2026-08-11T22:48:40.666119Z",
+      "gate": null,
+      "skill": null,
+      "tool": null,
+      "tool_call_index": null,
+      "tool_budget_remaining": null,
+      "input_summary": null,
+      "output_count": 1,
+      "evidence_ids": [],
+      "claim_ids": [
+        "MOCK-CLAIM-1"
+      ],
+      "decision": null,
+      "latency_ms": 1.2129999813623726,
+      "error": null,
+      "details": {
+        "compatibility_alias_for": "Gate4"
+      }
+    },
+    {
+      "run_id": "RUN-c5c20d70fab0",
+      "state": "CLAIM_SPLITTER",
+      "event_type": "skill",
+      "timestamp": "2026-08-11T22:48:40.666119Z",
+      "gate": null,
+      "skill": "citation_audit@0.3.0",
+      "tool": null,
+      "tool_call_index": null,
+      "tool_budget_remaining": null,
+      "input_summary": null,
+      "output_count": 1,
+      "evidence_ids": [],
+      "claim_ids": [
+        "MOCK-CLAIM-1"
+      ],
+      "decision": null,
+      "latency_ms": 1.2246999831404537,
+      "error": null,
+      "details": {
+        "route_reason": "stage=claim_verification"
+      }
+    },
+    {
+      "run_id": "RUN-c5c20d70fab0",
+      "state": "AUDIT_CITATIONS",
+      "event_type": "skill",
+      "timestamp": "2026-08-11T22:48:40.666119Z",
+      "gate": null,
+      "skill": "citation_audit@0.3.0",
+      "tool": null,
+      "tool_call_index": null,
+      "tool_budget_remaining": null,
+      "input_summary": null,
+      "output_count": null,
+      "evidence_ids": [],
+      "claim_ids": [
+        "MOCK-CLAIM-1"
+      ],
+      "decision": "PASS",
+      "latency_ms": 0.3572000132407993,
+      "error": null,
+      "details": {
+        "approved": [
+          "MOCK-CLAIM-1"
+        ],
+        "rejected": []
+      }
+    },
+    {
+      "run_id": "RUN-c5c20d70fab0",
+      "state": "GATE5",
+      "event_type": "gate",
+      "timestamp": "2026-08-11T22:48:40.666119Z",
+      "gate": "Gate5@0.3.0",
+      "skill": "citation_audit@0.3.0",
+      "tool": null,
+      "tool_call_index": null,
+      "tool_budget_remaining": null,
+      "input_summary": null,
+      "output_count": null,
+      "evidence_ids": [],
+      "claim_ids": [
+        "MOCK-CLAIM-1"
+      ],
+      "decision": null,
+      "latency_ms": 0.0247000134550035,
+      "error": null,
+      "details": {
+        "results": [
+          {
+            "claim_id": "MOCK-CLAIM-1",
+            "status": "SUPPORTED",
+            "evidence_ids": [
+              "MOCK-BACKEND-GUIDELINE::MOCK-BACKEND-GUIDELINE:c24e287faaca:0000"
+            ],
+            "evidence_span_ids": [
+              "MOCK-BACKEND-GUIDELINE:c24e287faaca:0000:s000"
+            ],
+            "checked_evidence_ids": [
+              "MOCK-BACKEND-GUIDELINE::MOCK-BACKEND-GUIDELINE:c24e287faaca:0000"
+            ],
+            "illegal_evidence_ids": [],
+            "illegal_span_ids": [],
+            "citation_valid": true,
+            "span_check": "MATCH",
+            "population_match": "UNKNOWN",
+            "intervention_match": "UNKNOWN",
+            "comparator_match": "UNKNOWN",
+            "outcome_match": "UNKNOWN",
+            "time_match": "MATCH",
+            "numeric_match": "UNKNOWN",
+            "unit_match": "UNKNOWN",
+            "entailment_score": 1.0,
+            "conflict_ids": [],
+            "uncertainty": "LOW",
+            "verification_method": "exact_span_match@0.2.0",
+            "reasons": [
+              "textual_support: exact normalized claim text found in cited span"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "run_id": "RUN-c5c20d70fab0",
+      "state": "GATE6",
+      "event_type": "decision",
+      "timestamp": "2026-08-11T22:48:40.666119Z",
+      "gate": "Gate6@0.3.0",
+      "skill": null,
+      "tool": null,
+      "tool_call_index": null,
+      "tool_budget_remaining": null,
+      "input_summary": null,
+      "output_count": null,
+      "evidence_ids": [],
+      "claim_ids": [],
+      "decision": "PASS",
+      "latency_ms": 0.0014999823179095984,
+      "error": null,
+      "details": {
+        "reasons": []
+      }
+    },
+    {
+      "run_id": "RUN-c5c20d70fab0",
+      "state": "FINALIZE",
+      "event_type": "decision",
+      "timestamp": "2026-08-11T22:48:40.666119Z",
+      "gate": null,
+      "skill": null,
+      "tool": null,
+      "tool_call_index": null,
+      "tool_budget_remaining": null,
+      "input_summary": null,
+      "output_count": null,
+      "evidence_ids": [
+        "MOCK-BACKEND-GUIDELINE::MOCK-BACKEND-GUIDELINE:c24e287faaca:0000"
+      ],
+      "claim_ids": [
+        "MOCK-CLAIM-1"
+      ],
+      "decision": "PASS",
+      "latency_ms": 0.014499993994832039,
+      "error": null,
+      "details": {
+        "limitations": []
+      }
+    },
+    {
+      "run_id": "RUN-c5c20d70fab0",
+      "state": "END",
+      "event_type": "state",
+      "timestamp": "2026-08-11T22:48:40.666119Z",
+      "gate": null,
+      "skill": null,
+      "tool": null,
+      "tool_call_index": null,
+      "tool_budget_remaining": null,
+      "input_summary": null,
+      "output_count": null,
+      "evidence_ids": [],
+      "claim_ids": [],
+      "decision": "PASS",
+      "latency_ms": 0.000700005330145359,
+      "error": null,
+      "details": {
+        "run_latency_ms": 571.1030000000001
+      }
+    }
+  ],
+  "agent_version": "0.3.0",
+  "skill_versions": {
+    "evidence_research": "0.2.0",
+    "citation_audit": "0.3.0"
+  },
+  "prompt_versions": {
+    "question_classification": "0.2.0",
+    "evidence_research": "0.2.0",
+    "claim_generation": "0.4.0",
+    "citation_audit": "0.3.0"
+  },
+  "gate_config_version": "0.3.0",
+  "runtime_config_snapshot": {
+    "agent": {
+      "config_version": "0.3.0",
+      "agent_version": "0.3.0",
+      "state_machine_version": "0.3.0",
+      "max_tool_calls": 3
+    },
+    "gates": {
+      "config_version": "0.3.0",
+      "threshold_status": "development_default_not_clinically_validated",
+      "gate0_version": "0.2.0",
+      "gate1_version": "0.3.0",
+      "gate2_version": "0.3.0",
+      "gate3_version": "0.4.0",
+      "gate4_version": "0.4.0",
+      "gate5_version": "0.3.0",
+      "gate6_version": "0.3.0",
+      "gate1": {
+        "required_source_metadata": [
+          "stable_id",
+          "url",
+          "fetched_at",
+          "content_hash"
+        ],
+        "accepted_integrity_markers": [
+          "a2_mcp_normalized",
+          "a3_provenance_validated",
+          "a4_a3_provenance_validated"
+        ]
+      },
+      "gate2": {
+        "min_candidates": 2,
+        "min_top_score": 0.7,
+        "min_source_types": 2,
+        "min_source_diversity": 0.5,
+        "accepted_evidence_levels": [
+          "guideline",
+          "systematic_review",
+          "controlled_study"
+        ],
+        "max_age_days": 1825,
+        "min_fresh_fraction": 0.5,
+        "max_conflicts": 0,
+        "required_score_kind": "QUALITY",
+        "required_score_scope": "CROSS_QUERY",
+        "require_calibrated_score": true
+      },
+      "gate5": {
+        "require_span": true,
+        "require_pico_when_claim_specified": true,
+        "require_time_when_fresh": true,
+        "supported_entailment_threshold": 1.0,
+        "require_numeric_consistency": true
+      },
+      "gate6": {
+        "critical_allowed_uncertainty": [
+          "LOW",
+          "MEDIUM"
+        ]
+      }
+    },
+    "skills": {
+      "config_version": "0.3.0",
+      "evidence_research": {
+        "version": "0.2.0",
+        "prompt_version": "0.2.0",
+        "manifest": "a5/skills/evidence_research/manifest.yaml"
+      },
+      "citation_audit": {
+        "version": "0.3.0",
+        "prompt_version": "0.3.0",
+        "manifest": "a5/skills/citation_audit/manifest.yaml"
+      },
+      "prompt_versions": {
+        "question_classification": "0.2.0",
+        "evidence_research": "0.2.0",
+        "claim_generation": "0.4.0",
+        "citation_audit": "0.3.0"
+      },
+      "classifier": {
+        "policy_version": "temporary-a1-default-0.2.0",
+        "fallback_type": "general_evidence",
+        "keyword_types": {
+          "treatment_evidence": [
+            "treat",
+            "therapy",
+            "intervention",
+            "治疗",
+            "用药"
+          ],
+          "diagnostic_evidence": [
+            "diagnos",
+            "test",
+            "screen",
+            "诊断",
+            "筛查"
+          ]
+        },
+        "rules": {
+          "stable_mechanism": {
+            "preferred_sources": [
+              "pubmed_review",
+              "europe_pmc"
+            ],
+            "expected_evidence_types": [
+              "systematic_review",
+              "review"
+            ],
+            "freshness_required": false,
+            "max_tool_calls": 2
+          },
+          "guideline_treatment": {
+            "preferred_sources": [
+              "current_guideline",
+              "pubmed_review",
+              "europe_pmc"
+            ],
+            "expected_evidence_types": [
+              "guideline",
+              "systematic_review",
+              "controlled_study"
+            ],
+            "freshness_required": true,
+            "max_tool_calls": 3
+          },
+          "latest_research_trial": {
+            "preferred_sources": [
+              "clinicaltrials_record",
+              "pubmed_trial",
+              "europe_pmc"
+            ],
+            "expected_evidence_types": [
+              "clinical_trial",
+              "controlled_study"
+            ],
+            "freshness_required": true,
+            "max_tool_calls": 3
+          },
+          "insufficient_conflict_out_of_scope": {
+            "preferred_sources": [
+              "current_guideline",
+              "pubmed_review",
+              "clinicaltrials_record"
+            ],
+            "expected_evidence_types": [
+              "guideline",
+              "systematic_review",
+              "clinical_trial"
+            ],
+            "freshness_required": true,
+            "max_tool_calls": 3
+          },
+          "treatment_evidence": {
+            "preferred_sources": [
+              "guideline",
+              "systematic_review",
+              "primary_study"
+            ],
+            "expected_evidence_types": [
+              "guideline",
+              "systematic_review",
+              "controlled_study"
+            ],
+            "freshness_required": true,
+            "max_tool_calls": 3
+          },
+          "diagnostic_evidence": {
+            "preferred_sources": [
+              "guideline",
+              "systematic_review",
+              "diagnostic_study"
+            ],
+            "expected_evidence_types": [
+              "guideline",
+              "diagnostic_accuracy_study"
+            ],
+            "freshness_required": true,
+            "max_tool_calls": 3
+          },
+          "general_evidence": {
+            "preferred_sources": [
+              "guideline",
+              "systematic_review",
+              "primary_study"
+            ],
+            "expected_evidence_types": [
+              "guideline",
+              "review",
+              "study"
+            ],
+            "freshness_required": false,
+            "max_tool_calls": 2
+          }
+        }
+      }
+    },
+    "models": {
+      "config_version": "0.3.0",
+      "claim_generator": "mock_claim_generator@0.2.0",
+      "claim_verifier": "rule_based_claim_verifier@0.3.0",
+      "textual_support_evaluator": "exact_span_match@0.2.0",
+      "structured_generation_transport": "injected_openai_compatible@0.4.0",
+      "semantic_support_evaluator": "injected_independent_verifier@0.4.0"
+    },
+    "integrations": {
+      "config_version": "a5-upstream-adapters-v0.3.0",
+      "status": "branch_contracts_reviewed_not_main_integrated",
+      "a1": {
+        "contract_version": "question-v0.2+safety-v0.2+agent-termination-v0.2",
+        "source_ref": "commit-b3e1ea6",
+        "status": "reviewed_branch_contract"
+      },
+      "a2": {
+        "contract_version": "a2-evidence-v1+mcp-tools-v1",
+        "source_ref": "commit-881025a",
+        "status": "reviewed_branch_contract"
+      },
+      "a3": {
+        "contract_version": "a3-compat-v0.3",
+        "source_ref": "commit-91a9180",
+        "status": "reviewed_branch_contract"
+      },
+      "a4": {
+        "contract_version": "a4-search-result-21ad3a0",
+        "source_ref": "commit-21ad3a0",
+        "status": "reviewed_branch_contract_blocked_on_rerank_evidence"
+      },
+      "embedding_capability": {
+        "owner": "A3",
+        "enabled": false,
+        "status": "pending_real_dev_recall_at_50_latency_and_reproducibility",
+        "model": "BAAI/bge-m3",
+        "required_dev_metrics": [
+          "Recall@50",
+          "latency_ms",
+          "index_rebuild_reproducibility"
+        ]
+      },
+      "cross_encoder_capability": {
+        "owner": "A4",
+        "enabled": false,
+        "status": "pending_real_dev_ablation_calibration_and_latency",
+        "model": null,
+        "required_dev_metrics": [
+          "nDCG@10_delta_R2_vs_R1",
+          "latency_ms",
+          "score_calibration"
+        ]
+      },
+      "a2_tool_names": {
+        "pubmed": "search_pubmed",
+        "pubmed_review": "search_pubmed",
+        "pubmed_trial": "search_pubmed",
+        "systematic_review": "search_pubmed",
+        "primary_study": "search_pubmed",
+        "controlled_study": "search_pubmed",
+        "clinicaltrials": "search_trials",
+        "clinicaltrials_record": "search_trials",
+        "guideline": "search_guidelines",
+        "current_guideline": "search_guidelines",
+        "europe_pmc": "search_europe_pmc"
+      },
+      "a2_search_limit": 10,
+      "a2_gate1_required_fields": [
+        "id",
+        "source_type",
+        "published_at",
+        "url",
+        "fetched_at",
+        "content_hash"
+      ],
+      "a2_response_ok_field": "ok",
+      "a2_response_items_field": "evidence",
+      "a4_question_type_map": {
+        "stable_mechanism": "generic",
+        "guideline_treatment": "guideline",
+        "latest_research_trial": "latest_trial",
+        "insufficient_conflict_out_of_scope": "generic",
+        "treatment_evidence": "therapy",
+        "diagnostic_evidence": "diagnosis",
+        "general_evidence": "generic"
+      },
+      "a4_freshness_map": {
+        "stable_mechanism": "generic",
+        "guideline_treatment": "current",
+        "latest_research_trial": "latest",
+        "insufficient_conflict_out_of_scope": "generic",
+        "treatment_evidence": "current",
+        "diagnostic_evidence": "current",
+        "general_evidence": "generic"
+      },
+      "a4_source_type_map": {
+        "pubmed": "pubmed",
+        "pubmed_review": "pubmed",
+        "pubmed_trial": "pubmed",
+        "systematic_review": "pubmed",
+        "primary_study": "pubmed",
+        "controlled_study": "pubmed",
+        "clinicaltrials": "clinical_trials",
+        "clinicaltrials_record": "clinical_trials",
+        "guideline": "guideline",
+        "current_guideline": "guideline",
+        "europe_pmc": "europe_pmc"
+      },
+      "a4_topic_map": {
+        "stable_mechanism": "generic",
+        "guideline_treatment": "therapy",
+        "latest_research_trial": "therapy",
+        "insufficient_conflict_out_of_scope": "generic",
+        "treatment_evidence": "therapy",
+        "diagnostic_evidence": "diagnosis",
+        "general_evidence": "generic"
+      }
+    }
+  },
+  "started_at": "2026-08-11T22:48:40.095016Z",
+  "finished_at": "2026-08-11T22:48:40.666119Z",
+  "latency_ms": 571.1030000000001,
+  "error": null
+}

@@ -1,0 +1,24 @@
+MOCK OFFLINE BACKEND COORDINATION TRACE — NOT MEDICAL EVIDENCE
+run_id=RUN-c5c20d70fab0
+decision=PASS
+2026-08-11T22:48:40.095016+00:00 | START | state
+2026-08-11T22:48:40.095016+00:00 | GATE0 | gate | gate=Gate0@0.2.0 | decision=ALLOW
+2026-08-11T22:48:40.095016+00:00 | CLASSIFY | state
+2026-08-11T22:48:40.095016+00:00 | SELECT_SKILL | skill | skill=evidence_research@0.2.0
+2026-08-11T22:48:40.095016+00:00 | PLAN | skill | skill=evidence_research@0.2.0
+2026-08-11T22:48:40.603602+00:00 | RETRIEVE | tool | skill=evidence_research@0.2.0 | tool=a2_mcp_a3_index_a4_rerank | tool_call_index=1 | budget_remaining=2
+2026-08-11T22:48:40.603602+00:00 | GATE1 | gate | gate=Gate1@0.3.0 | decision=ELIGIBLE | budget_remaining=2
+2026-08-11T22:48:40.603602+00:00 | GATE2 | gate | gate=Gate2@0.3.0 | decision=INSUFFICIENT | budget_remaining=2
+2026-08-11T22:48:40.661395+00:00 | RETRIEVE | tool | skill=evidence_research@0.2.0 | tool=a2_mcp_a3_index_a4_rerank | tool_call_index=2 | budget_remaining=1
+2026-08-11T22:48:40.661395+00:00 | GATE1 | gate | gate=Gate1@0.3.0 | decision=ELIGIBLE | budget_remaining=1
+2026-08-11T22:48:40.661395+00:00 | GATE2 | gate | gate=Gate2@0.3.0 | decision=SUFFICIENT | budget_remaining=1
+2026-08-11T22:48:40.661395+00:00 | SUMMARIZE_EVIDENCE | skill | skill=evidence_research@0.2.0
+2026-08-11T22:48:40.661395+00:00 | GATE3 | gate | gate=Gate3@0.4.0 | skill=claim_generation@0.4.0
+2026-08-11T22:48:40.666119+00:00 | GATE4 | generation | gate=Gate4@0.4.0 | skill=claim_generation@0.4.0 | decision=ACCEPTED
+2026-08-11T22:48:40.666119+00:00 | GENERATE_CLAIMS | generation
+2026-08-11T22:48:40.666119+00:00 | CLAIM_SPLITTER | skill | skill=citation_audit@0.3.0
+2026-08-11T22:48:40.666119+00:00 | AUDIT_CITATIONS | skill | skill=citation_audit@0.3.0 | decision=PASS
+2026-08-11T22:48:40.666119+00:00 | GATE5 | gate | gate=Gate5@0.3.0 | skill=citation_audit@0.3.0
+2026-08-11T22:48:40.666119+00:00 | GATE6 | decision | gate=Gate6@0.3.0 | decision=PASS
+2026-08-11T22:48:40.666119+00:00 | FINALIZE | decision | decision=PASS
+2026-08-11T22:48:40.666119+00:00 | END | state | decision=PASS

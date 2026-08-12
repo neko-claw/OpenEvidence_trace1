@@ -1,0 +1,410 @@
+{
+  "$defs": {
+    "CitationAuditReport": {
+      "additionalProperties": false,
+      "properties": {
+        "decision": {
+          "$ref": "#/$defs/Decision"
+        },
+        "verification_results": {
+          "items": {
+            "$ref": "#/$defs/VerificationResult"
+          },
+          "title": "Verification Results",
+          "type": "array"
+        },
+        "approved_claim_ids": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Approved Claim Ids",
+          "type": "array"
+        },
+        "rejected_claim_ids": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Rejected Claim Ids",
+          "type": "array"
+        },
+        "reasons": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Reasons",
+          "type": "array"
+        }
+      },
+      "required": [
+        "decision"
+      ],
+      "title": "CitationAuditReport",
+      "type": "object"
+    },
+    "Claim": {
+      "additionalProperties": false,
+      "properties": {
+        "claim_id": {
+          "minLength": 1,
+          "title": "Claim Id",
+          "type": "string"
+        },
+        "run_id": {
+          "default": "",
+          "title": "Run Id",
+          "type": "string"
+        },
+        "text": {
+          "minLength": 1,
+          "title": "Text",
+          "type": "string"
+        },
+        "criticality": {
+          "$ref": "#/$defs/ClaimCriticality"
+        },
+        "evidence_ids": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Evidence Ids",
+          "type": "array"
+        },
+        "evidence_span_ids": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Evidence Span Ids",
+          "type": "array"
+        },
+        "uncertainty": {
+          "$ref": "#/$defs/UncertaintyLevel",
+          "default": "UNKNOWN"
+        },
+        "entailment_score": {
+          "anyOf": [
+            {
+              "maximum": 1.0,
+              "minimum": 0.0,
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Entailment Score"
+        },
+        "population": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Population"
+        },
+        "intervention": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Intervention"
+        },
+        "comparator": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Comparator"
+        },
+        "outcome": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Outcome"
+        },
+        "as_of_date": {
+          "anyOf": [
+            {
+              "format": "date",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "As Of Date"
+        },
+        "population_match": {
+          "$ref": "#/$defs/MatchStatus",
+          "default": "UNKNOWN"
+        },
+        "intervention_match": {
+          "$ref": "#/$defs/MatchStatus",
+          "default": "UNKNOWN"
+        },
+        "comparator_match": {
+          "$ref": "#/$defs/MatchStatus",
+          "default": "UNKNOWN"
+        },
+        "outcome_match": {
+          "$ref": "#/$defs/MatchStatus",
+          "default": "UNKNOWN"
+        },
+        "time_match": {
+          "$ref": "#/$defs/MatchStatus",
+          "default": "UNKNOWN"
+        },
+        "conflict_ids": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Conflict Ids",
+          "type": "array"
+        },
+        "verification_method": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Verification Method"
+        },
+        "decision": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/VerificationStatus"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        }
+      },
+      "required": [
+        "claim_id",
+        "text",
+        "criticality"
+      ],
+      "title": "Claim",
+      "type": "object"
+    },
+    "ClaimCriticality": {
+      "enum": [
+        "critical",
+        "important",
+        "context"
+      ],
+      "title": "ClaimCriticality",
+      "type": "string"
+    },
+    "Decision": {
+      "enum": [
+        "PASS",
+        "WARN",
+        "REFUSE"
+      ],
+      "title": "Decision",
+      "type": "string"
+    },
+    "MatchStatus": {
+      "enum": [
+        "MATCH",
+        "MISMATCH",
+        "UNKNOWN"
+      ],
+      "title": "MatchStatus",
+      "type": "string"
+    },
+    "UncertaintyLevel": {
+      "enum": [
+        "LOW",
+        "MEDIUM",
+        "HIGH",
+        "UNKNOWN"
+      ],
+      "title": "UncertaintyLevel",
+      "type": "string"
+    },
+    "VerificationResult": {
+      "additionalProperties": false,
+      "properties": {
+        "claim_id": {
+          "title": "Claim Id",
+          "type": "string"
+        },
+        "status": {
+          "$ref": "#/$defs/VerificationStatus"
+        },
+        "evidence_ids": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Evidence Ids",
+          "type": "array"
+        },
+        "evidence_span_ids": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Evidence Span Ids",
+          "type": "array"
+        },
+        "checked_evidence_ids": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Checked Evidence Ids",
+          "type": "array"
+        },
+        "illegal_evidence_ids": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Illegal Evidence Ids",
+          "type": "array"
+        },
+        "illegal_span_ids": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Illegal Span Ids",
+          "type": "array"
+        },
+        "citation_valid": {
+          "default": false,
+          "title": "Citation Valid",
+          "type": "boolean"
+        },
+        "span_check": {
+          "$ref": "#/$defs/MatchStatus",
+          "default": "UNKNOWN"
+        },
+        "population_match": {
+          "$ref": "#/$defs/MatchStatus",
+          "default": "UNKNOWN"
+        },
+        "intervention_match": {
+          "$ref": "#/$defs/MatchStatus",
+          "default": "UNKNOWN"
+        },
+        "comparator_match": {
+          "$ref": "#/$defs/MatchStatus",
+          "default": "UNKNOWN"
+        },
+        "outcome_match": {
+          "$ref": "#/$defs/MatchStatus",
+          "default": "UNKNOWN"
+        },
+        "time_match": {
+          "$ref": "#/$defs/MatchStatus",
+          "default": "UNKNOWN"
+        },
+        "numeric_match": {
+          "$ref": "#/$defs/MatchStatus",
+          "default": "UNKNOWN"
+        },
+        "unit_match": {
+          "$ref": "#/$defs/MatchStatus",
+          "default": "UNKNOWN"
+        },
+        "entailment_score": {
+          "anyOf": [
+            {
+              "maximum": 1.0,
+              "minimum": 0.0,
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Entailment Score"
+        },
+        "conflict_ids": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Conflict Ids",
+          "type": "array"
+        },
+        "uncertainty": {
+          "$ref": "#/$defs/UncertaintyLevel",
+          "default": "UNKNOWN"
+        },
+        "verification_method": {
+          "title": "Verification Method",
+          "type": "string"
+        },
+        "reasons": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Reasons",
+          "type": "array"
+        }
+      },
+      "required": [
+        "claim_id",
+        "status",
+        "verification_method"
+      ],
+      "title": "VerificationResult",
+      "type": "object"
+    },
+    "VerificationStatus": {
+      "enum": [
+        "SUPPORTED",
+        "CONTRADICTED",
+        "INSUFFICIENT"
+      ],
+      "title": "VerificationStatus",
+      "type": "string"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "atomic_claims": {
+      "items": {
+        "$ref": "#/$defs/Claim"
+      },
+      "title": "Atomic Claims",
+      "type": "array"
+    },
+    "report": {
+      "$ref": "#/$defs/CitationAuditReport"
+    }
+  },
+  "required": [
+    "atomic_claims",
+    "report"
+  ],
+  "title": "CitationAuditOutput",
+  "type": "object"
+}

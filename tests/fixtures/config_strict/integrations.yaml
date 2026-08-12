@@ -1,0 +1,19 @@
+{
+  "config_version": "strict-test-integrations-v1",
+  "status": "provisional_non_frozen",
+  "a1": {"contract_version": "a1-test", "source_ref": "test", "status": "test"},
+  "a2": {"contract_version": "a2-test", "source_ref": "test", "status": "test"},
+  "a3": {"contract_version": "a3-test", "source_ref": "test", "status": "test"},
+  "a4": {"contract_version": "a4-test", "source_ref": "test", "status": "test"},
+  "embedding_capability": {"owner": "A3", "enabled": false, "status": "test", "model": "BAAI/bge-m3", "required_dev_metrics": []},
+  "cross_encoder_capability": {"owner": "A4", "enabled": false, "status": "test", "model": null, "required_dev_metrics": []},
+  "a2_tool_names": {"guideline": "search_guidelines"},
+  "a2_search_limit": 10,
+  "a2_gate1_required_fields": ["id", "source_type", "published_at", "url", "fetched_at", "content_hash"],
+  "a2_response_ok_field": "ok",
+  "a2_response_items_field": "evidence",
+  "a4_question_type_map": {"general_evidence": "generic"},
+  "a4_freshness_map": {"general_evidence": "generic"},
+  "a4_source_type_map": {"guideline": "guideline"},
+  "a4_topic_map": {"general_evidence": "generic"}
+}

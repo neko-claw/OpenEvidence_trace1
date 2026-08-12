@@ -1,0 +1,1452 @@
+{
+  "run_id": "RUN-ac57c2a4cf0e",
+  "question": {
+    "question_id": "Q-REPLAY-WARN",
+    "text": "Artificial offline warn replay question.",
+    "metadata": {
+      "fixture_batches": [
+        [
+          "E1"
+        ],
+        [
+          "E3"
+        ]
+      ],
+      "mock_safety_decision": "ALLOW",
+      "as_of_date": "2026-08-12",
+      "demo_mode": true
+    }
+  },
+  "state": "END",
+  "selected_skill": "citation_audit@0.3.0",
+  "selected_skills": [
+    "evidence_research@0.2.0",
+    "citation_audit@0.3.0"
+  ],
+  "agent_plan": {
+    "question_type": "general_evidence",
+    "selected_skill": "evidence_research@0.2.0",
+    "search_plan": {
+      "queries": [
+        "Artificial offline warn replay question."
+      ],
+      "preferred_sources": [
+        "guideline",
+        "systematic_review",
+        "primary_study"
+      ],
+      "freshness_required": false,
+      "expected_evidence_types": [
+        "guideline",
+        "review",
+        "study"
+      ],
+      "max_tool_calls": 2
+    },
+    "policy_version": "temporary-a1-default-0.2.0",
+    "evidence_summary": {
+      "evidence_count": 2,
+      "evidence_ids": [
+        "E1",
+        "E3"
+      ],
+      "source_types": [
+        "controlled_study",
+        "guideline"
+      ],
+      "source_diversity": 1.0,
+      "strongest_evidence_level": "guideline",
+      "freshness_summary": "NOT_REQUIRED",
+      "conflicts_detected": false,
+      "summary_text": "2 evidence record(s) from 2 source type(s); strongest level=guideline; freshness=NOT_REQUIRED; conflicts=0."
+    }
+  },
+  "safety_assessment": {
+    "decision": "ALLOW",
+    "reason": "mock Gate0 decision=ALLOW; not an A1 medical policy",
+    "policy_version": "mock_fixture_safety@0.2.0"
+  },
+  "evidence_integrity": {
+    "status": "ELIGIBLE",
+    "eligible_evidence_ids": [
+      "E1",
+      "E3"
+    ],
+    "rejected_evidence_ids": [],
+    "unknown_evidence_ids": [],
+    "items": [
+      {
+        "evidence_id": "E1",
+        "status": "ELIGIBLE",
+        "reason_codes": [
+          "mock_fixture_allowed"
+        ]
+      },
+      {
+        "evidence_id": "E3",
+        "status": "ELIGIBLE",
+        "reason_codes": [
+          "mock_fixture_allowed"
+        ]
+      }
+    ],
+    "reasons": [
+      "mock_fixture_allowed"
+    ]
+  },
+  "evidence_sufficiency": {
+    "status": "SUFFICIENT",
+    "reasons": [],
+    "metrics": {
+      "candidate_count": 2,
+      "top_score": 0.95,
+      "top_ranking_score": null,
+      "usable_quality_score_count": 2,
+      "source_type_count": 2,
+      "source_diversity": 1.0,
+      "strongest_evidence_level": "guideline",
+      "freshness_state": "NOT_REQUIRED",
+      "conflict_count": 0
+    },
+    "recommended_action": "CONTINUE"
+  },
+  "evidence_summary": {
+    "evidence_count": 2,
+    "evidence_ids": [
+      "E1",
+      "E3"
+    ],
+    "source_types": [
+      "controlled_study",
+      "guideline"
+    ],
+    "source_diversity": 1.0,
+    "strongest_evidence_level": "guideline",
+    "freshness_summary": "NOT_REQUIRED",
+    "conflicts_detected": false,
+    "summary_text": "2 evidence record(s) from 2 source type(s); strongest level=guideline; freshness=NOT_REQUIRED; conflicts=0."
+  },
+  "atomic_claim_plan": {
+    "question_id": "Q-REPLAY-WARN",
+    "allowed_evidence_ids": [
+      "E1",
+      "E3"
+    ],
+    "allowed_span_ids": [
+      "S-E1",
+      "S-E3"
+    ],
+    "prompt_version": "0.4.0",
+    "output_contract": "ClaimGenerationOutput",
+    "constraints": [
+      "one_verifiable_fact_per_claim",
+      "evidence_id_whitelist",
+      "evidence_span_id_whitelist",
+      "no_external_reference_generation"
+    ]
+  },
+  "generation_constraints": {
+    "status": "ACCEPTED",
+    "accepted_claim_ids": [
+      "C1",
+      "C3"
+    ],
+    "rejected_claim_ids": [],
+    "reasons": []
+  },
+  "retrieved_evidence": [
+    {
+      "id": "E1",
+      "content": "Artificial outcome A is improved in the offline fixture.",
+      "source_type": "guideline",
+      "title": "Mock evidence E1",
+      "source_metadata": {
+        "mock_route": "guideline",
+        "mock_candidate_claims": [
+          {
+            "claim_id": "C1",
+            "text": "Artificial outcome A is improved",
+            "criticality": "critical",
+            "evidence_ids": [
+              "E1"
+            ],
+            "evidence_span_ids": [
+              "S-E1"
+            ],
+            "uncertainty": "LOW",
+            "population": "synthetic population",
+            "intervention": "synthetic intervention",
+            "comparator": "synthetic comparator",
+            "outcome": "synthetic outcome A"
+          }
+        ]
+      },
+      "population": "synthetic population",
+      "intervention": "synthetic intervention",
+      "comparator": "synthetic comparator",
+      "outcome": "synthetic outcome A",
+      "published_at": "2026-07-01T00:00:00Z",
+      "retrieval_score": 0.95,
+      "retrieval_score_kind": "QUALITY",
+      "retrieval_score_scope": "CROSS_QUERY",
+      "retrieval_score_calibrated": true,
+      "evidence_level": "guideline",
+      "spans": [
+        {
+          "span_id": "S-E1",
+          "text": "Artificial outcome A is improved in the offline fixture.",
+          "chunk_id": "CH-E1",
+          "page": null,
+          "raw_page": null,
+          "section": "mock",
+          "char_start": null,
+          "char_end": null,
+          "offset_scope": null,
+          "document_char_start": null,
+          "document_char_end": null,
+          "span_content_hash": null,
+          "chunk_content_hash": null,
+          "evidence_content_hash": null
+        }
+      ],
+      "conflicts_with_ids": [],
+      "mock": true
+    },
+    {
+      "id": "E3",
+      "content": "Artificial context C is incomplete in this fixture.",
+      "source_type": "controlled_study",
+      "title": "Mock evidence E3",
+      "source_metadata": {
+        "mock_route": "primary_study",
+        "mock_candidate_claims": [
+          {
+            "claim_id": "C3",
+            "text": "Artificial outcome C is definitively improved",
+            "criticality": "important",
+            "evidence_ids": [
+              "E3"
+            ],
+            "evidence_span_ids": [
+              "S-E3"
+            ],
+            "uncertainty": "HIGH"
+          }
+        ]
+      },
+      "population": null,
+      "intervention": null,
+      "comparator": null,
+      "outcome": null,
+      "published_at": "2026-05-01T00:00:00Z",
+      "retrieval_score": 0.82,
+      "retrieval_score_kind": "QUALITY",
+      "retrieval_score_scope": "CROSS_QUERY",
+      "retrieval_score_calibrated": true,
+      "evidence_level": "controlled_study",
+      "spans": [
+        {
+          "span_id": "S-E3",
+          "text": "Artificial context C is incomplete in this fixture.",
+          "chunk_id": "CH-E3",
+          "page": null,
+          "raw_page": null,
+          "section": "mock",
+          "char_start": null,
+          "char_end": null,
+          "offset_scope": null,
+          "document_char_start": null,
+          "document_char_end": null,
+          "span_content_hash": null,
+          "chunk_content_hash": null,
+          "evidence_content_hash": null
+        }
+      ],
+      "conflicts_with_ids": [],
+      "mock": true
+    }
+  ],
+  "claims": [
+    {
+      "claim_id": "C1",
+      "run_id": "RUN-ac57c2a4cf0e",
+      "text": "Artificial outcome A is improved",
+      "criticality": "critical",
+      "evidence_ids": [
+        "E1"
+      ],
+      "evidence_span_ids": [
+        "S-E1"
+      ],
+      "uncertainty": "LOW",
+      "entailment_score": 1.0,
+      "population": "synthetic population",
+      "intervention": "synthetic intervention",
+      "comparator": "synthetic comparator",
+      "outcome": "synthetic outcome A",
+      "as_of_date": null,
+      "population_match": "MATCH",
+      "intervention_match": "MATCH",
+      "comparator_match": "MATCH",
+      "outcome_match": "MATCH",
+      "time_match": "UNKNOWN",
+      "conflict_ids": [],
+      "verification_method": "exact_span_match@0.2.0",
+      "decision": "SUPPORTED"
+    },
+    {
+      "claim_id": "C3",
+      "run_id": "RUN-ac57c2a4cf0e",
+      "text": "Artificial outcome C is definitively improved",
+      "criticality": "important",
+      "evidence_ids": [
+        "E3"
+      ],
+      "evidence_span_ids": [
+        "S-E3"
+      ],
+      "uncertainty": "HIGH",
+      "entailment_score": null,
+      "population": null,
+      "intervention": null,
+      "comparator": null,
+      "outcome": null,
+      "as_of_date": null,
+      "population_match": "UNKNOWN",
+      "intervention_match": "UNKNOWN",
+      "comparator_match": "UNKNOWN",
+      "outcome_match": "UNKNOWN",
+      "time_match": "UNKNOWN",
+      "conflict_ids": [],
+      "verification_method": "exact_span_match@0.2.0",
+      "decision": "INSUFFICIENT"
+    }
+  ],
+  "verification_results": [
+    {
+      "claim_id": "C1",
+      "status": "SUPPORTED",
+      "evidence_ids": [
+        "E1"
+      ],
+      "evidence_span_ids": [
+        "S-E1"
+      ],
+      "checked_evidence_ids": [
+        "E1"
+      ],
+      "illegal_evidence_ids": [],
+      "illegal_span_ids": [],
+      "citation_valid": true,
+      "span_check": "MATCH",
+      "population_match": "MATCH",
+      "intervention_match": "MATCH",
+      "comparator_match": "MATCH",
+      "outcome_match": "MATCH",
+      "time_match": "UNKNOWN",
+      "numeric_match": "UNKNOWN",
+      "unit_match": "UNKNOWN",
+      "entailment_score": 1.0,
+      "conflict_ids": [],
+      "uncertainty": "LOW",
+      "verification_method": "exact_span_match@0.2.0",
+      "reasons": [
+        "textual_support: exact normalized claim text found in cited span"
+      ]
+    },
+    {
+      "claim_id": "C3",
+      "status": "INSUFFICIENT",
+      "evidence_ids": [
+        "E3"
+      ],
+      "evidence_span_ids": [
+        "S-E3"
+      ],
+      "checked_evidence_ids": [
+        "E3"
+      ],
+      "illegal_evidence_ids": [],
+      "illegal_span_ids": [],
+      "citation_valid": true,
+      "span_check": "MATCH",
+      "population_match": "UNKNOWN",
+      "intervention_match": "UNKNOWN",
+      "comparator_match": "UNKNOWN",
+      "outcome_match": "UNKNOWN",
+      "time_match": "UNKNOWN",
+      "numeric_match": "UNKNOWN",
+      "unit_match": "UNKNOWN",
+      "entailment_score": null,
+      "conflict_ids": [],
+      "uncertainty": "HIGH",
+      "verification_method": "exact_span_match@0.2.0",
+      "reasons": [
+        "unsupported_claim: exact span support unavailable; semantic evaluator required"
+      ]
+    }
+  ],
+  "final_answer": {
+    "decision": "WARN",
+    "text": "- Artificial outcome A is improved [E1]",
+    "included_claim_ids": [
+      "C1"
+    ],
+    "cited_evidence_ids": [
+      "E1"
+    ],
+    "limitations": [
+      "unsupported_claim: exact span support unavailable; semantic evaluator required",
+      "unsupported_claim: non-critical claims were removed after Gate5",
+      "One or more non-critical claims were omitted after Gate5."
+    ],
+    "warnings": [
+      "unsupported_claim: exact span support unavailable; semantic evaluator required",
+      "unsupported_claim: non-critical claims were removed after Gate5",
+      "One or more non-critical claims were omitted after Gate5."
+    ]
+  },
+  "decision": "WARN",
+  "trace": [
+    {
+      "run_id": "RUN-ac57c2a4cf0e",
+      "state": "START",
+      "event_type": "state",
+      "timestamp": "2026-08-11T22:47:12.059899Z",
+      "gate": null,
+      "skill": null,
+      "tool": null,
+      "tool_call_index": null,
+      "tool_budget_remaining": null,
+      "input_summary": null,
+      "output_count": null,
+      "evidence_ids": [],
+      "claim_ids": [],
+      "decision": null,
+      "latency_ms": 0.000200001522898674,
+      "error": null,
+      "details": {}
+    },
+    {
+      "run_id": "RUN-ac57c2a4cf0e",
+      "state": "GATE0",
+      "event_type": "gate",
+      "timestamp": "2026-08-11T22:47:12.059899Z",
+      "gate": "Gate0@0.2.0",
+      "skill": null,
+      "tool": null,
+      "tool_call_index": null,
+      "tool_budget_remaining": null,
+      "input_summary": null,
+      "output_count": null,
+      "evidence_ids": [],
+      "claim_ids": [],
+      "decision": "ALLOW",
+      "latency_ms": 0.0046000059228390455,
+      "error": null,
+      "details": {
+        "reason": "mock Gate0 decision=ALLOW; not an A1 medical policy",
+        "policy": "mock_fixture_safety@0.2.0"
+      }
+    },
+    {
+      "run_id": "RUN-ac57c2a4cf0e",
+      "state": "CLASSIFY",
+      "event_type": "state",
+      "timestamp": "2026-08-11T22:47:12.059899Z",
+      "gate": null,
+      "skill": null,
+      "tool": null,
+      "tool_call_index": null,
+      "tool_budget_remaining": null,
+      "input_summary": null,
+      "output_count": null,
+      "evidence_ids": [],
+      "claim_ids": [],
+      "decision": null,
+      "latency_ms": 0.004599976819008589,
+      "error": null,
+      "details": {
+        "question_type": "general_evidence"
+      }
+    },
+    {
+      "run_id": "RUN-ac57c2a4cf0e",
+      "state": "SELECT_SKILL",
+      "event_type": "skill",
+      "timestamp": "2026-08-11T22:47:12.059899Z",
+      "gate": null,
+      "skill": "evidence_research@0.2.0",
+      "tool": null,
+      "tool_call_index": null,
+      "tool_budget_remaining": null,
+      "input_summary": null,
+      "output_count": null,
+      "evidence_ids": [],
+      "claim_ids": [],
+      "decision": null,
+      "latency_ms": 0.001700012944638729,
+      "error": null,
+      "details": {
+        "route_reason": "question_type=general_evidence; stage=retrieval"
+      }
+    },
+    {
+      "run_id": "RUN-ac57c2a4cf0e",
+      "state": "PLAN",
+      "event_type": "skill",
+      "timestamp": "2026-08-11T22:47:12.059899Z",
+      "gate": null,
+      "skill": "evidence_research@0.2.0",
+      "tool": null,
+      "tool_call_index": null,
+      "tool_budget_remaining": null,
+      "input_summary": {
+        "question_type": "general_evidence"
+      },
+      "output_count": null,
+      "evidence_ids": [],
+      "claim_ids": [],
+      "decision": null,
+      "latency_ms": 0.02060001133941114,
+      "error": null,
+      "details": {
+        "agent_plan": {
+          "question_type": "general_evidence",
+          "selected_skill": "evidence_research@0.2.0",
+          "search_plan": {
+            "queries": [
+              "Artificial offline warn replay question."
+            ],
+            "preferred_sources": [
+              "guideline",
+              "systematic_review",
+              "primary_study"
+            ],
+            "freshness_required": false,
+            "expected_evidence_types": [
+              "guideline",
+              "review",
+              "study"
+            ],
+            "max_tool_calls": 2
+          },
+          "policy_version": "temporary-a1-default-0.2.0",
+          "evidence_summary": {
+            "evidence_count": 0,
+            "evidence_ids": [],
+            "source_types": [],
+            "source_diversity": null,
+            "strongest_evidence_level": null,
+            "freshness_summary": "NOT_REQUIRED",
+            "conflicts_detected": false,
+            "summary_text": "No evidence retrieved; quality fields remain UNKNOWN."
+          }
+        }
+      }
+    },
+    {
+      "run_id": "RUN-ac57c2a4cf0e",
+      "state": "RETRIEVE",
+      "event_type": "tool",
+      "timestamp": "2026-08-11T22:47:12.059899Z",
+      "gate": null,
+      "skill": "evidence_research@0.2.0",
+      "tool": "mock_search",
+      "tool_call_index": 1,
+      "tool_budget_remaining": 1,
+      "input_summary": {
+        "source_type": "guideline",
+        "query_count": 1
+      },
+      "output_count": 1,
+      "evidence_ids": [
+        "E1"
+      ],
+      "claim_ids": [],
+      "decision": null,
+      "latency_ms": 0.007299997378140688,
+      "error": null,
+      "details": {
+        "diagnostics": {
+          "adapter": "MockEvidenceRetriever",
+          "fixture": "evidence.json",
+          "requested_source": "guideline",
+          "tool_call_index": 1,
+          "query_count": 1,
+          "mock": true
+        }
+      }
+    },
+    {
+      "run_id": "RUN-ac57c2a4cf0e",
+      "state": "GATE1",
+      "event_type": "gate",
+      "timestamp": "2026-08-11T22:47:12.059899Z",
+      "gate": "Gate1@0.3.0",
+      "skill": null,
+      "tool": null,
+      "tool_call_index": null,
+      "tool_budget_remaining": 1,
+      "input_summary": null,
+      "output_count": null,
+      "evidence_ids": [
+        "E1"
+      ],
+      "claim_ids": [],
+      "decision": "ELIGIBLE",
+      "latency_ms": 0.01170000177808106,
+      "error": null,
+      "details": {
+        "status": "ELIGIBLE",
+        "eligible_evidence_ids": [
+          "E1"
+        ],
+        "rejected_evidence_ids": [],
+        "unknown_evidence_ids": [],
+        "items": [
+          {
+            "evidence_id": "E1",
+            "status": "ELIGIBLE",
+            "reason_codes": [
+              "mock_fixture_allowed"
+            ]
+          }
+        ],
+        "reasons": [
+          "mock_fixture_allowed"
+        ]
+      }
+    },
+    {
+      "run_id": "RUN-ac57c2a4cf0e",
+      "state": "GATE2",
+      "event_type": "gate",
+      "timestamp": "2026-08-11T22:47:12.059899Z",
+      "gate": "Gate2@0.3.0",
+      "skill": null,
+      "tool": null,
+      "tool_call_index": null,
+      "tool_budget_remaining": 1,
+      "input_summary": null,
+      "output_count": null,
+      "evidence_ids": [
+        "E1"
+      ],
+      "claim_ids": [],
+      "decision": "INSUFFICIENT",
+      "latency_ms": 0.014199991710484028,
+      "error": null,
+      "details": {
+        "status": "INSUFFICIENT",
+        "reasons": [
+          "retrieval_insufficient: candidate_count below threshold",
+          "retrieval_insufficient: source coverage below threshold"
+        ],
+        "metrics": {
+          "candidate_count": 1,
+          "top_score": 0.95,
+          "top_ranking_score": null,
+          "usable_quality_score_count": 1,
+          "source_type_count": 1,
+          "source_diversity": 1.0,
+          "strongest_evidence_level": "guideline",
+          "freshness_state": "NOT_REQUIRED",
+          "conflict_count": 0
+        },
+        "recommended_action": "RETRY"
+      }
+    },
+    {
+      "run_id": "RUN-ac57c2a4cf0e",
+      "state": "RETRIEVE",
+      "event_type": "tool",
+      "timestamp": "2026-08-11T22:47:12.059899Z",
+      "gate": null,
+      "skill": "evidence_research@0.2.0",
+      "tool": "mock_search",
+      "tool_call_index": 2,
+      "tool_budget_remaining": 0,
+      "input_summary": {
+        "source_type": "systematic_review",
+        "query_count": 1
+      },
+      "output_count": 1,
+      "evidence_ids": [
+        "E3"
+      ],
+      "claim_ids": [],
+      "decision": null,
+      "latency_ms": 0.012500007869675756,
+      "error": null,
+      "details": {
+        "diagnostics": {
+          "adapter": "MockEvidenceRetriever",
+          "fixture": "evidence.json",
+          "requested_source": "systematic_review",
+          "tool_call_index": 2,
+          "query_count": 1,
+          "mock": true
+        }
+      }
+    },
+    {
+      "run_id": "RUN-ac57c2a4cf0e",
+      "state": "GATE1",
+      "event_type": "gate",
+      "timestamp": "2026-08-11T22:47:12.062782Z",
+      "gate": "Gate1@0.3.0",
+      "skill": null,
+      "tool": null,
+      "tool_call_index": null,
+      "tool_budget_remaining": 0,
+      "input_summary": null,
+      "output_count": null,
+      "evidence_ids": [
+        "E1",
+        "E3"
+      ],
+      "claim_ids": [],
+      "decision": "ELIGIBLE",
+      "latency_ms": 0.02300000051036477,
+      "error": null,
+      "details": {
+        "status": "ELIGIBLE",
+        "eligible_evidence_ids": [
+          "E1",
+          "E3"
+        ],
+        "rejected_evidence_ids": [],
+        "unknown_evidence_ids": [],
+        "items": [
+          {
+            "evidence_id": "E1",
+            "status": "ELIGIBLE",
+            "reason_codes": [
+              "mock_fixture_allowed"
+            ]
+          },
+          {
+            "evidence_id": "E3",
+            "status": "ELIGIBLE",
+            "reason_codes": [
+              "mock_fixture_allowed"
+            ]
+          }
+        ],
+        "reasons": [
+          "mock_fixture_allowed"
+        ]
+      }
+    },
+    {
+      "run_id": "RUN-ac57c2a4cf0e",
+      "state": "GATE2",
+      "event_type": "gate",
+      "timestamp": "2026-08-11T22:47:12.062782Z",
+      "gate": "Gate2@0.3.0",
+      "skill": null,
+      "tool": null,
+      "tool_call_index": null,
+      "tool_budget_remaining": 0,
+      "input_summary": null,
+      "output_count": null,
+      "evidence_ids": [
+        "E1",
+        "E3"
+      ],
+      "claim_ids": [],
+      "decision": "SUFFICIENT",
+      "latency_ms": 0.014599994756281376,
+      "error": null,
+      "details": {
+        "status": "SUFFICIENT",
+        "reasons": [],
+        "metrics": {
+          "candidate_count": 2,
+          "top_score": 0.95,
+          "top_ranking_score": null,
+          "usable_quality_score_count": 2,
+          "source_type_count": 2,
+          "source_diversity": 1.0,
+          "strongest_evidence_level": "guideline",
+          "freshness_state": "NOT_REQUIRED",
+          "conflict_count": 0
+        },
+        "recommended_action": "CONTINUE"
+      }
+    },
+    {
+      "run_id": "RUN-ac57c2a4cf0e",
+      "state": "SUMMARIZE_EVIDENCE",
+      "event_type": "skill",
+      "timestamp": "2026-08-11T22:47:12.062782Z",
+      "gate": null,
+      "skill": "evidence_research@0.2.0",
+      "tool": null,
+      "tool_call_index": null,
+      "tool_budget_remaining": null,
+      "input_summary": null,
+      "output_count": 2,
+      "evidence_ids": [
+        "E1",
+        "E3"
+      ],
+      "claim_ids": [],
+      "decision": null,
+      "latency_ms": 0.0109999964479357,
+      "error": null,
+      "details": {
+        "evidence_count": 2,
+        "evidence_ids": [
+          "E1",
+          "E3"
+        ],
+        "source_types": [
+          "controlled_study",
+          "guideline"
+        ],
+        "source_diversity": 1.0,
+        "strongest_evidence_level": "guideline",
+        "freshness_summary": "NOT_REQUIRED",
+        "conflicts_detected": false,
+        "summary_text": "2 evidence record(s) from 2 source type(s); strongest level=guideline; freshness=NOT_REQUIRED; conflicts=0."
+      }
+    },
+    {
+      "run_id": "RUN-ac57c2a4cf0e",
+      "state": "GATE3",
+      "event_type": "gate",
+      "timestamp": "2026-08-11T22:47:12.062782Z",
+      "gate": "Gate3@0.4.0",
+      "skill": "claim_generation@0.4.0",
+      "tool": null,
+      "tool_call_index": null,
+      "tool_budget_remaining": null,
+      "input_summary": null,
+      "output_count": null,
+      "evidence_ids": [],
+      "claim_ids": [],
+      "decision": null,
+      "latency_ms": 0.006199989002197981,
+      "error": null,
+      "details": {
+        "question_id": "Q-REPLAY-WARN",
+        "allowed_evidence_ids": [
+          "E1",
+          "E3"
+        ],
+        "allowed_span_ids": [
+          "S-E1",
+          "S-E3"
+        ],
+        "prompt_version": "0.4.0",
+        "output_contract": "ClaimGenerationOutput",
+        "constraints": [
+          "one_verifiable_fact_per_claim",
+          "evidence_id_whitelist",
+          "evidence_span_id_whitelist",
+          "no_external_reference_generation"
+        ]
+      }
+    },
+    {
+      "run_id": "RUN-ac57c2a4cf0e",
+      "state": "GATE4",
+      "event_type": "generation",
+      "timestamp": "2026-08-11T22:47:12.062782Z",
+      "gate": "Gate4@0.4.0",
+      "skill": "claim_generation@0.4.0",
+      "tool": null,
+      "tool_call_index": null,
+      "tool_budget_remaining": null,
+      "input_summary": null,
+      "output_count": 2,
+      "evidence_ids": [],
+      "claim_ids": [
+        "C1",
+        "C3"
+      ],
+      "decision": "ACCEPTED",
+      "latency_ms": 0.04320000880397856,
+      "error": null,
+      "details": {
+        "status": "ACCEPTED",
+        "accepted_claim_ids": [
+          "C1",
+          "C3"
+        ],
+        "rejected_claim_ids": [],
+        "reasons": []
+      }
+    },
+    {
+      "run_id": "RUN-ac57c2a4cf0e",
+      "state": "GENERATE_CLAIMS",
+      "event_type": "generation",
+      "timestamp": "2026-08-11T22:47:12.062782Z",
+      "gate": null,
+      "skill": null,
+      "tool": null,
+      "tool_call_index": null,
+      "tool_budget_remaining": null,
+      "input_summary": null,
+      "output_count": 2,
+      "evidence_ids": [],
+      "claim_ids": [
+        "C1",
+        "C3"
+      ],
+      "decision": null,
+      "latency_ms": 0.0481999886687845,
+      "error": null,
+      "details": {
+        "compatibility_alias_for": "Gate4"
+      }
+    },
+    {
+      "run_id": "RUN-ac57c2a4cf0e",
+      "state": "CLAIM_SPLITTER",
+      "event_type": "skill",
+      "timestamp": "2026-08-11T22:47:12.062782Z",
+      "gate": null,
+      "skill": "citation_audit@0.3.0",
+      "tool": null,
+      "tool_call_index": null,
+      "tool_budget_remaining": null,
+      "input_summary": null,
+      "output_count": 2,
+      "evidence_ids": [],
+      "claim_ids": [
+        "C1",
+        "C3"
+      ],
+      "decision": null,
+      "latency_ms": 0.053499999921768904,
+      "error": null,
+      "details": {
+        "route_reason": "stage=claim_verification"
+      }
+    },
+    {
+      "run_id": "RUN-ac57c2a4cf0e",
+      "state": "AUDIT_CITATIONS",
+      "event_type": "skill",
+      "timestamp": "2026-08-11T22:47:12.062782Z",
+      "gate": null,
+      "skill": "citation_audit@0.3.0",
+      "tool": null,
+      "tool_call_index": null,
+      "tool_budget_remaining": null,
+      "input_summary": null,
+      "output_count": null,
+      "evidence_ids": [],
+      "claim_ids": [
+        "C1",
+        "C3"
+      ],
+      "decision": "WARN",
+      "latency_ms": 0.6398999830707908,
+      "error": null,
+      "details": {
+        "approved": [
+          "C1"
+        ],
+        "rejected": [
+          "C3"
+        ]
+      }
+    },
+    {
+      "run_id": "RUN-ac57c2a4cf0e",
+      "state": "GATE5",
+      "event_type": "gate",
+      "timestamp": "2026-08-11T22:47:12.062782Z",
+      "gate": "Gate5@0.3.0",
+      "skill": "citation_audit@0.3.0",
+      "tool": null,
+      "tool_call_index": null,
+      "tool_budget_remaining": null,
+      "input_summary": null,
+      "output_count": null,
+      "evidence_ids": [],
+      "claim_ids": [
+        "C1",
+        "C3"
+      ],
+      "decision": null,
+      "latency_ms": 0.024300010409206152,
+      "error": null,
+      "details": {
+        "results": [
+          {
+            "claim_id": "C1",
+            "status": "SUPPORTED",
+            "evidence_ids": [
+              "E1"
+            ],
+            "evidence_span_ids": [
+              "S-E1"
+            ],
+            "checked_evidence_ids": [
+              "E1"
+            ],
+            "illegal_evidence_ids": [],
+            "illegal_span_ids": [],
+            "citation_valid": true,
+            "span_check": "MATCH",
+            "population_match": "MATCH",
+            "intervention_match": "MATCH",
+            "comparator_match": "MATCH",
+            "outcome_match": "MATCH",
+            "time_match": "UNKNOWN",
+            "numeric_match": "UNKNOWN",
+            "unit_match": "UNKNOWN",
+            "entailment_score": 1.0,
+            "conflict_ids": [],
+            "uncertainty": "LOW",
+            "verification_method": "exact_span_match@0.2.0",
+            "reasons": [
+              "textual_support: exact normalized claim text found in cited span"
+            ]
+          },
+          {
+            "claim_id": "C3",
+            "status": "INSUFFICIENT",
+            "evidence_ids": [
+              "E3"
+            ],
+            "evidence_span_ids": [
+              "S-E3"
+            ],
+            "checked_evidence_ids": [
+              "E3"
+            ],
+            "illegal_evidence_ids": [],
+            "illegal_span_ids": [],
+            "citation_valid": true,
+            "span_check": "MATCH",
+            "population_match": "UNKNOWN",
+            "intervention_match": "UNKNOWN",
+            "comparator_match": "UNKNOWN",
+            "outcome_match": "UNKNOWN",
+            "time_match": "UNKNOWN",
+            "numeric_match": "UNKNOWN",
+            "unit_match": "UNKNOWN",
+            "entailment_score": null,
+            "conflict_ids": [],
+            "uncertainty": "HIGH",
+            "verification_method": "exact_span_match@0.2.0",
+            "reasons": [
+              "unsupported_claim: exact span support unavailable; semantic evaluator required"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "run_id": "RUN-ac57c2a4cf0e",
+      "state": "GATE6",
+      "event_type": "decision",
+      "timestamp": "2026-08-11T22:47:12.062782Z",
+      "gate": "Gate6@0.3.0",
+      "skill": null,
+      "tool": null,
+      "tool_call_index": null,
+      "tool_budget_remaining": null,
+      "input_summary": null,
+      "output_count": null,
+      "evidence_ids": [],
+      "claim_ids": [],
+      "decision": "WARN",
+      "latency_ms": 0.001200009137392044,
+      "error": null,
+      "details": {
+        "reasons": [
+          "unsupported_claim: non-critical claims were removed after Gate5"
+        ]
+      }
+    },
+    {
+      "run_id": "RUN-ac57c2a4cf0e",
+      "state": "FINALIZE",
+      "event_type": "decision",
+      "timestamp": "2026-08-11T22:47:12.062782Z",
+      "gate": null,
+      "skill": null,
+      "tool": null,
+      "tool_call_index": null,
+      "tool_budget_remaining": null,
+      "input_summary": null,
+      "output_count": null,
+      "evidence_ids": [
+        "E1"
+      ],
+      "claim_ids": [
+        "C1"
+      ],
+      "decision": "WARN",
+      "latency_ms": 0.007599999662488699,
+      "error": null,
+      "details": {
+        "limitations": [
+          "unsupported_claim: exact span support unavailable; semantic evaluator required",
+          "unsupported_claim: non-critical claims were removed after Gate5",
+          "One or more non-critical claims were omitted after Gate5."
+        ]
+      }
+    },
+    {
+      "run_id": "RUN-ac57c2a4cf0e",
+      "state": "END",
+      "event_type": "state",
+      "timestamp": "2026-08-11T22:47:12.062782Z",
+      "gate": null,
+      "skill": null,
+      "tool": null,
+      "tool_call_index": null,
+      "tool_budget_remaining": null,
+      "input_summary": null,
+      "output_count": null,
+      "evidence_ids": [],
+      "claim_ids": [],
+      "decision": "WARN",
+      "latency_ms": 0.000700005330145359,
+      "error": null,
+      "details": {
+        "run_latency_ms": 2.883
+      }
+    }
+  ],
+  "agent_version": "0.3.0",
+  "skill_versions": {
+    "evidence_research": "0.2.0",
+    "citation_audit": "0.3.0"
+  },
+  "prompt_versions": {
+    "question_classification": "0.2.0",
+    "evidence_research": "0.2.0",
+    "claim_generation": "0.4.0",
+    "citation_audit": "0.3.0"
+  },
+  "gate_config_version": "0.3.0",
+  "runtime_config_snapshot": {
+    "agent": {
+      "config_version": "0.3.0",
+      "agent_version": "0.3.0",
+      "state_machine_version": "0.3.0",
+      "max_tool_calls": 3
+    },
+    "gates": {
+      "config_version": "0.3.0",
+      "threshold_status": "development_default_not_clinically_validated",
+      "gate0_version": "0.2.0",
+      "gate1_version": "0.3.0",
+      "gate2_version": "0.3.0",
+      "gate3_version": "0.4.0",
+      "gate4_version": "0.4.0",
+      "gate5_version": "0.3.0",
+      "gate6_version": "0.3.0",
+      "gate1": {
+        "required_source_metadata": [
+          "stable_id",
+          "url",
+          "fetched_at",
+          "content_hash"
+        ],
+        "accepted_integrity_markers": [
+          "a2_mcp_normalized",
+          "a3_provenance_validated",
+          "a4_a3_provenance_validated"
+        ]
+      },
+      "gate2": {
+        "min_candidates": 2,
+        "min_top_score": 0.7,
+        "min_source_types": 2,
+        "min_source_diversity": 0.5,
+        "accepted_evidence_levels": [
+          "guideline",
+          "systematic_review",
+          "controlled_study"
+        ],
+        "max_age_days": 1825,
+        "min_fresh_fraction": 0.5,
+        "max_conflicts": 0,
+        "required_score_kind": "QUALITY",
+        "required_score_scope": "CROSS_QUERY",
+        "require_calibrated_score": true
+      },
+      "gate5": {
+        "require_span": true,
+        "require_pico_when_claim_specified": true,
+        "require_time_when_fresh": true,
+        "supported_entailment_threshold": 1.0,
+        "require_numeric_consistency": true
+      },
+      "gate6": {
+        "critical_allowed_uncertainty": [
+          "LOW",
+          "MEDIUM"
+        ]
+      }
+    },
+    "skills": {
+      "config_version": "0.3.0",
+      "evidence_research": {
+        "version": "0.2.0",
+        "prompt_version": "0.2.0",
+        "manifest": "a5/skills/evidence_research/manifest.yaml"
+      },
+      "citation_audit": {
+        "version": "0.3.0",
+        "prompt_version": "0.3.0",
+        "manifest": "a5/skills/citation_audit/manifest.yaml"
+      },
+      "prompt_versions": {
+        "question_classification": "0.2.0",
+        "evidence_research": "0.2.0",
+        "claim_generation": "0.4.0",
+        "citation_audit": "0.3.0"
+      },
+      "classifier": {
+        "policy_version": "temporary-a1-default-0.2.0",
+        "fallback_type": "general_evidence",
+        "keyword_types": {
+          "treatment_evidence": [
+            "treat",
+            "therapy",
+            "intervention",
+            "治疗",
+            "用药"
+          ],
+          "diagnostic_evidence": [
+            "diagnos",
+            "test",
+            "screen",
+            "诊断",
+            "筛查"
+          ]
+        },
+        "rules": {
+          "stable_mechanism": {
+            "preferred_sources": [
+              "pubmed_review",
+              "europe_pmc"
+            ],
+            "expected_evidence_types": [
+              "systematic_review",
+              "review"
+            ],
+            "freshness_required": false,
+            "max_tool_calls": 2
+          },
+          "guideline_treatment": {
+            "preferred_sources": [
+              "current_guideline",
+              "pubmed_review",
+              "europe_pmc"
+            ],
+            "expected_evidence_types": [
+              "guideline",
+              "systematic_review",
+              "controlled_study"
+            ],
+            "freshness_required": true,
+            "max_tool_calls": 3
+          },
+          "latest_research_trial": {
+            "preferred_sources": [
+              "clinicaltrials_record",
+              "pubmed_trial",
+              "europe_pmc"
+            ],
+            "expected_evidence_types": [
+              "clinical_trial",
+              "controlled_study"
+            ],
+            "freshness_required": true,
+            "max_tool_calls": 3
+          },
+          "insufficient_conflict_out_of_scope": {
+            "preferred_sources": [
+              "current_guideline",
+              "pubmed_review",
+              "clinicaltrials_record"
+            ],
+            "expected_evidence_types": [
+              "guideline",
+              "systematic_review",
+              "clinical_trial"
+            ],
+            "freshness_required": true,
+            "max_tool_calls": 3
+          },
+          "treatment_evidence": {
+            "preferred_sources": [
+              "guideline",
+              "systematic_review",
+              "primary_study"
+            ],
+            "expected_evidence_types": [
+              "guideline",
+              "systematic_review",
+              "controlled_study"
+            ],
+            "freshness_required": true,
+            "max_tool_calls": 3
+          },
+          "diagnostic_evidence": {
+            "preferred_sources": [
+              "guideline",
+              "systematic_review",
+              "diagnostic_study"
+            ],
+            "expected_evidence_types": [
+              "guideline",
+              "diagnostic_accuracy_study"
+            ],
+            "freshness_required": true,
+            "max_tool_calls": 3
+          },
+          "general_evidence": {
+            "preferred_sources": [
+              "guideline",
+              "systematic_review",
+              "primary_study"
+            ],
+            "expected_evidence_types": [
+              "guideline",
+              "review",
+              "study"
+            ],
+            "freshness_required": false,
+            "max_tool_calls": 2
+          }
+        }
+      }
+    },
+    "models": {
+      "config_version": "0.3.0",
+      "claim_generator": "mock_claim_generator@0.2.0",
+      "claim_verifier": "rule_based_claim_verifier@0.3.0",
+      "textual_support_evaluator": "exact_span_match@0.2.0",
+      "structured_generation_transport": "injected_openai_compatible@0.4.0",
+      "semantic_support_evaluator": "injected_independent_verifier@0.4.0"
+    },
+    "integrations": {
+      "config_version": "a5-upstream-adapters-v0.3.0",
+      "status": "branch_contracts_reviewed_not_main_integrated",
+      "a1": {
+        "contract_version": "question-v0.2+safety-v0.2+agent-termination-v0.2",
+        "source_ref": "commit-b3e1ea6",
+        "status": "reviewed_branch_contract"
+      },
+      "a2": {
+        "contract_version": "a2-evidence-v1+mcp-tools-v1",
+        "source_ref": "commit-881025a",
+        "status": "reviewed_branch_contract"
+      },
+      "a3": {
+        "contract_version": "a3-compat-v0.3",
+        "source_ref": "commit-91a9180",
+        "status": "reviewed_branch_contract"
+      },
+      "a4": {
+        "contract_version": "a4-search-result-21ad3a0",
+        "source_ref": "commit-21ad3a0",
+        "status": "reviewed_branch_contract_blocked_on_rerank_evidence"
+      },
+      "embedding_capability": {
+        "owner": "A3",
+        "enabled": false,
+        "status": "pending_real_dev_recall_at_50_latency_and_reproducibility",
+        "model": "BAAI/bge-m3",
+        "required_dev_metrics": [
+          "Recall@50",
+          "latency_ms",
+          "index_rebuild_reproducibility"
+        ]
+      },
+      "cross_encoder_capability": {
+        "owner": "A4",
+        "enabled": false,
+        "status": "pending_real_dev_ablation_calibration_and_latency",
+        "model": null,
+        "required_dev_metrics": [
+          "nDCG@10_delta_R2_vs_R1",
+          "latency_ms",
+          "score_calibration"
+        ]
+      },
+      "a2_tool_names": {
+        "pubmed": "search_pubmed",
+        "pubmed_review": "search_pubmed",
+        "pubmed_trial": "search_pubmed",
+        "systematic_review": "search_pubmed",
+        "primary_study": "search_pubmed",
+        "controlled_study": "search_pubmed",
+        "clinicaltrials": "search_trials",
+        "clinicaltrials_record": "search_trials",
+        "guideline": "search_guidelines",
+        "current_guideline": "search_guidelines",
+        "europe_pmc": "search_europe_pmc"
+      },
+      "a2_search_limit": 10,
+      "a2_gate1_required_fields": [
+        "id",
+        "source_type",
+        "published_at",
+        "url",
+        "fetched_at",
+        "content_hash"
+      ],
+      "a2_response_ok_field": "ok",
+      "a2_response_items_field": "evidence",
+      "a4_question_type_map": {
+        "stable_mechanism": "generic",
+        "guideline_treatment": "guideline",
+        "latest_research_trial": "latest_trial",
+        "insufficient_conflict_out_of_scope": "generic",
+        "treatment_evidence": "therapy",
+        "diagnostic_evidence": "diagnosis",
+        "general_evidence": "generic"
+      },
+      "a4_freshness_map": {
+        "stable_mechanism": "generic",
+        "guideline_treatment": "current",
+        "latest_research_trial": "latest",
+        "insufficient_conflict_out_of_scope": "generic",
+        "treatment_evidence": "current",
+        "diagnostic_evidence": "current",
+        "general_evidence": "generic"
+      },
+      "a4_source_type_map": {
+        "pubmed": "pubmed",
+        "pubmed_review": "pubmed",
+        "pubmed_trial": "pubmed",
+        "systematic_review": "pubmed",
+        "primary_study": "pubmed",
+        "controlled_study": "pubmed",
+        "clinicaltrials": "clinical_trials",
+        "clinicaltrials_record": "clinical_trials",
+        "guideline": "guideline",
+        "current_guideline": "guideline",
+        "europe_pmc": "europe_pmc"
+      },
+      "a4_topic_map": {
+        "stable_mechanism": "generic",
+        "guideline_treatment": "therapy",
+        "latest_research_trial": "therapy",
+        "insufficient_conflict_out_of_scope": "generic",
+        "treatment_evidence": "therapy",
+        "diagnostic_evidence": "diagnosis",
+        "general_evidence": "generic"
+      }
+    }
+  },
+  "started_at": "2026-08-11T22:47:12.059899Z",
+  "finished_at": "2026-08-11T22:47:12.062782Z",
+  "latency_ms": 2.883,
+  "error": null
+}

@@ -1,0 +1,107 @@
+{
+  "$defs": {
+    "SpecialPopulation": {
+      "enum": [
+        "none",
+        "pregnancy",
+        "pediatric",
+        "other",
+        "unknown"
+      ],
+      "title": "SpecialPopulation",
+      "type": "string"
+    },
+    "TopicScope": {
+      "enum": [
+        "hypertension",
+        "dyslipidemia",
+        "other",
+        "unknown"
+      ],
+      "title": "TopicScope",
+      "type": "string"
+    }
+  },
+  "additionalProperties": false,
+  "description": "Normalized Gate0 signals.\n\nThe reference implementation deliberately does not infer these signals from\nfree text. A future A1 classifier/adapter must provide them. Missing signals\nstay ``None`` and therefore fail closed.",
+  "properties": {
+    "question_id": {
+      "minLength": 1,
+      "title": "Question Id",
+      "type": "string"
+    },
+    "topic": {
+      "$ref": "#/$defs/TopicScope",
+      "default": "unknown"
+    },
+    "acute_emergency": {
+      "anyOf": [
+        {
+          "type": "boolean"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Acute Emergency"
+    },
+    "personal_diagnosis": {
+      "anyOf": [
+        {
+          "type": "boolean"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Personal Diagnosis"
+    },
+    "personalized_prescribing_or_dose_change": {
+      "anyOf": [
+        {
+          "type": "boolean"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Personalized Prescribing Or Dose Change"
+    },
+    "prompt_injection_or_fabricated_reference": {
+      "anyOf": [
+        {
+          "type": "boolean"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Prompt Injection Or Fabricated Reference"
+    },
+    "identifiable_personal_data": {
+      "anyOf": [
+        {
+          "type": "boolean"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Identifiable Personal Data"
+    },
+    "special_population": {
+      "$ref": "#/$defs/SpecialPopulation",
+      "default": "unknown"
+    }
+  },
+  "required": [
+    "question_id"
+  ],
+  "title": "SafetyPolicyInput",
+  "type": "object"
+}

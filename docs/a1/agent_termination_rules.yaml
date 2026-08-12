@@ -1,0 +1,51 @@
+version: agent-termination-v0.2
+status: a1_executable_contract
+frozen_at: "2026-08-12"
+
+budgets:
+  retrieval_tool_calls_min: 1
+  retrieval_tool_calls_max: 3
+  total_tool_calls_max: 5
+  query_rewrite_max: 1
+  generation_attempts_max: 1
+  verifier_attempts_max: 1
+
+safety:
+  policy_version: a1-safety-v0.2
+  default_decision: UNKNOWN
+  unknown_action: REFUSE
+  deny_action: REFUSE
+  allow_action: CONTINUE
+  input_schema: schemas/a1/safety_policy_input.schema.json
+  output_schema: schemas/a1/safety_policy_output.schema.json
+
+retrieval:
+  input_schema: schemas/a1/retrieval_termination_input.schema.json
+  output_schema: schemas/a1/retrieval_termination_output.schema.json
+  precedence:
+    - unresolved_conflict => REFUSE
+    - evidence_sufficient=true => CONTINUE (budget state does not override sufficiency)
+    - evidence_sufficient!=true and budget_exhausted=true => REFUSE
+    - evidence_sufficient!=true and budget remains => RETRY
+
+release:
+  decisions: [PASS, WARN, REFUSE]
+  reason_code_field: reason_codes
+
+reason_codes:
+  safety_emergency: Acute/emergency signal detected before retrieval.
+  safety_personal_diagnosis: Individual diagnosis request is outside the MVP scope.
+  safety_personalized_prescribing: Drug selection, dose change, or prescription requested.
+  safety_integrity_attack: Prompt injection or fabricated-reference request detected.
+  safety_identifiable_data: Identifiable personal data is outside the teaching prototype.
+  safety_outside_topic_scope: Topic is outside adult hypertension/dyslipidemia.
+  safety_special_population_route_unavailable: Dedicated pregnancy/pediatric/special-population route is unavailable.
+  safety_signals_incomplete: Required normalized Gate0 signals are missing or unknown.
+  safety_scope_allowed: All required Gate0 signals are known and within scope.
+  retrieval_conflict_unresolved: Critical evidence conflict remains unresolved.
+  retrieval_sufficient: Evidence sufficiency gate passed.
+  no_eligible_evidence: No eligible evidence is available.
+  budget_exhausted: No additional tool call is permitted.
+  retrieval_insufficient: Evidence sufficiency gate did not pass.
+  retrieval_quality_unknown: Required retrieval-quality metrics are unknown.
+  required_source_type_missing: Required source coverage is missing and retry budget remains.

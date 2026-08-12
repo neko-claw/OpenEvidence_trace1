@@ -1,0 +1,1755 @@
+{
+  "$defs": {
+    "AgentPlan": {
+      "additionalProperties": false,
+      "properties": {
+        "question_type": {
+          "title": "Question Type",
+          "type": "string"
+        },
+        "selected_skill": {
+          "title": "Selected Skill",
+          "type": "string"
+        },
+        "search_plan": {
+          "$ref": "#/$defs/SearchPlan"
+        },
+        "policy_version": {
+          "title": "Policy Version",
+          "type": "string"
+        },
+        "evidence_summary": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/EvidenceSummary"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        }
+      },
+      "required": [
+        "question_type",
+        "selected_skill",
+        "search_plan",
+        "policy_version"
+      ],
+      "title": "AgentPlan",
+      "type": "object"
+    },
+    "AtomicClaimPlan": {
+      "additionalProperties": false,
+      "properties": {
+        "question_id": {
+          "title": "Question Id",
+          "type": "string"
+        },
+        "allowed_evidence_ids": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Allowed Evidence Ids",
+          "type": "array"
+        },
+        "allowed_span_ids": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Allowed Span Ids",
+          "type": "array"
+        },
+        "prompt_version": {
+          "title": "Prompt Version",
+          "type": "string"
+        },
+        "output_contract": {
+          "default": "ClaimGenerationOutput",
+          "title": "Output Contract",
+          "type": "string"
+        },
+        "constraints": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Constraints",
+          "type": "array"
+        }
+      },
+      "required": [
+        "question_id",
+        "allowed_evidence_ids",
+        "allowed_span_ids",
+        "prompt_version"
+      ],
+      "title": "AtomicClaimPlan",
+      "type": "object"
+    },
+    "Claim": {
+      "additionalProperties": false,
+      "properties": {
+        "claim_id": {
+          "minLength": 1,
+          "title": "Claim Id",
+          "type": "string"
+        },
+        "run_id": {
+          "default": "",
+          "title": "Run Id",
+          "type": "string"
+        },
+        "text": {
+          "minLength": 1,
+          "title": "Text",
+          "type": "string"
+        },
+        "criticality": {
+          "$ref": "#/$defs/ClaimCriticality"
+        },
+        "evidence_ids": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Evidence Ids",
+          "type": "array"
+        },
+        "evidence_span_ids": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Evidence Span Ids",
+          "type": "array"
+        },
+        "uncertainty": {
+          "$ref": "#/$defs/UncertaintyLevel",
+          "default": "UNKNOWN"
+        },
+        "entailment_score": {
+          "anyOf": [
+            {
+              "maximum": 1.0,
+              "minimum": 0.0,
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Entailment Score"
+        },
+        "population": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Population"
+        },
+        "intervention": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Intervention"
+        },
+        "comparator": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Comparator"
+        },
+        "outcome": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Outcome"
+        },
+        "as_of_date": {
+          "anyOf": [
+            {
+              "format": "date",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "As Of Date"
+        },
+        "population_match": {
+          "$ref": "#/$defs/MatchStatus",
+          "default": "UNKNOWN"
+        },
+        "intervention_match": {
+          "$ref": "#/$defs/MatchStatus",
+          "default": "UNKNOWN"
+        },
+        "comparator_match": {
+          "$ref": "#/$defs/MatchStatus",
+          "default": "UNKNOWN"
+        },
+        "outcome_match": {
+          "$ref": "#/$defs/MatchStatus",
+          "default": "UNKNOWN"
+        },
+        "time_match": {
+          "$ref": "#/$defs/MatchStatus",
+          "default": "UNKNOWN"
+        },
+        "conflict_ids": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Conflict Ids",
+          "type": "array"
+        },
+        "verification_method": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Verification Method"
+        },
+        "decision": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/VerificationStatus"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        }
+      },
+      "required": [
+        "claim_id",
+        "text",
+        "criticality"
+      ],
+      "title": "Claim",
+      "type": "object"
+    },
+    "ClaimCriticality": {
+      "enum": [
+        "critical",
+        "important",
+        "context"
+      ],
+      "title": "ClaimCriticality",
+      "type": "string"
+    },
+    "Decision": {
+      "enum": [
+        "PASS",
+        "WARN",
+        "REFUSE"
+      ],
+      "title": "Decision",
+      "type": "string"
+    },
+    "EventType": {
+      "enum": [
+        "state",
+        "gate",
+        "skill",
+        "tool",
+        "generation",
+        "decision",
+        "error"
+      ],
+      "title": "EventType",
+      "type": "string"
+    },
+    "EvidenceIntegrityItem": {
+      "additionalProperties": false,
+      "properties": {
+        "evidence_id": {
+          "title": "Evidence Id",
+          "type": "string"
+        },
+        "status": {
+          "$ref": "#/$defs/EvidenceIntegrityStatus"
+        },
+        "reason_codes": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Reason Codes",
+          "type": "array"
+        }
+      },
+      "required": [
+        "evidence_id",
+        "status"
+      ],
+      "title": "EvidenceIntegrityItem",
+      "type": "object"
+    },
+    "EvidenceIntegrityResult": {
+      "additionalProperties": false,
+      "properties": {
+        "status": {
+          "$ref": "#/$defs/EvidenceIntegrityStatus"
+        },
+        "eligible_evidence_ids": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Eligible Evidence Ids",
+          "type": "array"
+        },
+        "rejected_evidence_ids": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Rejected Evidence Ids",
+          "type": "array"
+        },
+        "unknown_evidence_ids": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Unknown Evidence Ids",
+          "type": "array"
+        },
+        "items": {
+          "items": {
+            "$ref": "#/$defs/EvidenceIntegrityItem"
+          },
+          "title": "Items",
+          "type": "array"
+        },
+        "reasons": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Reasons",
+          "type": "array"
+        }
+      },
+      "required": [
+        "status"
+      ],
+      "title": "EvidenceIntegrityResult",
+      "type": "object"
+    },
+    "EvidenceIntegrityStatus": {
+      "enum": [
+        "ELIGIBLE",
+        "REJECTED",
+        "UNKNOWN"
+      ],
+      "title": "EvidenceIntegrityStatus",
+      "type": "string"
+    },
+    "EvidenceRecord": {
+      "additionalProperties": false,
+      "description": "TEMPORARY COMPATIBILITY MODEL, not the frozen A2/A3 schema.\n\nUpstream records must be normalized to this narrow view by an adapter.\nMissing quality/provenance fields stay ``None`` and gates treat them as\nUNKNOWN; A5 never manufactures scores, evidence levels, spans, or dates.",
+      "properties": {
+        "id": {
+          "minLength": 1,
+          "title": "Id",
+          "type": "string"
+        },
+        "content": {
+          "minLength": 1,
+          "title": "Content",
+          "type": "string"
+        },
+        "source_type": {
+          "minLength": 1,
+          "title": "Source Type",
+          "type": "string"
+        },
+        "title": {
+          "minLength": 1,
+          "title": "Title",
+          "type": "string"
+        },
+        "source_metadata": {
+          "additionalProperties": true,
+          "title": "Source Metadata",
+          "type": "object"
+        },
+        "population": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Population"
+        },
+        "intervention": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Intervention"
+        },
+        "comparator": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Comparator"
+        },
+        "outcome": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Outcome"
+        },
+        "published_at": {
+          "anyOf": [
+            {
+              "format": "date-time",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Published At"
+        },
+        "retrieval_score": {
+          "anyOf": [
+            {
+              "maximum": 1.0,
+              "minimum": 0.0,
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Retrieval Score"
+        },
+        "retrieval_score_kind": {
+          "$ref": "#/$defs/RetrievalScoreKind",
+          "default": "UNKNOWN"
+        },
+        "retrieval_score_scope": {
+          "$ref": "#/$defs/RetrievalScoreScope",
+          "default": "UNKNOWN"
+        },
+        "retrieval_score_calibrated": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Retrieval Score Calibrated"
+        },
+        "evidence_level": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Evidence Level"
+        },
+        "spans": {
+          "items": {
+            "$ref": "#/$defs/EvidenceSpan"
+          },
+          "title": "Spans",
+          "type": "array"
+        },
+        "conflicts_with_ids": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Conflicts With Ids",
+          "type": "array"
+        },
+        "mock": {
+          "default": false,
+          "title": "Mock",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "id",
+        "content",
+        "source_type",
+        "title"
+      ],
+      "title": "EvidenceRecord",
+      "type": "object"
+    },
+    "EvidenceSpan": {
+      "additionalProperties": false,
+      "properties": {
+        "span_id": {
+          "minLength": 1,
+          "title": "Span Id",
+          "type": "string"
+        },
+        "text": {
+          "minLength": 1,
+          "title": "Text",
+          "type": "string"
+        },
+        "chunk_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Chunk Id"
+        },
+        "page": {
+          "anyOf": [
+            {
+              "minimum": 1,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Page"
+        },
+        "raw_page": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Raw Page"
+        },
+        "section": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Section"
+        },
+        "char_start": {
+          "anyOf": [
+            {
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Char Start"
+        },
+        "char_end": {
+          "anyOf": [
+            {
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Char End"
+        },
+        "offset_scope": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Offset Scope"
+        },
+        "document_char_start": {
+          "anyOf": [
+            {
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Document Char Start"
+        },
+        "document_char_end": {
+          "anyOf": [
+            {
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Document Char End"
+        },
+        "span_content_hash": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Span Content Hash"
+        },
+        "chunk_content_hash": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Chunk Content Hash"
+        },
+        "evidence_content_hash": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Evidence Content Hash"
+        }
+      },
+      "required": [
+        "span_id",
+        "text"
+      ],
+      "title": "EvidenceSpan",
+      "type": "object"
+    },
+    "EvidenceSufficiencyMetrics": {
+      "additionalProperties": false,
+      "properties": {
+        "candidate_count": {
+          "minimum": 0,
+          "title": "Candidate Count",
+          "type": "integer"
+        },
+        "top_score": {
+          "anyOf": [
+            {
+              "maximum": 1.0,
+              "minimum": 0.0,
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Top Score"
+        },
+        "top_ranking_score": {
+          "anyOf": [
+            {
+              "maximum": 1.0,
+              "minimum": 0.0,
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Top Ranking Score"
+        },
+        "usable_quality_score_count": {
+          "default": 0,
+          "minimum": 0,
+          "title": "Usable Quality Score Count",
+          "type": "integer"
+        },
+        "source_type_count": {
+          "minimum": 0,
+          "title": "Source Type Count",
+          "type": "integer"
+        },
+        "source_diversity": {
+          "anyOf": [
+            {
+              "maximum": 1.0,
+              "minimum": 0.0,
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Source Diversity"
+        },
+        "strongest_evidence_level": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Strongest Evidence Level"
+        },
+        "freshness_state": {
+          "$ref": "#/$defs/FreshnessState"
+        },
+        "conflict_count": {
+          "minimum": 0,
+          "title": "Conflict Count",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "candidate_count",
+        "source_type_count",
+        "freshness_state",
+        "conflict_count"
+      ],
+      "title": "EvidenceSufficiencyMetrics",
+      "type": "object"
+    },
+    "EvidenceSufficiencyResult": {
+      "additionalProperties": false,
+      "properties": {
+        "status": {
+          "$ref": "#/$defs/SufficiencyStatus"
+        },
+        "reasons": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Reasons",
+          "type": "array"
+        },
+        "metrics": {
+          "$ref": "#/$defs/EvidenceSufficiencyMetrics"
+        },
+        "recommended_action": {
+          "$ref": "#/$defs/RecommendedAction"
+        }
+      },
+      "required": [
+        "status",
+        "metrics",
+        "recommended_action"
+      ],
+      "title": "EvidenceSufficiencyResult",
+      "type": "object"
+    },
+    "EvidenceSummary": {
+      "additionalProperties": false,
+      "properties": {
+        "evidence_count": {
+          "minimum": 0,
+          "title": "Evidence Count",
+          "type": "integer"
+        },
+        "evidence_ids": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Evidence Ids",
+          "type": "array"
+        },
+        "source_types": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Source Types",
+          "type": "array"
+        },
+        "source_diversity": {
+          "anyOf": [
+            {
+              "maximum": 1.0,
+              "minimum": 0.0,
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Source Diversity"
+        },
+        "strongest_evidence_level": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Strongest Evidence Level"
+        },
+        "freshness_summary": {
+          "$ref": "#/$defs/FreshnessState",
+          "default": "UNKNOWN"
+        },
+        "conflicts_detected": {
+          "default": false,
+          "title": "Conflicts Detected",
+          "type": "boolean"
+        },
+        "summary_text": {
+          "title": "Summary Text",
+          "type": "string"
+        }
+      },
+      "required": [
+        "evidence_count",
+        "summary_text"
+      ],
+      "title": "EvidenceSummary",
+      "type": "object"
+    },
+    "FinalAnswer": {
+      "additionalProperties": false,
+      "properties": {
+        "decision": {
+          "$ref": "#/$defs/Decision"
+        },
+        "text": {
+          "title": "Text",
+          "type": "string"
+        },
+        "included_claim_ids": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Included Claim Ids",
+          "type": "array"
+        },
+        "cited_evidence_ids": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Cited Evidence Ids",
+          "type": "array"
+        },
+        "limitations": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Limitations",
+          "type": "array"
+        },
+        "warnings": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Warnings",
+          "type": "array"
+        }
+      },
+      "required": [
+        "decision",
+        "text"
+      ],
+      "title": "FinalAnswer",
+      "type": "object"
+    },
+    "FreshnessState": {
+      "enum": [
+        "FRESH",
+        "STALE",
+        "UNKNOWN",
+        "NOT_REQUIRED"
+      ],
+      "title": "FreshnessState",
+      "type": "string"
+    },
+    "GenerationConstraintResult": {
+      "additionalProperties": false,
+      "properties": {
+        "status": {
+          "$ref": "#/$defs/GenerationConstraintStatus"
+        },
+        "accepted_claim_ids": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Accepted Claim Ids",
+          "type": "array"
+        },
+        "rejected_claim_ids": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Rejected Claim Ids",
+          "type": "array"
+        },
+        "reasons": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Reasons",
+          "type": "array"
+        }
+      },
+      "required": [
+        "status"
+      ],
+      "title": "GenerationConstraintResult",
+      "type": "object"
+    },
+    "GenerationConstraintStatus": {
+      "enum": [
+        "ACCEPTED",
+        "REJECTED"
+      ],
+      "title": "GenerationConstraintStatus",
+      "type": "string"
+    },
+    "MatchStatus": {
+      "enum": [
+        "MATCH",
+        "MISMATCH",
+        "UNKNOWN"
+      ],
+      "title": "MatchStatus",
+      "type": "string"
+    },
+    "Question": {
+      "additionalProperties": false,
+      "properties": {
+        "question_id": {
+          "title": "Question Id",
+          "type": "string"
+        },
+        "text": {
+          "minLength": 1,
+          "title": "Text",
+          "type": "string"
+        },
+        "metadata": {
+          "additionalProperties": true,
+          "title": "Metadata",
+          "type": "object"
+        }
+      },
+      "required": [
+        "text"
+      ],
+      "title": "Question",
+      "type": "object"
+    },
+    "RecommendedAction": {
+      "enum": [
+        "CONTINUE",
+        "RETRY",
+        "WARN",
+        "REFUSE"
+      ],
+      "title": "RecommendedAction",
+      "type": "string"
+    },
+    "RetrievalScoreKind": {
+      "enum": [
+        "QUALITY",
+        "RANKING",
+        "UNKNOWN"
+      ],
+      "title": "RetrievalScoreKind",
+      "type": "string"
+    },
+    "RetrievalScoreScope": {
+      "enum": [
+        "CROSS_QUERY",
+        "QUERY_LOCAL",
+        "UNKNOWN"
+      ],
+      "title": "RetrievalScoreScope",
+      "type": "string"
+    },
+    "RuntimeConfigSnapshot": {
+      "additionalProperties": false,
+      "properties": {
+        "agent": {
+          "additionalProperties": true,
+          "title": "Agent",
+          "type": "object"
+        },
+        "gates": {
+          "additionalProperties": true,
+          "title": "Gates",
+          "type": "object"
+        },
+        "skills": {
+          "additionalProperties": true,
+          "title": "Skills",
+          "type": "object"
+        },
+        "models": {
+          "additionalProperties": true,
+          "title": "Models",
+          "type": "object"
+        },
+        "integrations": {
+          "additionalProperties": true,
+          "title": "Integrations",
+          "type": "object"
+        }
+      },
+      "required": [
+        "agent",
+        "gates",
+        "skills",
+        "models"
+      ],
+      "title": "RuntimeConfigSnapshot",
+      "type": "object"
+    },
+    "SafetyAssessment": {
+      "additionalProperties": false,
+      "properties": {
+        "decision": {
+          "$ref": "#/$defs/SafetyDecision"
+        },
+        "reason": {
+          "title": "Reason",
+          "type": "string"
+        },
+        "policy_version": {
+          "title": "Policy Version",
+          "type": "string"
+        }
+      },
+      "required": [
+        "decision",
+        "reason",
+        "policy_version"
+      ],
+      "title": "SafetyAssessment",
+      "type": "object"
+    },
+    "SafetyDecision": {
+      "enum": [
+        "ALLOW",
+        "DENY",
+        "UNKNOWN"
+      ],
+      "title": "SafetyDecision",
+      "type": "string"
+    },
+    "SearchPlan": {
+      "additionalProperties": false,
+      "properties": {
+        "queries": {
+          "items": {
+            "type": "string"
+          },
+          "minItems": 1,
+          "title": "Queries",
+          "type": "array"
+        },
+        "preferred_sources": {
+          "items": {
+            "type": "string"
+          },
+          "minItems": 1,
+          "title": "Preferred Sources",
+          "type": "array"
+        },
+        "freshness_required": {
+          "default": false,
+          "title": "Freshness Required",
+          "type": "boolean"
+        },
+        "expected_evidence_types": {
+          "items": {
+            "type": "string"
+          },
+          "minItems": 1,
+          "title": "Expected Evidence Types",
+          "type": "array"
+        },
+        "max_tool_calls": {
+          "maximum": 20,
+          "minimum": 1,
+          "title": "Max Tool Calls",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "queries",
+        "preferred_sources",
+        "expected_evidence_types",
+        "max_tool_calls"
+      ],
+      "title": "SearchPlan",
+      "type": "object"
+    },
+    "SufficiencyStatus": {
+      "enum": [
+        "SUFFICIENT",
+        "INSUFFICIENT",
+        "CONFLICTED"
+      ],
+      "title": "SufficiencyStatus",
+      "type": "string"
+    },
+    "ToolTrace": {
+      "additionalProperties": false,
+      "properties": {
+        "run_id": {
+          "title": "Run Id",
+          "type": "string"
+        },
+        "state": {
+          "$ref": "#/$defs/WorkflowState"
+        },
+        "event_type": {
+          "$ref": "#/$defs/EventType"
+        },
+        "timestamp": {
+          "format": "date-time",
+          "title": "Timestamp",
+          "type": "string"
+        },
+        "gate": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Gate"
+        },
+        "skill": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Skill"
+        },
+        "tool": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Tool"
+        },
+        "tool_call_index": {
+          "anyOf": [
+            {
+              "minimum": 1,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Tool Call Index"
+        },
+        "tool_budget_remaining": {
+          "anyOf": [
+            {
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Tool Budget Remaining"
+        },
+        "input_summary": {
+          "anyOf": [
+            {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Input Summary"
+        },
+        "output_count": {
+          "anyOf": [
+            {
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Output Count"
+        },
+        "evidence_ids": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Evidence Ids",
+          "type": "array"
+        },
+        "claim_ids": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Claim Ids",
+          "type": "array"
+        },
+        "decision": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Decision"
+        },
+        "latency_ms": {
+          "default": 0.0,
+          "minimum": 0.0,
+          "title": "Latency Ms",
+          "type": "number"
+        },
+        "error": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Error"
+        },
+        "details": {
+          "additionalProperties": true,
+          "title": "Details",
+          "type": "object"
+        }
+      },
+      "required": [
+        "run_id",
+        "state",
+        "event_type"
+      ],
+      "title": "ToolTrace",
+      "type": "object"
+    },
+    "UncertaintyLevel": {
+      "enum": [
+        "LOW",
+        "MEDIUM",
+        "HIGH",
+        "UNKNOWN"
+      ],
+      "title": "UncertaintyLevel",
+      "type": "string"
+    },
+    "VerificationResult": {
+      "additionalProperties": false,
+      "properties": {
+        "claim_id": {
+          "title": "Claim Id",
+          "type": "string"
+        },
+        "status": {
+          "$ref": "#/$defs/VerificationStatus"
+        },
+        "evidence_ids": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Evidence Ids",
+          "type": "array"
+        },
+        "evidence_span_ids": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Evidence Span Ids",
+          "type": "array"
+        },
+        "checked_evidence_ids": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Checked Evidence Ids",
+          "type": "array"
+        },
+        "illegal_evidence_ids": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Illegal Evidence Ids",
+          "type": "array"
+        },
+        "illegal_span_ids": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Illegal Span Ids",
+          "type": "array"
+        },
+        "citation_valid": {
+          "default": false,
+          "title": "Citation Valid",
+          "type": "boolean"
+        },
+        "span_check": {
+          "$ref": "#/$defs/MatchStatus",
+          "default": "UNKNOWN"
+        },
+        "population_match": {
+          "$ref": "#/$defs/MatchStatus",
+          "default": "UNKNOWN"
+        },
+        "intervention_match": {
+          "$ref": "#/$defs/MatchStatus",
+          "default": "UNKNOWN"
+        },
+        "comparator_match": {
+          "$ref": "#/$defs/MatchStatus",
+          "default": "UNKNOWN"
+        },
+        "outcome_match": {
+          "$ref": "#/$defs/MatchStatus",
+          "default": "UNKNOWN"
+        },
+        "time_match": {
+          "$ref": "#/$defs/MatchStatus",
+          "default": "UNKNOWN"
+        },
+        "numeric_match": {
+          "$ref": "#/$defs/MatchStatus",
+          "default": "UNKNOWN"
+        },
+        "unit_match": {
+          "$ref": "#/$defs/MatchStatus",
+          "default": "UNKNOWN"
+        },
+        "entailment_score": {
+          "anyOf": [
+            {
+              "maximum": 1.0,
+              "minimum": 0.0,
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Entailment Score"
+        },
+        "conflict_ids": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Conflict Ids",
+          "type": "array"
+        },
+        "uncertainty": {
+          "$ref": "#/$defs/UncertaintyLevel",
+          "default": "UNKNOWN"
+        },
+        "verification_method": {
+          "title": "Verification Method",
+          "type": "string"
+        },
+        "reasons": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Reasons",
+          "type": "array"
+        }
+      },
+      "required": [
+        "claim_id",
+        "status",
+        "verification_method"
+      ],
+      "title": "VerificationResult",
+      "type": "object"
+    },
+    "VerificationStatus": {
+      "enum": [
+        "SUPPORTED",
+        "CONTRADICTED",
+        "INSUFFICIENT"
+      ],
+      "title": "VerificationStatus",
+      "type": "string"
+    },
+    "WorkflowState": {
+      "enum": [
+        "START",
+        "GATE0",
+        "CLASSIFY",
+        "SELECT_SKILL",
+        "PLAN",
+        "RETRIEVE",
+        "GATE1",
+        "GATE2",
+        "SUMMARIZE_EVIDENCE",
+        "GATE3",
+        "GENERATE_CLAIMS",
+        "CLAIM_SPLITTER",
+        "GATE4",
+        "AUDIT_CITATIONS",
+        "GATE5",
+        "GATE6",
+        "FINALIZE",
+        "END"
+      ],
+      "title": "WorkflowState",
+      "type": "string"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "run_id": {
+      "title": "Run Id",
+      "type": "string"
+    },
+    "question": {
+      "$ref": "#/$defs/Question"
+    },
+    "state": {
+      "$ref": "#/$defs/WorkflowState",
+      "default": "START"
+    },
+    "selected_skill": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Selected Skill"
+    },
+    "selected_skills": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Selected Skills",
+      "type": "array"
+    },
+    "agent_plan": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/AgentPlan"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
+    },
+    "safety_assessment": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/SafetyAssessment"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
+    },
+    "evidence_integrity": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/EvidenceIntegrityResult"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
+    },
+    "evidence_sufficiency": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/EvidenceSufficiencyResult"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
+    },
+    "evidence_summary": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/EvidenceSummary"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
+    },
+    "atomic_claim_plan": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/AtomicClaimPlan"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
+    },
+    "generation_constraints": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/GenerationConstraintResult"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
+    },
+    "retrieved_evidence": {
+      "items": {
+        "$ref": "#/$defs/EvidenceRecord"
+      },
+      "title": "Retrieved Evidence",
+      "type": "array"
+    },
+    "claims": {
+      "items": {
+        "$ref": "#/$defs/Claim"
+      },
+      "title": "Claims",
+      "type": "array"
+    },
+    "verification_results": {
+      "items": {
+        "$ref": "#/$defs/VerificationResult"
+      },
+      "title": "Verification Results",
+      "type": "array"
+    },
+    "final_answer": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/FinalAnswer"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
+    },
+    "decision": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/Decision"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
+    },
+    "trace": {
+      "items": {
+        "$ref": "#/$defs/ToolTrace"
+      },
+      "title": "Trace",
+      "type": "array"
+    },
+    "agent_version": {
+      "title": "Agent Version",
+      "type": "string"
+    },
+    "skill_versions": {
+      "additionalProperties": {
+        "type": "string"
+      },
+      "title": "Skill Versions",
+      "type": "object"
+    },
+    "prompt_versions": {
+      "additionalProperties": {
+        "type": "string"
+      },
+      "title": "Prompt Versions",
+      "type": "object"
+    },
+    "gate_config_version": {
+      "title": "Gate Config Version",
+      "type": "string"
+    },
+    "runtime_config_snapshot": {
+      "$ref": "#/$defs/RuntimeConfigSnapshot"
+    },
+    "started_at": {
+      "format": "date-time",
+      "title": "Started At",
+      "type": "string"
+    },
+    "finished_at": {
+      "anyOf": [
+        {
+          "format": "date-time",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Finished At"
+    },
+    "latency_ms": {
+      "anyOf": [
+        {
+          "minimum": 0.0,
+          "type": "number"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Latency Ms"
+    },
+    "error": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Error"
+    }
+  },
+  "required": [
+    "question",
+    "agent_version",
+    "gate_config_version",
+    "runtime_config_snapshot"
+  ],
+  "title": "AgentRun",
+  "type": "object"
+}

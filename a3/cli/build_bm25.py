@@ -1,0 +1,3 @@
+from a3.cli.build_all import build
+def main(): build(real_embedding=False)
+if __name__ == "__main__": main()

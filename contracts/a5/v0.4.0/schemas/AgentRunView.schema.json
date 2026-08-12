@@ -1,0 +1,412 @@
+{
+  "$defs": {
+    "Decision": {
+      "enum": [
+        "PASS",
+        "WARN",
+        "REFUSE"
+      ],
+      "title": "Decision",
+      "type": "string"
+    },
+    "EventType": {
+      "enum": [
+        "state",
+        "gate",
+        "skill",
+        "tool",
+        "generation",
+        "decision",
+        "error"
+      ],
+      "title": "EventType",
+      "type": "string"
+    },
+    "EvidenceCardView": {
+      "additionalProperties": false,
+      "properties": {
+        "evidence_id": {
+          "title": "Evidence Id",
+          "type": "string"
+        },
+        "title": {
+          "title": "Title",
+          "type": "string"
+        },
+        "source_type": {
+          "title": "Source Type",
+          "type": "string"
+        },
+        "published_at": {
+          "anyOf": [
+            {
+              "format": "date-time",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Published At"
+        },
+        "url": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Url"
+        },
+        "page": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Page"
+        },
+        "section": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Section"
+        },
+        "evidence_level": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Evidence Level"
+        },
+        "mock": {
+          "title": "Mock",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "evidence_id",
+        "title",
+        "source_type",
+        "mock"
+      ],
+      "title": "EvidenceCardView",
+      "type": "object"
+    },
+    "ToolTrace": {
+      "additionalProperties": false,
+      "properties": {
+        "run_id": {
+          "title": "Run Id",
+          "type": "string"
+        },
+        "state": {
+          "$ref": "#/$defs/WorkflowState"
+        },
+        "event_type": {
+          "$ref": "#/$defs/EventType"
+        },
+        "timestamp": {
+          "format": "date-time",
+          "title": "Timestamp",
+          "type": "string"
+        },
+        "gate": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Gate"
+        },
+        "skill": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Skill"
+        },
+        "tool": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Tool"
+        },
+        "tool_call_index": {
+          "anyOf": [
+            {
+              "minimum": 1,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Tool Call Index"
+        },
+        "tool_budget_remaining": {
+          "anyOf": [
+            {
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Tool Budget Remaining"
+        },
+        "input_summary": {
+          "anyOf": [
+            {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Input Summary"
+        },
+        "output_count": {
+          "anyOf": [
+            {
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Output Count"
+        },
+        "evidence_ids": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Evidence Ids",
+          "type": "array"
+        },
+        "claim_ids": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Claim Ids",
+          "type": "array"
+        },
+        "decision": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Decision"
+        },
+        "latency_ms": {
+          "default": 0.0,
+          "minimum": 0.0,
+          "title": "Latency Ms",
+          "type": "number"
+        },
+        "error": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Error"
+        },
+        "details": {
+          "additionalProperties": true,
+          "title": "Details",
+          "type": "object"
+        }
+      },
+      "required": [
+        "run_id",
+        "state",
+        "event_type"
+      ],
+      "title": "ToolTrace",
+      "type": "object"
+    },
+    "UIReasonCode": {
+      "enum": [
+        "safety_denied",
+        "integrity_rejected",
+        "retrieval_insufficient",
+        "retrieval_conflict",
+        "budget_exhausted",
+        "generation_rejected",
+        "illegal_citation",
+        "missing_span",
+        "pico_mismatch",
+        "time_mismatch",
+        "unsupported_claim",
+        "contradicted_claim",
+        "high_uncertainty",
+        "upstream_unavailable",
+        "internal_error"
+      ],
+      "title": "UIReasonCode",
+      "type": "string"
+    },
+    "WorkflowState": {
+      "enum": [
+        "START",
+        "GATE0",
+        "CLASSIFY",
+        "SELECT_SKILL",
+        "PLAN",
+        "RETRIEVE",
+        "GATE1",
+        "GATE2",
+        "SUMMARIZE_EVIDENCE",
+        "GATE3",
+        "GENERATE_CLAIMS",
+        "CLAIM_SPLITTER",
+        "GATE4",
+        "AUDIT_CITATIONS",
+        "GATE5",
+        "GATE6",
+        "FINALIZE",
+        "END"
+      ],
+      "title": "WorkflowState",
+      "type": "string"
+    }
+  },
+  "additionalProperties": false,
+  "description": "A6-safe projection; candidate claims and internal exceptions stay private.",
+  "properties": {
+    "run_id": {
+      "title": "Run Id",
+      "type": "string"
+    },
+    "decision": {
+      "$ref": "#/$defs/Decision"
+    },
+    "answer_text": {
+      "title": "Answer Text",
+      "type": "string"
+    },
+    "included_claim_ids": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Included Claim Ids",
+      "type": "array"
+    },
+    "reason_codes": {
+      "items": {
+        "$ref": "#/$defs/UIReasonCode"
+      },
+      "title": "Reason Codes",
+      "type": "array"
+    },
+    "warnings": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Warnings",
+      "type": "array"
+    },
+    "limitations": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Limitations",
+      "type": "array"
+    },
+    "evidence_cards": {
+      "items": {
+        "$ref": "#/$defs/EvidenceCardView"
+      },
+      "title": "Evidence Cards",
+      "type": "array"
+    },
+    "trace": {
+      "items": {
+        "$ref": "#/$defs/ToolTrace"
+      },
+      "title": "Trace",
+      "type": "array"
+    },
+    "error_code": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/UIReasonCode"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
+    },
+    "error_message": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Error Message"
+    }
+  },
+  "required": [
+    "run_id",
+    "decision",
+    "answer_text"
+  ],
+  "title": "AgentRunView",
+  "type": "object"
+}
