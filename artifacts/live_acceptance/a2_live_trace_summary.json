@@ -1,0 +1,14 @@
+{
+  "generated_at": "2026-08-12",
+  "mcp_tools": ["search_pubmed", "search_europe_pmc", "search_trials", "search_guidelines", "get_evidence", "validate_citation"],
+  "schema_version": "a2-evidence-v1",
+  "config_version": "a2-config-v1",
+  "mcp_sdk_version": "2.0.0",
+  "live_test_result": "3 passed",
+  "records": [
+    {"tool": "search_pubmed", "evidence_id": "PMID:42527089", "cached_trace_retry_count": 0},
+    {"tool": "search_europe_pmc", "evidence_id": "EPMC:MED:31452104", "cached_trace_retry_count": 0},
+    {"tool": "search_trials", "evidence_id": "NCT:NCT03036124", "upstream_api_version": "v2", "cached_trace_retry_count": 0}
+  ],
+  "note": "The summarized trace was captured after live tests and therefore hit cache; network first-fetch acceptance is the separate 3-passed live test result. Guidelines were not tested because no approved manifest entry was supplied."
+}

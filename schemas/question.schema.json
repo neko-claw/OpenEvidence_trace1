@@ -1,0 +1,115 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://openevidence.local/schemas/question.schema.json",
+  "title": "OpenEvidence Question v0.3",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "id",
+    "split",
+    "dataset_pack",
+    "topic",
+    "difficulty",
+    "language",
+    "question",
+    "question_type",
+    "answerable",
+    "as_of_date",
+    "source_provenance",
+    "source_group_id",
+    "gold_source_ids",
+    "rubric_version",
+    "expected_source_types",
+    "critical_answer_points",
+    "contraindicating_evidence",
+    "penalty_points",
+    "evidence_gap_label",
+    "review_status"
+  ],
+  "properties": {
+    "id": {"type": "string", "pattern": "^(DEV|TEST|STRESS|EXTERNAL|RESERVE)-(HTN|LIP)-[0-9]{2,3}$"},
+    "split": {"enum": ["DEV", "TEST", "STRESS", "EXTERNAL", "RESERVE"]},
+    "dataset_pack": {"type": "string", "pattern": "^openevidence-(dev|test|stress|external|reserve)-v[0-9]+\\.[0-9]+$"},
+    "topic": {"enum": ["hypertension", "dyslipidemia"]},
+    "difficulty": {"enum": ["easy", "medium", "hard"]},
+    "language": {"enum": ["zh-CN", "en"]},
+    "question": {"type": "string", "minLength": 8},
+    "question_type": {
+      "enum": [
+        "stable_mechanism",
+        "guideline_treatment",
+        "latest_research_trial",
+        "insufficient_conflict_out_of_scope"
+      ]
+    },
+    "answerable": {"type": "boolean"},
+    "as_of_date": {"type": "string", "format": "date"},
+    "source_provenance": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["origin", "authoring_method", "candidate_sources"],
+      "properties": {
+        "origin": {"enum": ["a1_blueprint", "teacher", "guideline", "literature", "public_benchmark", "public_benchmark_style"]},
+        "authoring_method": {"type": "string"},
+        "candidate_sources": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["source_type", "stable_id", "url", "role", "verification_status"],
+            "properties": {
+              "source_type": {"enum": ["pubmed", "clinicaltrials", "guideline", "official_health", "search_route", "safety_policy"]},
+              "stable_id": {
+                "type": "string",
+                "minLength": 1,
+                "description": "For routing_only, this is an explicit routing key rather than an Evidence ID. All other roles require an upstream-verifiable stable source identifier."
+              },
+              "url": {
+                "type": ["string", "null"],
+                "format": "uri",
+                "minLength": 1,
+                "description": "May be null only for routing_only candidates. Empty strings are forbidden. The URL is discovery metadata, never a citation identity."
+              },
+              "role": {
+                "enum": ["candidate_gold", "candidate_support", "candidate_conflict", "routing_only"],
+                "description": "candidate_gold 仅表示优先人工核验候选，不等于已经进入 gold_source_ids。"
+              },
+              "verification_status": {"enum": ["source_exists_a1", "pending_a2_ingestion", "pending_b2_gold_review"]},
+              "published_at": {"type": ["string", "null"], "format": "date"},
+              "source_version": {"type": ["string", "null"]}
+            },
+            "allOf": [
+              {
+                "if": {"properties": {"role": {"const": "routing_only"}}, "required": ["role"]},
+                "else": {"properties": {"url": {"type": "string", "format": "uri", "minLength": 1}}}
+              }
+            ]
+          }
+        }
+      }
+    },
+    "source_group_id": {
+      "type": "string",
+      "pattern": "^SG-[A-Z0-9][A-Z0-9_-]{2,63}$",
+      "description": "Derivation-group identity. It must be stable across translations/paraphrases and must not be derived from split membership. Existing v0.1 assignments remain pending a B2 derivation audit."
+    },
+    "gold_source_ids": {
+      "type": "array",
+      "items": {"type": "string"},
+      "uniqueItems": true,
+      "description": "A1 阶段保持为空；A2 入库后由 B2 人工核验并在冻结版写入 Evidence ID。"
+    },
+    "rubric_version": {"type": "string", "pattern": "^rubric-(candidate|frozen)-v[0-9]+\\.[0-9]+$"},
+    "expected_source_types": {
+      "type": "array",
+      "items": {"enum": ["pubmed_review", "pubmed_trial", "clinicaltrials_record", "current_guideline", "official_health_page", "none_required_for_scope_refusal"]},
+      "minItems": 1,
+      "uniqueItems": true
+    },
+    "critical_answer_points": {"type": "array", "items": {"type": "string"}, "minItems": 1},
+    "contraindicating_evidence": {"type": "array", "items": {"type": "string"}},
+    "penalty_points": {"type": "array", "items": {"type": "string"}, "minItems": 1},
+    "evidence_gap_label": {"enum": ["none_expected", "results_not_posted", "guideline_conflict", "patient_specific_data_missing", "acute_care_out_of_scope", "malicious_or_fabricated_reference"]},
+    "review_status": {"enum": ["A1_COMPLETE_B2_GOLD_PENDING", "B2_REVIEWED", "B2_ADJUDICATED", "RETIRED"]}
+  }
+}

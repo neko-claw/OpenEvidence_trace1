@@ -1,30 +1,137 @@
 {
-  "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "title": "EvidenceResearchOutput",
-  "type": "object",
-  "additionalProperties": false,
-  "required": ["question_type", "search_queries", "preferred_sources", "freshness_required", "expected_evidence_types", "max_tool_calls", "evidence_summary"],
-  "properties": {
-    "question_type": {"type": "string"},
-    "search_queries": {"type": "array", "minItems": 1, "items": {"type": "string"}},
-    "preferred_sources": {"type": "array", "minItems": 1, "items": {"type": "string"}},
-    "freshness_required": {"type": "boolean"},
-    "expected_evidence_types": {"type": "array", "minItems": 1, "items": {"type": "string"}},
-    "max_tool_calls": {"type": "integer", "minimum": 1},
-    "evidence_summary": {
-      "type": "object",
+  "$defs": {
+    "EvidenceSummary": {
       "additionalProperties": false,
-      "required": ["evidence_count", "summary_text"],
       "properties": {
-        "evidence_count": {"type": "integer", "minimum": 0},
-        "evidence_ids": {"type": "array", "items": {"type": "string"}},
-        "source_types": {"type": "array", "items": {"type": "string"}},
-        "source_diversity": {"type": ["number", "null"], "minimum": 0, "maximum": 1},
-        "strongest_evidence_level": {"type": ["string", "null"]},
-        "freshness_summary": {"enum": ["FRESH", "STALE", "UNKNOWN", "NOT_REQUIRED"]},
-        "conflicts_detected": {"type": "boolean"},
-        "summary_text": {"type": "string"}
-      }
+        "evidence_count": {
+          "minimum": 0,
+          "title": "Evidence Count",
+          "type": "integer"
+        },
+        "evidence_ids": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Evidence Ids",
+          "type": "array"
+        },
+        "source_types": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Source Types",
+          "type": "array"
+        },
+        "source_diversity": {
+          "anyOf": [
+            {
+              "maximum": 1.0,
+              "minimum": 0.0,
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Source Diversity"
+        },
+        "strongest_evidence_level": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Strongest Evidence Level"
+        },
+        "freshness_summary": {
+          "$ref": "#/$defs/FreshnessState",
+          "default": "UNKNOWN"
+        },
+        "conflicts_detected": {
+          "default": false,
+          "title": "Conflicts Detected",
+          "type": "boolean"
+        },
+        "summary_text": {
+          "title": "Summary Text",
+          "type": "string"
+        }
+      },
+      "required": [
+        "evidence_count",
+        "summary_text"
+      ],
+      "title": "EvidenceSummary",
+      "type": "object"
+    },
+    "FreshnessState": {
+      "enum": [
+        "FRESH",
+        "STALE",
+        "UNKNOWN",
+        "NOT_REQUIRED"
+      ],
+      "title": "FreshnessState",
+      "type": "string"
     }
-  }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "question_type": {
+      "title": "Question Type",
+      "type": "string"
+    },
+    "search_queries": {
+      "items": {
+        "type": "string"
+      },
+      "minItems": 1,
+      "title": "Search Queries",
+      "type": "array"
+    },
+    "preferred_sources": {
+      "items": {
+        "type": "string"
+      },
+      "minItems": 1,
+      "title": "Preferred Sources",
+      "type": "array"
+    },
+    "freshness_required": {
+      "title": "Freshness Required",
+      "type": "boolean"
+    },
+    "expected_evidence_types": {
+      "items": {
+        "type": "string"
+      },
+      "minItems": 1,
+      "title": "Expected Evidence Types",
+      "type": "array"
+    },
+    "max_tool_calls": {
+      "minimum": 1,
+      "title": "Max Tool Calls",
+      "type": "integer"
+    },
+    "evidence_summary": {
+      "$ref": "#/$defs/EvidenceSummary"
+    }
+  },
+  "required": [
+    "question_type",
+    "search_queries",
+    "preferred_sources",
+    "freshness_required",
+    "expected_evidence_types",
+    "max_tool_calls",
+    "evidence_summary"
+  ],
+  "title": "EvidenceResearchOutput",
+  "type": "object"
 }

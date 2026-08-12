@@ -15,16 +15,21 @@ from .config import FeatureWeights, RetrievalConfig
 from .fusion import fuse_rrf
 from .models import (
     MAX_RRF_OPERAND,
+    Candidate,
     EvidenceChunk,
+    InitialCandidatePool,
     Query,
     RankLog,
     ReasonCode,
+    RetrievalCondition,
     RetrievalAlignmentHint,
     ScoredChunk,
     SearchResult,
     SearchStatus,
 )
 from .adaptive import adapt_k
+from .cross_encoder import CrossEncoderScorer
+from .ports import CalibratedQualityScorer, ClaimEvidenceSupportGate
 from .rerank import FeatureReranker, select_mmr
 from .support_check import check_alignment, detect_conflicts
 from .vector import VectorSearch
@@ -52,6 +57,10 @@ class RetrievalService:
         vector_search: VectorSearch | None,
         query_vector_provider: QueryVectorProvider | None,
         config: RetrievalConfig,
+        *,
+        cross_encoder: CrossEncoderScorer | None = None,
+        support_gate: ClaimEvidenceSupportGate | None = None,
+        quality_scorer: CalibratedQualityScorer | None = None,
     ) -> None:
         if not callable(getattr(bm25_index, "search", None)):
             raise ValueError("bm25_index must provide a callable search method")
@@ -68,6 +77,9 @@ class RetrievalService:
         self._query_vector_provider = query_vector_provider
         self._config = _snapshot_config(config)
         self._reranker = FeatureReranker(self._config)
+        self._cross_encoder = cross_encoder
+        self._support_gate = support_gate
+        self._quality_scorer = quality_scorer
 
     def search(self, query: Query) -> SearchResult:
         """Retrieve evidence with controlled degradation rather than fallback silence."""
@@ -94,8 +106,9 @@ class RetrievalService:
         vector, vector_operational, vector_version_stale = self._search_vector(query, timings, reasons)
 
         if bm25_version_stale or vector_version_stale:
-            # 设计 §9：索引版本不一致 → 停止执行 failed（round2 P1 修复）。
-            # 返回非冻结版本候选说明检索的索引不是预期发布版本，fail-closed。
+            # 设计 spec §9：索引版本不一致 → 停止执行 failed（round2 P1 修复）。
+            # 返回非冻结版本候选说明检索的索引不是预期发布版本，fail-closed；
+            # 下游不得把结果误解为部分可用（AGENTS.md fail-closed 原则）。
             timings["total"] = _elapsed_ms(started)
             return self._result(
                 query,
@@ -194,6 +207,180 @@ class RetrievalService:
             notes=adaptive_actions,
         )
 
+    def retrieve_initial_pool(self, query: Query) -> InitialCandidatePool:
+        """Retrieve BM25/vector once and freeze their RRF candidate pool.
+
+        Track-3 R0--R3 comparisons must call this exactly once per query and
+        reuse the returned object.  No downstream condition is allowed to
+        retrieve or append evidence.
+        """
+        if not isinstance(query, Query):
+            raise ValueError("query must be an A4 Query")
+        query.__post_init__()
+        timings = {"bm25": 0, "vector": 0, "fusion": 0}
+        reasons: list[str] = []
+        if query.out_of_scope:
+            return InitialCandidatePool(
+                query_id=query.query_id,
+                index_version=self._config.index_version,
+                corpus_version=self._config.corpus_version,
+                degradation_reasons=("out_of_scope",),
+                bm25_operational=False,
+                vector_operational=False,
+                stage_latency_ms=timings,
+                pool_hash=_pool_hash(query, (), (), ()),
+            )
+        bm25, bm25_operational, bm25_version_stale = self._search_bm25(query, timings, reasons)
+        vector, vector_operational, vector_version_stale = self._search_vector(query, timings, reasons)
+        if bm25_version_stale or vector_version_stale:
+            # 设计 spec §9：索引版本不一致 → fail-closed；池路径同样不得降级为部分可用。
+            return InitialCandidatePool(
+                query_id=query.query_id,
+                index_version=self._config.index_version,
+                corpus_version=self._config.corpus_version,
+                degradation_reasons=("index_version_mismatch",),
+                bm25_operational=False,
+                vector_operational=False,
+                stage_latency_ms=timings,
+                pool_hash=_pool_hash(query, (), (), ()),
+            )
+        stage_started = perf_counter()
+        fused = fuse_rrf(
+            bm25=bm25,
+            vector=vector,
+            rrf_k=self._config.rrf_k,
+            candidate_limit=self._config.fusion_top_k,
+        )
+        timings["fusion"] = _elapsed_ms(stage_started)
+        return InitialCandidatePool(
+            query_id=query.query_id,
+            index_version=self._config.index_version,
+            corpus_version=self._config.corpus_version,
+            bm25_candidates=tuple(bm25),
+            vector_candidates=tuple(vector),
+            fused_candidates=tuple(fused),
+            degradation_reasons=tuple(reasons),
+            bm25_operational=bm25_operational,
+            vector_operational=vector_operational,
+            stage_latency_ms=timings,
+            pool_hash=_pool_hash(query, bm25, vector, fused),
+        )
+
+    def search_condition(
+        self,
+        query: Query,
+        condition: RetrievalCondition | str,
+    ) -> SearchResult:
+        """Convenience path for one condition; ablations should reuse a pool."""
+        return self.search_from_pool(query, self.retrieve_initial_pool(query), condition)
+
+    def search_from_pool(
+        self,
+        query: Query,
+        pool: InitialCandidatePool,
+        condition: RetrievalCondition | str,
+    ) -> SearchResult:
+        """Apply R0/R1/R2/R3 to one immutable initial candidate pool."""
+        try:
+            selected_condition = (
+                condition if isinstance(condition, RetrievalCondition) else RetrievalCondition(condition)
+            )
+        except ValueError as error:
+            raise ValueError("condition must be R0/R1/R2/R3") from error
+        _validate_pool(query, pool, self._config)
+        started = perf_counter()
+        timings = {stage: 0 for stage in _STAGES}
+        timings.update(pool.stage_latency_ms)
+        reasons = list(pool.degradation_reasons)
+        trace = ["bm25", "vector", "rrf"]
+
+        if not pool.fused_candidates:
+            if not pool.bm25_operational and not pool.vector_operational:
+                status = SearchStatus.FAILED
+            elif reasons:
+                status = SearchStatus.PARTIAL
+            else:
+                status = SearchStatus.EMPTY
+            timings["total"] = _elapsed_ms(started)
+            return self._result(
+                query, status, (), (), reasons, timings,
+                codes=_reason_codes(reasons), condition=selected_condition,
+                pool_hash=pool.pool_hash, stage_trace=trace,
+            )
+
+        k1, k2, adaptive_actions = adapt_k(query, self._config)
+        k2 = min(k2, self._config.selection_top_k)
+        reranked: list[RankLog]
+        selected: tuple[RankLog, ...]
+
+        if selected_condition is RetrievalCondition.R0:
+            trace.append("rrf_top_k")
+            reranked = _rrf_rank_logs(query, pool.fused_candidates, self._config)
+            selected = tuple(
+                replace(log, selected=True) for log in reranked[:k2]
+            )
+        else:
+            stage_started = perf_counter()
+            reranked = self._reranker.rank_all(query, pool.fused_candidates)
+            timings["rerank"] = _elapsed_ms(stage_started)
+            trace.append("feature_rerank")
+            if selected_condition in {RetrievalCondition.R2, RetrievalCondition.R3}:
+                if self._cross_encoder is None or not self._cross_encoder.is_ready:
+                    raise RuntimeError(
+                        "cross_encoder capability PENDING: R2/R3 require an explicitly calibrated scorer"
+                    )
+                candidates = self._cross_encoder.score(
+                    query, [log.candidate for log in reranked[:k1] if log.candidate is not None]
+                )
+                reranked = _candidate_rank_logs(query, candidates, self._config)
+                trace.append("cross_encoder")
+            stage_started = perf_counter()
+            selected = select_mmr(reranked[:k1], self._config, k2)
+            timings["mmr"] = _elapsed_ms(stage_started)
+            trace.append("mmr")
+
+        if selected_condition is RetrievalCondition.R3:
+            if self._support_gate is None:
+                raise RuntimeError("support gate capability PENDING: R3 requires an injected gate")
+            gate_result = self._support_gate.filter(
+                query, [log.candidate for log in selected if log.candidate is not None]
+            )
+            available = {log.candidate.chunk.chunk_id for log in selected if log.candidate is not None}
+            retained = tuple(dict.fromkeys(gate_result.retained_chunk_ids))
+            if any(chunk_id not in available for chunk_id in retained):
+                raise ValueError("support gate cannot add chunks outside the selected candidate set")
+            selected = tuple(
+                log for log in selected
+                if log.candidate is not None and log.candidate.chunk.chunk_id in retained
+            )
+            reasons.extend(gate_result.reasons)
+            trace.append("claim_evidence_support_gate")
+
+        full_log = _merge_selection_logs(reranked, selected)
+        selected_chunks = tuple(log.candidate.chunk for log in selected if log.candidate is not None)
+        quality_scores = _score_quality(self._quality_scorer, query, selected_chunks)
+        alignment_hints = (
+            check_alignment(query, query.atomic_claims, selected_chunks, self._config)
+            if query.atomic_claims else ()
+        )
+        conflicts = detect_conflicts(selected_chunks)
+        if selected_condition is RetrievalCondition.R3 and not selected_chunks:
+            status = SearchStatus.EMPTY
+        else:
+            status = (
+                SearchStatus.OK
+                if pool.bm25_operational and pool.vector_operational and not pool.degradation_reasons
+                else SearchStatus.PARTIAL
+            )
+        timings["total"] = _elapsed_ms(started)
+        return self._result(
+            query, status, selected_chunks, full_log, reasons, timings,
+            alignment_hints=alignment_hints, conflicts=conflicts,
+            notes=adaptive_actions, condition=selected_condition,
+            pool_hash=pool.pool_hash, stage_trace=trace,
+            quality_scores=quality_scores,
+        )
+
     def _search_bm25(
         self, query: Query, timings: dict[str, int], reasons: list[str]
     ) -> tuple[list[ScoredChunk], bool, bool]:
@@ -254,6 +441,10 @@ class RetrievalService:
         conflicts: tuple[tuple[str, str, str], ...] = (),
         notes: Sequence[str] = (),
         codes: Sequence[str] = (),
+        condition: RetrievalCondition = RetrievalCondition.R1,
+        pool_hash: str = "",
+        stage_trace: Sequence[str] = (),
+        quality_scores: Mapping[str, float] | None = None,
     ) -> SearchResult:
         return SearchResult(
             query_id=query.query_id,
@@ -281,7 +472,106 @@ class RetrievalService:
             conflicts=conflicts,
             run_hash=_run_hash(query, status, selected_chunks, tuple(reasons)),
             reason_code_version=self._config.reason_code_version,
+            condition=condition,
+            initial_candidate_pool_hash=pool_hash,
+            stage_trace=tuple(stage_trace),
+            quality_scores=dict(quality_scores or {}),
+            quality_score_kind="QUALITY" if quality_scores else "UNKNOWN",
+            quality_score_scope="CROSS_QUERY" if quality_scores else "UNKNOWN",
+            quality_score_calibrated=bool(quality_scores),
         )
+
+
+def _rrf_rank_logs(
+    query: Query,
+    candidates: Sequence[Candidate],
+    config: RetrievalConfig,
+) -> list[RankLog]:
+    """R0 audit rows: direct RRF order, without feature rerank or MMR."""
+    rows: list[RankLog] = []
+    for rank, candidate in enumerate(candidates, start=1):
+        audited = replace(
+            candidate,
+            rerank_score=candidate.rrf_score,
+            feature_scores={"rrf_ranking_score": candidate.rrf_score},
+        )
+        rows.append(
+            RankLog(
+                candidate=audited,
+                feature_scores=audited.feature_scores,
+                final_rank=rank,
+                selected=False,
+                rerank_config_version=config.rerank_config_version,
+                as_of_date=query.as_of_date,
+            )
+        )
+    return rows
+
+
+def _candidate_rank_logs(
+    query: Query,
+    candidates: Sequence[Candidate],
+    config: RetrievalConfig,
+) -> list[RankLog]:
+    return [
+        RankLog(
+            candidate=candidate,
+            feature_scores=candidate.feature_scores,
+            final_rank=rank,
+            selected=False,
+            rerank_config_version=config.rerank_config_version,
+            as_of_date=query.as_of_date,
+        )
+        for rank, candidate in enumerate(candidates, start=1)
+    ]
+
+
+def _validate_pool(query: Query, pool: InitialCandidatePool, config: RetrievalConfig) -> None:
+    if not isinstance(query, Query) or not isinstance(pool, InitialCandidatePool):
+        raise ValueError("query and pool must use A4 native contracts")
+    if pool.query_id != query.query_id:
+        raise ValueError("initial candidate pool belongs to another query")
+    if pool.index_version != config.index_version or pool.corpus_version != config.corpus_version:
+        raise ValueError("initial candidate pool version does not match RetrievalConfig")
+
+
+def _score_quality(
+    scorer: CalibratedQualityScorer | None,
+    query: Query,
+    chunks: Sequence[EvidenceChunk],
+) -> dict[str, float]:
+    if scorer is None or not chunks:
+        return {}
+    raw = dict(scorer.score(query, chunks))
+    expected = {chunk.chunk_id for chunk in chunks}
+    if set(raw) != expected:
+        raise ValueError("quality scorer must return exactly one score per selected chunk")
+    scores: dict[str, float] = {}
+    for chunk_id, score in raw.items():
+        if not _finite(score) or not 0.0 <= float(score) <= 1.0:
+            raise ValueError("quality scorer values must be calibrated probabilities in [0, 1]")
+        scores[chunk_id] = float(score)
+    return scores
+
+
+def _pool_hash(
+    query: Query,
+    bm25: Sequence[ScoredChunk],
+    vector: Sequence[ScoredChunk],
+    fused: Sequence[Candidate],
+) -> str:
+    from hashlib import sha256
+
+    canonical = "\x1f".join(
+        (
+            query.query_id,
+            query.text,
+            ",".join(f"{item.chunk.chunk_id}:{item.rank}" for item in bm25),
+            ",".join(f"{item.chunk.chunk_id}:{item.rank}" for item in vector),
+            ",".join(f"{item.chunk.chunk_id}:{item.rrf_score:.17g}" for item in fused),
+        )
+    )
+    return sha256(canonical.encode("utf-8")).hexdigest()
 
 
 def _intake_candidates(
@@ -291,7 +581,7 @@ def _intake_candidates(
 
     Returns ``(candidates, version_excluded, excluded)``.  Candidates whose
     index/corpus version differs from the frozen config are counted separately
-    (``version_excluded``): per 设计 §9 a version mismatch fails the whole
+    (``version_excluded``): per 设计 spec §9 a version mismatch fails the whole
     request instead of degrading to PARTIAL (round2 P1).  Other invalid or
     stale candidates (tombstoned, malformed, duplicate) count as ``excluded``.
     Candidates that fail the *intended per-query metadata filters* (domain /
@@ -327,8 +617,8 @@ def _has_version_mismatch(item: object, expected_stage: str, config: RetrievalCo
     """Whether a structurally valid candidate comes from a different index release.
 
     A version-mismatched candidate means the searched index is not the frozen
-    one (设计 §9: 索引版本不一致 → failed).  Structurally invalid records are
-    *not* reported here so they keep the ordinary excluded path.
+    one (设计 spec §9: 索引版本不一致 → failed).  Structurally invalid records
+    are *not* reported here so they keep the ordinary excluded path.
     """
     if not isinstance(item, ScoredChunk) or item.stage != expected_stage:
         return False
@@ -524,10 +814,10 @@ def _reason_codes(reasons: Sequence[str]) -> tuple[str, ...]:
             codes.append(ReasonCode.BM25_UNAVAILABLE.value)
         elif reason == "vector_unavailable":
             codes.append(ReasonCode.VECTOR_UNAVAILABLE.value)
-        elif reason.startswith("bm25 channel index_version") or reason.startswith("vector channel index_version"):
-            codes.append(ReasonCode.INDEX_VERSION_MISMATCH.value)
         elif reason.startswith("bm25 channel excluded") or reason.startswith("vector channel excluded"):
             codes.append(ReasonCode.EXCLUDED_INVALID.value)
+        elif "index_version mismatch" in reason or reason == "index_version_mismatch":
+            codes.append(ReasonCode.INDEX_VERSION_MISMATCH.value)
         else:
             codes.append(ReasonCode.PIPELINE_FAILED.value)
     return tuple(dict.fromkeys(codes))
@@ -590,6 +880,13 @@ def _snapshot_config(config: RetrievalConfig) -> RetrievalConfig:
         cross_encoder_alpha=config.cross_encoder_alpha,
         freshness_weight_latest_trial=config.freshness_weight_latest_trial,
         source_quality_table=config.source_quality_table,
+        low_top_rerank_score=config.low_top_rerank_score,
+        default_as_of_date=config.default_as_of_date,
+        citation_id_rule=config.citation_id_rule,
+        alignment_overlap_aligned=config.alignment_overlap_aligned,
+        alignment_overlap_background=config.alignment_overlap_background,
+        alignment_threshold_version=config.alignment_threshold_version,
+        reason_code_version=config.reason_code_version,
         feature_weights=FeatureWeights(
             semantic=weights.semantic,
             lexical=weights.lexical,

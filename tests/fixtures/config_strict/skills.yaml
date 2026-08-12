@@ -5,7 +5,7 @@
   "prompt_versions": {
     "question_classification": "0.2.0",
     "evidence_research": "0.2.0",
-    "claim_generation": "0.2.0",
+    "claim_generation": "0.4.0",
     "citation_audit": "0.2.0"
   },
   "classifier": {

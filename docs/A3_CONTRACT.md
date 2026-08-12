@@ -1,4 +1,4 @@
-# A3 数据契约与边界（v0.2）
+# A3 数据契约与边界（compatibility v0.3）
 
 本契约是 A3 对下游的冻结接口，不代表 A3 替 A2 宣布最终 Evidence Schema。
 A2 后续真实采集结果应通过显式 Adapter 映射并保留其生产 provenance；A3 不实现
@@ -24,16 +24,32 @@ Chunk、Span 均保留 Evidence/Chunk content hash。数字页写入 `page`，�
 SQLite corpus 白名单；Mock Wiki 始终显示
 `MOCK / OFFLINE FIXTURE — NOT MEDICAL EVIDENCE`。
 
+Evidence SearchHit 的 BM25/Vector 两通道均强类型保留 Mock/live 状态、Chunk/Evidence hash、
+Span refs/locator、corpus/index/chunk/tokenizer、Embedding source 和 Wiki/config 版本；缺失值
+显式为 `None`/`UNKNOWN`。`wiki_navigation` 必须 `evidence_id=None`，不能进入 A5 Evidence。
+
 `IndexManifest` 冻结 schema、corpus、index、Chunk policy、BM25 tokenizer、Embedding
-provider/model/revision/mode、向量距离、Wiki builder 版本和实际生效配置。存储路径不参与
-语义 index version 哈希，但仍记录在 `effective_config` 中。
+provider/model/revision/source kind/mode、向量距离和 Wiki builder 版本。`requested_config`
+保留请求的 YAML；`runtime_effective_config` 是实际运行快照并参与语义 index hash。存储路径
+仍不参与语义 hash。
 
-`config/a3.yaml` 的 `corpus_cutoff`（数据截止日期）属于配置驱动的语义值：写入
-`effective_config` 并参与 `index_version` 哈希。Wiki 每个主题页与索引页的 Provenance 固定包含
-`updated at`（构建时间，来自 `IndexManifest.created_at`）与 `data cutoff`（来自
-`corpus_cutoff`，未配置时为 `UNKNOWN`），满足实施规划 5.3 固定结构（更新时间、数据截止日期、
-生成模型和人工审核状态）。
+`config/a3.yaml` 的 `corpus_cutoff`（数据截止日期）是配置驱动的语义值：同时写入请求与
+实际运行快照，并通过 `runtime_effective_config` 参与 `index_version` 哈希。Wiki 每个主题页
+和索引页的 Provenance 固定包含 `updated at`（来自 `IndexManifest.created_at`）与
+`data cutoff`（来自 `corpus_cutoff`，未配置时为 `UNKNOWN`）。
 
-契约路径：`contracts/a3/v0.2/`。未来 LLM Wiki 接缝位于 `a3/wiki/generator.py`，其 Prompt
-和结构化输出 Schema 位于 `a3/wiki/prompts/` 与 `a3/wiki/schemas/`；当前并未绑定或冒充
-任何真实 LLM 生成器。
+唯一 A3→A5 兼容入口是 `a5/adapters/a3.py::adapt_a3_selection`。它只消费 A4 本轮已选
+Chunk，不消费 SearchHit，不制造 normalized retrieval score；逐 Span provenance 和所有 A3
+版本保存在 A5 `source_metadata`/retriever diagnostics，供 AgentRun/Trace 留痕。
+
+契约路径：`contracts/a3/v0.3/`。LLM Wiki 接缝位于 `a3/wiki/generator.py`，其 Prompt
+和结构化输出 Schema 位于 `a3/wiki/prompts/` 与 `a3/wiki/schemas/`；Adapter 已实现注入式
+结构化调用、白名单校验与 fail-closed 转换，但未绑定真实 provider，Issue #4 仍 pending。
+
+## 安装方式
+
+`pip install -e .` 安装严格 YAML 配置和核心契约；`pip install -e .[retrieval]`
+增加 BM25/Chroma；`pip install -e .[retrieval,embedding]` 增加真实 BGE-M3 runtime。
+未安装 embedding extra 时，构造真实 provider 会返回稳定的安装提示，而不会让基础 A3
+import 崩溃。Pixi 环境包含全部 profile；`pixi run a3-build-offline` 始终是 deterministic
+工程 embedder，不能解释为 BGE 效果。

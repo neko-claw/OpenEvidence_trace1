@@ -1,9 +1,26 @@
 __pycache__/
 *.py[cod]
 .pytest_cache/
+.pytest-tmp/
+.backend-pytest-tmp/
+.a3-pytest-tmp/
+.a1-phase-pytest/
+.a2-phase-pytest/
+.evaluation-phase-pytest/
+.a5-phase-pytest/
+.backend-live-pytest/
+.live-final-pytest/
+.a2-live-final-pytest/
 .pixi/
 .venv/
 .env
+*.sqlite3
+*.sqlite3-*
+data/a2/
+*.mcp.log
+*.api-dump
+*.pdf
+!tests/fixtures/**/*.pdf
 data/sqlite/*.db
 data/sqlite/*.db-*
 data/chroma/
@@ -15,3 +32,7 @@ build/
 
 # Local A5 progress log; update after every task and never commit it.
 /log.md
+/.worktrees/
+/.github_issue_updates/
+/.tmp/
+/A_demo.tmppytest-*/

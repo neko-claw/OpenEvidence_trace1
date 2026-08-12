@@ -5,13 +5,17 @@ from collections.abc import Sequence
 from a5.domain.enums import (
     ClaimCriticality,
     Decision,
+    EvidenceIntegrityStatus,
+    GenerationConstraintStatus,
     SafetyDecision,
     SufficiencyStatus,
     VerificationStatus,
 )
 from a5.domain.models import (
     Claim,
+    EvidenceIntegrityResult,
     EvidenceSufficiencyResult,
+    GenerationConstraintResult,
     SafetyAssessment,
     VerificationResult,
 )
@@ -26,18 +30,28 @@ class ReleaseGate:
         self,
         *,
         safety: SafetyAssessment,
+        integrity: EvidenceIntegrityResult | None,
         sufficiency: EvidenceSufficiencyResult | None,
         claims: Sequence[Claim],
         results: Sequence[VerificationResult],
+        generation: GenerationConstraintResult | None = None,
     ) -> tuple[Decision, list[str]]:
         reasons: list[str] = []
         if safety.decision is not SafetyDecision.ALLOW:
             return Decision.REFUSE, [f"safety_denied: Gate0={safety.decision.value}"]
+        if integrity is not None and integrity.status is EvidenceIntegrityStatus.REJECTED:
+            return Decision.REFUSE, list(dict.fromkeys(integrity.reasons))
         if sufficiency is None or sufficiency.status is not SufficiencyStatus.SUFFICIENT:
             details = sufficiency.reasons if sufficiency else ["Gate2 result missing"]
             return Decision.REFUSE, list(dict.fromkeys(details))
+        if integrity is None or integrity.status is not EvidenceIntegrityStatus.ELIGIBLE:
+            details = integrity.reasons if integrity else ["Gate1 result missing"]
+            return Decision.REFUSE, list(dict.fromkeys(details))
         if not claims:
             return Decision.REFUSE, ["unsupported_claim: no atomic claims"]
+        if generation is None or generation.status is GenerationConstraintStatus.REJECTED:
+            details = generation.reasons if generation else ["generation_rejected: Gate4 result missing"]
+            return Decision.REFUSE, list(dict.fromkeys(details))
 
         claims_by_id = {claim.claim_id: claim for claim in claims}
         results_by_id = {result.claim_id: result for result in results}

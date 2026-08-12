@@ -1,6 +1,8 @@
 {
-  "config_version": "0.2.0",
+  "config_version": "0.3.0",
   "claim_generator": "mock_claim_generator@0.2.0",
-  "claim_verifier": "rule_based_claim_verifier@0.2.0",
-  "textual_support_evaluator": "exact_span_match@0.2.0"
+  "claim_verifier": "rule_based_claim_verifier@0.3.0",
+  "textual_support_evaluator": "exact_span_match@0.2.0",
+  "structured_generation_transport": "injected_openai_compatible@0.4.0",
+  "semantic_support_evaluator": "injected_independent_verifier@0.4.0"
 }

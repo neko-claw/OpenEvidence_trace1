@@ -14,6 +14,7 @@ from a5.domain.enums import (
     WorkflowState,
 )
 from a5.domain.models import Claim, Question, RetrievalResult
+from a5.gates.evidence_integrity import EvidenceIntegrityGate
 from a5.observability.trace import render_trace
 from a5.ports.evidence_retriever import EvidenceRetriever
 from a5.runtime_config import load_runtime_config
@@ -26,6 +27,7 @@ def workflow(*, retriever=None, generator=None, safety=None) -> A5Workflow:
         claim_generator=generator or MockClaimGenerator(),
         claim_verifier=RuleBasedClaimVerifier(config.gates.gate5),
         safety_policy=safety or FixtureSafetyPolicy(),
+        evidence_integrity=EvidenceIntegrityGate(config.gates.gate1, allow_mock=True),
         runtime_config=config,
     )
 
@@ -191,6 +193,7 @@ def test_trace_and_run_capture_versions_config_and_full_happy_path() -> None:
         WorkflowState.GATE0,
         WorkflowState.SELECT_SKILL,
         WorkflowState.RETRIEVE,
+        WorkflowState.GATE1,
         WorkflowState.GATE2,
         WorkflowState.SUMMARIZE_EVIDENCE,
         WorkflowState.GENERATE_CLAIMS,

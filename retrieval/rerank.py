@@ -305,7 +305,10 @@ def _is_live_selectable_chunk(chunk: EvidenceChunk) -> bool:
 
 
 def _rerank_score(candidate: Candidate) -> float:
-    score = candidate.rerank_score
+    # R2 must feed the actual post-Cross-Encoder ranking score into MMR.
+    # ``rerank_score`` remains the explainable R1 score for audit; ``s_final``
+    # is present only after an explicitly calibrated Cross-Encoder pass.
+    score = candidate.feature_scores.get("s_final", candidate.rerank_score)
     if not _finite_real(score) or score is None or score < 0:
         raise ValueError("rank log candidate rerank_score must be a finite nonnegative number")
     return float(score)

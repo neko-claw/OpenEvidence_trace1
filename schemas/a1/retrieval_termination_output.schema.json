@@ -1,0 +1,55 @@
+{
+  "$defs": {
+    "Decision": {
+      "description": "Top-level publication outcome shared with A5.",
+      "enum": [
+        "PASS",
+        "WARN",
+        "REFUSE"
+      ],
+      "title": "Decision",
+      "type": "string"
+    },
+    "TerminationAction": {
+      "enum": [
+        "CONTINUE",
+        "RETRY",
+        "WARN",
+        "REFUSE"
+      ],
+      "title": "TerminationAction",
+      "type": "string"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "action": {
+      "$ref": "#/$defs/TerminationAction"
+    },
+    "decision": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/Decision"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
+    },
+    "reason_codes": {
+      "items": {
+        "type": "string"
+      },
+      "minItems": 1,
+      "title": "Reason Codes",
+      "type": "array"
+    }
+  },
+  "required": [
+    "action",
+    "reason_codes"
+  ],
+  "title": "RetrievalTerminationOutput",
+  "type": "object"
+}

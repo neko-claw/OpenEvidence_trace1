@@ -1,0 +1,32 @@
+{
+  "contract_version": "agent-termination-v0.2",
+  "cases": [
+    {
+      "name": "sufficient_at_budget_boundary_continues",
+      "input": {
+        "evidence_sufficient": true,
+        "tool_budget_exhausted": true,
+        "evidence_present": true
+      },
+      "expected_action": "CONTINUE"
+    },
+    {
+      "name": "insufficient_with_budget_retries",
+      "input": {
+        "evidence_sufficient": false,
+        "tool_budget_exhausted": false,
+        "evidence_present": true
+      },
+      "expected_action": "RETRY"
+    },
+    {
+      "name": "insufficient_without_budget_refuses",
+      "input": {
+        "evidence_sufficient": false,
+        "tool_budget_exhausted": true,
+        "evidence_present": true
+      },
+      "expected_action": "REFUSE"
+    }
+  ]
+}

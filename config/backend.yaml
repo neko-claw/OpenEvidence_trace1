@@ -1,0 +1,25 @@
+{
+  "config_version": "track1-backend-config-v0.1",
+  "backend_version": "track1-backend-v0.1",
+  "a2_result_limit": 50,
+  "a2_source_routes": {
+    "pubmed": "search_pubmed",
+    "pubmed_review": "search_pubmed",
+    "pubmed_trial": "search_pubmed",
+    "systematic_review": "search_pubmed",
+    "primary_study": "search_pubmed",
+    "diagnostic_study": "search_pubmed",
+    "europe_pmc": "search_europe_pmc",
+    "clinical_trials": "search_trials",
+    "clinicaltrials_record": "search_trials",
+    "trials": "search_trials",
+    "guideline": "search_guidelines",
+    "guidelines": "search_guidelines",
+    "current_guideline": "search_guidelines"
+  },
+  "chunk_policy_version": "track1-a3-chunk-v0.1",
+  "chunk_max_chars": 1200,
+  "chunk_overlap_chars": 150,
+  "chunk_natural_boundary_ratio": 0.6,
+  "default_retrieval_condition": "R1"
+}

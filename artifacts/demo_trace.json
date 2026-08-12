@@ -1,5 +1,5 @@
 {
-  "run_id": "RUN-32d282eeee13",
+  "run_id": "RUN-dba0bd711d58",
   "question": {
     "question_id": "Q-PASS",
     "text": "Run the artificial treatment evidence scenario.",
@@ -13,14 +13,15 @@
         [
           "E2"
         ]
-      ]
+      ],
+      "as_of_date": "2026-08-11"
     }
   },
   "state": "END",
-  "selected_skill": "citation_audit@0.2.0",
+  "selected_skill": "citation_audit@0.3.0",
   "selected_skills": [
     "evidence_research@0.2.0",
-    "citation_audit@0.2.0"
+    "citation_audit@0.3.0"
   ],
   "agent_plan": {
     "question_type": "treatment_evidence",
@@ -65,12 +66,42 @@
     "reason": "mock Gate0 decision=ALLOW; not an A1 medical policy",
     "policy_version": "mock_fixture_safety@0.2.0"
   },
+  "evidence_integrity": {
+    "status": "ELIGIBLE",
+    "eligible_evidence_ids": [
+      "E1",
+      "E2"
+    ],
+    "rejected_evidence_ids": [],
+    "unknown_evidence_ids": [],
+    "items": [
+      {
+        "evidence_id": "E1",
+        "status": "ELIGIBLE",
+        "reason_codes": [
+          "mock_fixture_allowed"
+        ]
+      },
+      {
+        "evidence_id": "E2",
+        "status": "ELIGIBLE",
+        "reason_codes": [
+          "mock_fixture_allowed"
+        ]
+      }
+    ],
+    "reasons": [
+      "mock_fixture_allowed"
+    ]
+  },
   "evidence_sufficiency": {
     "status": "SUFFICIENT",
     "reasons": [],
     "metrics": {
       "candidate_count": 2,
       "top_score": 0.95,
+      "top_ranking_score": null,
+      "usable_quality_score_count": 2,
       "source_type_count": 2,
       "source_diversity": 1.0,
       "strongest_evidence_level": "guideline",
@@ -94,6 +125,34 @@
     "freshness_summary": "FRESH",
     "conflicts_detected": false,
     "summary_text": "2 evidence record(s) from 2 source type(s); strongest level=guideline; freshness=FRESH; conflicts=0."
+  },
+  "atomic_claim_plan": {
+    "question_id": "Q-PASS",
+    "allowed_evidence_ids": [
+      "E1",
+      "E2"
+    ],
+    "allowed_span_ids": [
+      "S-E1",
+      "S-E2"
+    ],
+    "prompt_version": "0.4.0",
+    "output_contract": "ClaimGenerationOutput",
+    "constraints": [
+      "one_verifiable_fact_per_claim",
+      "evidence_id_whitelist",
+      "evidence_span_id_whitelist",
+      "no_external_reference_generation"
+    ]
+  },
+  "generation_constraints": {
+    "status": "ACCEPTED",
+    "accepted_claim_ids": [
+      "C1",
+      "C2"
+    ],
+    "rejected_claim_ids": [],
+    "reasons": []
   },
   "retrieved_evidence": [
     {
@@ -128,6 +187,9 @@
       "outcome": "synthetic outcome A",
       "published_at": "2026-07-01T00:00:00Z",
       "retrieval_score": 0.95,
+      "retrieval_score_kind": "QUALITY",
+      "retrieval_score_scope": "CROSS_QUERY",
+      "retrieval_score_calibrated": true,
       "evidence_level": "guideline",
       "spans": [
         {
@@ -135,7 +197,16 @@
           "text": "Artificial outcome A is improved in the offline fixture.",
           "chunk_id": "CH-E1",
           "page": null,
-          "section": "mock"
+          "raw_page": null,
+          "section": "mock",
+          "char_start": null,
+          "char_end": null,
+          "offset_scope": null,
+          "document_char_start": null,
+          "document_char_end": null,
+          "span_content_hash": null,
+          "chunk_content_hash": null,
+          "evidence_content_hash": null
         }
       ],
       "conflicts_with_ids": [],
@@ -169,6 +240,9 @@
       "outcome": null,
       "published_at": "2026-06-01T00:00:00Z",
       "retrieval_score": 0.88,
+      "retrieval_score_kind": "QUALITY",
+      "retrieval_score_scope": "CROSS_QUERY",
+      "retrieval_score_calibrated": true,
       "evidence_level": "systematic_review",
       "spans": [
         {
@@ -176,7 +250,16 @@
           "text": "Artificial outcome B is stable in the offline fixture.",
           "chunk_id": "CH-E2",
           "page": null,
-          "section": "mock"
+          "raw_page": null,
+          "section": "mock",
+          "char_start": null,
+          "char_end": null,
+          "offset_scope": null,
+          "document_char_start": null,
+          "document_char_end": null,
+          "span_content_hash": null,
+          "chunk_content_hash": null,
+          "evidence_content_hash": null
         }
       ],
       "conflicts_with_ids": [],
@@ -186,7 +269,7 @@
   "claims": [
     {
       "claim_id": "C1",
-      "run_id": "RUN-32d282eeee13",
+      "run_id": "RUN-dba0bd711d58",
       "text": "Artificial outcome A is improved",
       "criticality": "critical",
       "evidence_ids": [
@@ -213,7 +296,7 @@
     },
     {
       "claim_id": "C2",
-      "run_id": "RUN-32d282eeee13",
+      "run_id": "RUN-dba0bd711d58",
       "text": "Artificial outcome B is stable",
       "criticality": "important",
       "evidence_ids": [
@@ -261,6 +344,8 @@
       "comparator_match": "MATCH",
       "outcome_match": "MATCH",
       "time_match": "MATCH",
+      "numeric_match": "UNKNOWN",
+      "unit_match": "UNKNOWN",
       "entailment_score": 1.0,
       "conflict_ids": [],
       "uncertainty": "LOW",
@@ -290,6 +375,8 @@
       "comparator_match": "UNKNOWN",
       "outcome_match": "UNKNOWN",
       "time_match": "MATCH",
+      "numeric_match": "UNKNOWN",
+      "unit_match": "UNKNOWN",
       "entailment_score": 1.0,
       "conflict_ids": [],
       "uncertainty": "LOW",
@@ -316,10 +403,10 @@
   "decision": "PASS",
   "trace": [
     {
-      "run_id": "RUN-32d282eeee13",
+      "run_id": "RUN-dba0bd711d58",
       "state": "START",
       "event_type": "state",
-      "timestamp": "2026-08-11T16:39:19.380161Z",
+      "timestamp": "2026-08-11T22:48:22.667731Z",
       "gate": null,
       "skill": null,
       "tool": null,
@@ -330,15 +417,15 @@
       "evidence_ids": [],
       "claim_ids": [],
       "decision": null,
-      "latency_ms": 0.0020000006770715117,
+      "latency_ms": 0.001400010660290718,
       "error": null,
       "details": {}
     },
     {
-      "run_id": "RUN-32d282eeee13",
+      "run_id": "RUN-dba0bd711d58",
       "state": "GATE0",
       "event_type": "gate",
-      "timestamp": "2026-08-11T16:39:19.380219Z",
+      "timestamp": "2026-08-11T22:48:22.667731Z",
       "gate": "Gate0@0.2.0",
       "skill": null,
       "tool": null,
@@ -349,7 +436,7 @@
       "evidence_ids": [],
       "claim_ids": [],
       "decision": "ALLOW",
-      "latency_ms": 0.026900001103058457,
+      "latency_ms": 0.01379998866468668,
       "error": null,
       "details": {
         "reason": "mock Gate0 decision=ALLOW; not an A1 medical policy",
@@ -357,10 +444,10 @@
       }
     },
     {
-      "run_id": "RUN-32d282eeee13",
+      "run_id": "RUN-dba0bd711d58",
       "state": "CLASSIFY",
       "event_type": "state",
-      "timestamp": "2026-08-11T16:39:19.380239Z",
+      "timestamp": "2026-08-11T22:48:22.667731Z",
       "gate": null,
       "skill": null,
       "tool": null,
@@ -371,17 +458,17 @@
       "evidence_ids": [],
       "claim_ids": [],
       "decision": null,
-      "latency_ms": 0.008700000762473792,
+      "latency_ms": 0.005199981387704611,
       "error": null,
       "details": {
         "question_type": "treatment_evidence"
       }
     },
     {
-      "run_id": "RUN-32d282eeee13",
+      "run_id": "RUN-dba0bd711d58",
       "state": "SELECT_SKILL",
       "event_type": "skill",
-      "timestamp": "2026-08-11T16:39:19.380258Z",
+      "timestamp": "2026-08-11T22:48:22.667731Z",
       "gate": null,
       "skill": "evidence_research@0.2.0",
       "tool": null,
@@ -392,17 +479,17 @@
       "evidence_ids": [],
       "claim_ids": [],
       "decision": null,
-      "latency_ms": 0.010799998563015833,
+      "latency_ms": 0.006299989763647318,
       "error": null,
       "details": {
         "route_reason": "question_type=treatment_evidence; stage=retrieval"
       }
     },
     {
-      "run_id": "RUN-32d282eeee13",
+      "run_id": "RUN-dba0bd711d58",
       "state": "PLAN",
       "event_type": "skill",
-      "timestamp": "2026-08-11T16:39:19.380335Z",
+      "timestamp": "2026-08-11T22:48:22.667731Z",
       "gate": null,
       "skill": "evidence_research@0.2.0",
       "tool": null,
@@ -415,7 +502,7 @@
       "evidence_ids": [],
       "claim_ids": [],
       "decision": null,
-      "latency_ms": 0.06620000203838572,
+      "latency_ms": 0.04290000651963055,
       "error": null,
       "details": {
         "agent_plan": {
@@ -453,10 +540,10 @@
       }
     },
     {
-      "run_id": "RUN-32d282eeee13",
+      "run_id": "RUN-dba0bd711d58",
       "state": "RETRIEVE",
       "event_type": "tool",
-      "timestamp": "2026-08-11T16:39:19.380385Z",
+      "timestamp": "2026-08-11T22:48:22.667731Z",
       "gate": null,
       "skill": "evidence_research@0.2.0",
       "tool": "mock_search",
@@ -472,7 +559,7 @@
       ],
       "claim_ids": [],
       "decision": null,
-      "latency_ms": 0.024900000425986946,
+      "latency_ms": 0.0185999961104244,
       "error": null,
       "details": {
         "diagnostics": {
@@ -486,11 +573,51 @@
       }
     },
     {
-      "run_id": "RUN-32d282eeee13",
+      "run_id": "RUN-dba0bd711d58",
+      "state": "GATE1",
+      "event_type": "gate",
+      "timestamp": "2026-08-11T22:48:22.667731Z",
+      "gate": "Gate1@0.3.0",
+      "skill": null,
+      "tool": null,
+      "tool_call_index": null,
+      "tool_budget_remaining": 2,
+      "input_summary": null,
+      "output_count": null,
+      "evidence_ids": [
+        "E1"
+      ],
+      "claim_ids": [],
+      "decision": "ELIGIBLE",
+      "latency_ms": 0.023900007363408804,
+      "error": null,
+      "details": {
+        "status": "ELIGIBLE",
+        "eligible_evidence_ids": [
+          "E1"
+        ],
+        "rejected_evidence_ids": [],
+        "unknown_evidence_ids": [],
+        "items": [
+          {
+            "evidence_id": "E1",
+            "status": "ELIGIBLE",
+            "reason_codes": [
+              "mock_fixture_allowed"
+            ]
+          }
+        ],
+        "reasons": [
+          "mock_fixture_allowed"
+        ]
+      }
+    },
+    {
+      "run_id": "RUN-dba0bd711d58",
       "state": "GATE2",
       "event_type": "gate",
-      "timestamp": "2026-08-11T16:39:19.380453Z",
-      "gate": "Gate2@0.2.0",
+      "timestamp": "2026-08-11T22:48:22.667731Z",
+      "gate": "Gate2@0.3.0",
       "skill": null,
       "tool": null,
       "tool_call_index": null,
@@ -502,7 +629,7 @@
       ],
       "claim_ids": [],
       "decision": "INSUFFICIENT",
-      "latency_ms": 0.05509999755304307,
+      "latency_ms": 0.03960001049563289,
       "error": null,
       "details": {
         "status": "INSUFFICIENT",
@@ -513,6 +640,8 @@
         "metrics": {
           "candidate_count": 1,
           "top_score": 0.95,
+          "top_ranking_score": null,
+          "usable_quality_score_count": 1,
           "source_type_count": 1,
           "source_diversity": 1.0,
           "strongest_evidence_level": "guideline",
@@ -523,10 +652,10 @@
       }
     },
     {
-      "run_id": "RUN-32d282eeee13",
+      "run_id": "RUN-dba0bd711d58",
       "state": "RETRIEVE",
       "event_type": "tool",
-      "timestamp": "2026-08-11T16:39:19.380491Z",
+      "timestamp": "2026-08-11T22:48:22.667731Z",
       "gate": null,
       "skill": "evidence_research@0.2.0",
       "tool": "mock_search",
@@ -542,7 +671,7 @@
       ],
       "claim_ids": [],
       "decision": null,
-      "latency_ms": 0.015100002201506868,
+      "latency_ms": 0.00790000194683671,
       "error": null,
       "details": {
         "diagnostics": {
@@ -556,11 +685,60 @@
       }
     },
     {
-      "run_id": "RUN-32d282eeee13",
+      "run_id": "RUN-dba0bd711d58",
+      "state": "GATE1",
+      "event_type": "gate",
+      "timestamp": "2026-08-11T22:48:22.667731Z",
+      "gate": "Gate1@0.3.0",
+      "skill": null,
+      "tool": null,
+      "tool_call_index": null,
+      "tool_budget_remaining": 1,
+      "input_summary": null,
+      "output_count": null,
+      "evidence_ids": [
+        "E1",
+        "E2"
+      ],
+      "claim_ids": [],
+      "decision": "ELIGIBLE",
+      "latency_ms": 0.015700003132224083,
+      "error": null,
+      "details": {
+        "status": "ELIGIBLE",
+        "eligible_evidence_ids": [
+          "E1",
+          "E2"
+        ],
+        "rejected_evidence_ids": [],
+        "unknown_evidence_ids": [],
+        "items": [
+          {
+            "evidence_id": "E1",
+            "status": "ELIGIBLE",
+            "reason_codes": [
+              "mock_fixture_allowed"
+            ]
+          },
+          {
+            "evidence_id": "E2",
+            "status": "ELIGIBLE",
+            "reason_codes": [
+              "mock_fixture_allowed"
+            ]
+          }
+        ],
+        "reasons": [
+          "mock_fixture_allowed"
+        ]
+      }
+    },
+    {
+      "run_id": "RUN-dba0bd711d58",
       "state": "GATE2",
       "event_type": "gate",
-      "timestamp": "2026-08-11T16:39:19.380534Z",
-      "gate": "Gate2@0.2.0",
+      "timestamp": "2026-08-11T22:48:22.667731Z",
+      "gate": "Gate2@0.3.0",
       "skill": null,
       "tool": null,
       "tool_call_index": null,
@@ -573,7 +751,7 @@
       ],
       "claim_ids": [],
       "decision": "SUFFICIENT",
-      "latency_ms": 0.03369999831193127,
+      "latency_ms": 0.018699996871873736,
       "error": null,
       "details": {
         "status": "SUFFICIENT",
@@ -581,6 +759,8 @@
         "metrics": {
           "candidate_count": 2,
           "top_score": 0.95,
+          "top_ranking_score": null,
+          "usable_quality_score_count": 2,
           "source_type_count": 2,
           "source_diversity": 1.0,
           "strongest_evidence_level": "guideline",
@@ -591,10 +771,10 @@
       }
     },
     {
-      "run_id": "RUN-32d282eeee13",
+      "run_id": "RUN-dba0bd711d58",
       "state": "SUMMARIZE_EVIDENCE",
       "event_type": "skill",
-      "timestamp": "2026-08-11T16:39:19.380582Z",
+      "timestamp": "2026-08-11T22:48:22.667731Z",
       "gate": null,
       "skill": "evidence_research@0.2.0",
       "tool": null,
@@ -608,7 +788,7 @@
       ],
       "claim_ids": [],
       "decision": null,
-      "latency_ms": 0.038800000766059384,
+      "latency_ms": 0.030199997127056122,
       "error": null,
       "details": {
         "evidence_count": 2,
@@ -628,34 +808,79 @@
       }
     },
     {
-      "run_id": "RUN-32d282eeee13",
-      "state": "GENERATE_CLAIMS",
-      "event_type": "generation",
-      "timestamp": "2026-08-11T16:39:19.380624Z",
-      "gate": null,
-      "skill": "claim_generation@0.2.0",
+      "run_id": "RUN-dba0bd711d58",
+      "state": "GATE3",
+      "event_type": "gate",
+      "timestamp": "2026-08-11T22:48:22.667731Z",
+      "gate": "Gate3@0.4.0",
+      "skill": "claim_generation@0.4.0",
       "tool": null,
       "tool_call_index": null,
       "tool_budget_remaining": null,
       "input_summary": null,
-      "output_count": 2,
+      "output_count": null,
       "evidence_ids": [],
-      "claim_ids": [
-        "C1",
-        "C2"
-      ],
+      "claim_ids": [],
       "decision": null,
-      "latency_ms": 0.033300002542091534,
+      "latency_ms": 0.013400014722719789,
       "error": null,
-      "details": {}
+      "details": {
+        "question_id": "Q-PASS",
+        "allowed_evidence_ids": [
+          "E1",
+          "E2"
+        ],
+        "allowed_span_ids": [
+          "S-E1",
+          "S-E2"
+        ],
+        "prompt_version": "0.4.0",
+        "output_contract": "ClaimGenerationOutput",
+        "constraints": [
+          "one_verifiable_fact_per_claim",
+          "evidence_id_whitelist",
+          "evidence_span_id_whitelist",
+          "no_external_reference_generation"
+        ]
+      }
     },
     {
-      "run_id": "RUN-32d282eeee13",
-      "state": "CLAIM_SPLITTER",
-      "event_type": "skill",
-      "timestamp": "2026-08-11T16:39:19.380681Z",
+      "run_id": "RUN-dba0bd711d58",
+      "state": "GATE4",
+      "event_type": "generation",
+      "timestamp": "2026-08-11T22:48:22.667731Z",
+      "gate": "Gate4@0.4.0",
+      "skill": "claim_generation@0.4.0",
+      "tool": null,
+      "tool_call_index": null,
+      "tool_budget_remaining": null,
+      "input_summary": null,
+      "output_count": 2,
+      "evidence_ids": [],
+      "claim_ids": [
+        "C1",
+        "C2"
+      ],
+      "decision": "ACCEPTED",
+      "latency_ms": 0.062400009483098984,
+      "error": null,
+      "details": {
+        "status": "ACCEPTED",
+        "accepted_claim_ids": [
+          "C1",
+          "C2"
+        ],
+        "rejected_claim_ids": [],
+        "reasons": []
+      }
+    },
+    {
+      "run_id": "RUN-dba0bd711d58",
+      "state": "GENERATE_CLAIMS",
+      "event_type": "generation",
+      "timestamp": "2026-08-11T22:48:22.667731Z",
       "gate": null,
-      "skill": "citation_audit@0.2.0",
+      "skill": null,
       "tool": null,
       "tool_call_index": null,
       "tool_budget_remaining": null,
@@ -667,19 +892,43 @@
         "C2"
       ],
       "decision": null,
-      "latency_ms": 0.048499998229090124,
+      "latency_ms": 0.06820002454333007,
+      "error": null,
+      "details": {
+        "compatibility_alias_for": "Gate4"
+      }
+    },
+    {
+      "run_id": "RUN-dba0bd711d58",
+      "state": "CLAIM_SPLITTER",
+      "event_type": "skill",
+      "timestamp": "2026-08-11T22:48:22.667731Z",
+      "gate": null,
+      "skill": "citation_audit@0.3.0",
+      "tool": null,
+      "tool_call_index": null,
+      "tool_budget_remaining": null,
+      "input_summary": null,
+      "output_count": 2,
+      "evidence_ids": [],
+      "claim_ids": [
+        "C1",
+        "C2"
+      ],
+      "decision": null,
+      "latency_ms": 0.07440001354552805,
       "error": null,
       "details": {
         "route_reason": "stage=claim_verification"
       }
     },
     {
-      "run_id": "RUN-32d282eeee13",
+      "run_id": "RUN-dba0bd711d58",
       "state": "AUDIT_CITATIONS",
       "event_type": "skill",
-      "timestamp": "2026-08-11T16:39:19.380919Z",
+      "timestamp": "2026-08-11T22:48:22.672743Z",
       "gate": null,
-      "skill": "citation_audit@0.2.0",
+      "skill": "citation_audit@0.3.0",
       "tool": null,
       "tool_call_index": null,
       "tool_budget_remaining": null,
@@ -691,7 +940,7 @@
         "C2"
       ],
       "decision": "PASS",
-      "latency_ms": 0.22739999985788018,
+      "latency_ms": 0.3952000115532428,
       "error": null,
       "details": {
         "approved": [
@@ -702,12 +951,12 @@
       }
     },
     {
-      "run_id": "RUN-32d282eeee13",
+      "run_id": "RUN-dba0bd711d58",
       "state": "GATE5",
       "event_type": "gate",
-      "timestamp": "2026-08-11T16:39:19.380995Z",
-      "gate": "Gate5@0.2.0",
-      "skill": "citation_audit@0.2.0",
+      "timestamp": "2026-08-11T22:48:22.672743Z",
+      "gate": "Gate5@0.3.0",
+      "skill": "citation_audit@0.3.0",
       "tool": null,
       "tool_call_index": null,
       "tool_budget_remaining": null,
@@ -719,7 +968,7 @@
         "C2"
       ],
       "decision": null,
-      "latency_ms": 0.06579999899258837,
+      "latency_ms": 0.028799986466765404,
       "error": null,
       "details": {
         "results": [
@@ -744,6 +993,8 @@
             "comparator_match": "MATCH",
             "outcome_match": "MATCH",
             "time_match": "MATCH",
+            "numeric_match": "UNKNOWN",
+            "unit_match": "UNKNOWN",
             "entailment_score": 1.0,
             "conflict_ids": [],
             "uncertainty": "LOW",
@@ -773,6 +1024,8 @@
             "comparator_match": "UNKNOWN",
             "outcome_match": "UNKNOWN",
             "time_match": "MATCH",
+            "numeric_match": "UNKNOWN",
+            "unit_match": "UNKNOWN",
             "entailment_score": 1.0,
             "conflict_ids": [],
             "uncertainty": "LOW",
@@ -785,11 +1038,11 @@
       }
     },
     {
-      "run_id": "RUN-32d282eeee13",
+      "run_id": "RUN-dba0bd711d58",
       "state": "GATE6",
       "event_type": "decision",
-      "timestamp": "2026-08-11T16:39:19.381029Z",
-      "gate": "Gate6@0.2.0",
+      "timestamp": "2026-08-11T22:48:22.672743Z",
+      "gate": "Gate6@0.3.0",
       "skill": null,
       "tool": null,
       "tool_call_index": null,
@@ -799,17 +1052,17 @@
       "evidence_ids": [],
       "claim_ids": [],
       "decision": "PASS",
-      "latency_ms": 0.0016000012692529708,
+      "latency_ms": 0.001200009137392044,
       "error": null,
       "details": {
         "reasons": []
       }
     },
     {
-      "run_id": "RUN-32d282eeee13",
+      "run_id": "RUN-dba0bd711d58",
       "state": "FINALIZE",
       "event_type": "decision",
-      "timestamp": "2026-08-11T16:39:19.381061Z",
+      "timestamp": "2026-08-11T22:48:22.672743Z",
       "gate": null,
       "skill": null,
       "tool": null,
@@ -826,17 +1079,17 @@
         "C2"
       ],
       "decision": "PASS",
-      "latency_ms": 0.023299999156733975,
+      "latency_ms": 0.013299984857439995,
       "error": null,
       "details": {
         "limitations": []
       }
     },
     {
-      "run_id": "RUN-32d282eeee13",
+      "run_id": "RUN-dba0bd711d58",
       "state": "END",
       "event_type": "state",
-      "timestamp": "2026-08-11T16:39:19.381082Z",
+      "timestamp": "2026-08-11T22:48:22.672743Z",
       "gate": null,
       "skill": null,
       "tool": null,
@@ -847,39 +1100,55 @@
       "evidence_ids": [],
       "claim_ids": [],
       "decision": "PASS",
-      "latency_ms": 0.0008999995770864189,
+      "latency_ms": 0.0005999754648655653,
       "error": null,
       "details": {
-        "run_latency_ms": 0.933
+        "run_latency_ms": 5.012
       }
     }
   ],
-  "agent_version": "0.2.0",
+  "agent_version": "0.3.0",
   "skill_versions": {
     "evidence_research": "0.2.0",
-    "citation_audit": "0.2.0"
+    "citation_audit": "0.3.0"
   },
   "prompt_versions": {
     "question_classification": "0.2.0",
     "evidence_research": "0.2.0",
-    "claim_generation": "0.2.0",
-    "citation_audit": "0.2.0"
+    "claim_generation": "0.4.0",
+    "citation_audit": "0.3.0"
   },
-  "gate_config_version": "0.2.0",
+  "gate_config_version": "0.3.0",
   "runtime_config_snapshot": {
     "agent": {
-      "config_version": "0.2.0",
-      "agent_version": "0.2.0",
-      "state_machine_version": "0.2.0",
+      "config_version": "0.3.0",
+      "agent_version": "0.3.0",
+      "state_machine_version": "0.3.0",
       "max_tool_calls": 3
     },
     "gates": {
-      "config_version": "0.2.0",
+      "config_version": "0.3.0",
       "threshold_status": "development_default_not_clinically_validated",
       "gate0_version": "0.2.0",
-      "gate2_version": "0.2.0",
-      "gate5_version": "0.2.0",
-      "gate6_version": "0.2.0",
+      "gate1_version": "0.3.0",
+      "gate2_version": "0.3.0",
+      "gate3_version": "0.4.0",
+      "gate4_version": "0.4.0",
+      "gate5_version": "0.3.0",
+      "gate6_version": "0.3.0",
+      "gate1": {
+        "required_source_metadata": [
+          "stable_id",
+          "url",
+          "fetched_at",
+          "content_hash"
+        ],
+        "accepted_integrity_markers": [
+          "a2_mcp_normalized",
+          "a3_provenance_validated",
+          "a4_a3_provenance_validated"
+        ]
+      },
       "gate2": {
         "min_candidates": 2,
         "min_top_score": 0.7,
@@ -892,13 +1161,17 @@
         ],
         "max_age_days": 1825,
         "min_fresh_fraction": 0.5,
-        "max_conflicts": 0
+        "max_conflicts": 0,
+        "required_score_kind": "QUALITY",
+        "required_score_scope": "CROSS_QUERY",
+        "require_calibrated_score": true
       },
       "gate5": {
         "require_span": true,
         "require_pico_when_claim_specified": true,
         "require_time_when_fresh": true,
-        "supported_entailment_threshold": 1.0
+        "supported_entailment_threshold": 1.0,
+        "require_numeric_consistency": true
       },
       "gate6": {
         "critical_allowed_uncertainty": [
@@ -908,22 +1181,22 @@
       }
     },
     "skills": {
-      "config_version": "0.2.0",
+      "config_version": "0.3.0",
       "evidence_research": {
         "version": "0.2.0",
         "prompt_version": "0.2.0",
         "manifest": "a5/skills/evidence_research/manifest.yaml"
       },
       "citation_audit": {
-        "version": "0.2.0",
-        "prompt_version": "0.2.0",
+        "version": "0.3.0",
+        "prompt_version": "0.3.0",
         "manifest": "a5/skills/citation_audit/manifest.yaml"
       },
       "prompt_versions": {
         "question_classification": "0.2.0",
         "evidence_research": "0.2.0",
-        "claim_generation": "0.2.0",
-        "citation_audit": "0.2.0"
+        "claim_generation": "0.4.0",
+        "citation_audit": "0.3.0"
       },
       "classifier": {
         "policy_version": "temporary-a1-default-0.2.0",
@@ -945,6 +1218,59 @@
           ]
         },
         "rules": {
+          "stable_mechanism": {
+            "preferred_sources": [
+              "pubmed_review",
+              "europe_pmc"
+            ],
+            "expected_evidence_types": [
+              "systematic_review",
+              "review"
+            ],
+            "freshness_required": false,
+            "max_tool_calls": 2
+          },
+          "guideline_treatment": {
+            "preferred_sources": [
+              "current_guideline",
+              "pubmed_review",
+              "europe_pmc"
+            ],
+            "expected_evidence_types": [
+              "guideline",
+              "systematic_review",
+              "controlled_study"
+            ],
+            "freshness_required": true,
+            "max_tool_calls": 3
+          },
+          "latest_research_trial": {
+            "preferred_sources": [
+              "clinicaltrials_record",
+              "pubmed_trial",
+              "europe_pmc"
+            ],
+            "expected_evidence_types": [
+              "clinical_trial",
+              "controlled_study"
+            ],
+            "freshness_required": true,
+            "max_tool_calls": 3
+          },
+          "insufficient_conflict_out_of_scope": {
+            "preferred_sources": [
+              "current_guideline",
+              "pubmed_review",
+              "clinicaltrials_record"
+            ],
+            "expected_evidence_types": [
+              "guideline",
+              "systematic_review",
+              "clinical_trial"
+            ],
+            "freshness_required": true,
+            "max_tool_calls": 3
+          },
           "treatment_evidence": {
             "preferred_sources": [
               "guideline",
@@ -990,14 +1316,126 @@
       }
     },
     "models": {
-      "config_version": "0.2.0",
+      "config_version": "0.3.0",
       "claim_generator": "mock_claim_generator@0.2.0",
-      "claim_verifier": "rule_based_claim_verifier@0.2.0",
-      "textual_support_evaluator": "exact_span_match@0.2.0"
+      "claim_verifier": "rule_based_claim_verifier@0.3.0",
+      "textual_support_evaluator": "exact_span_match@0.2.0",
+      "structured_generation_transport": "injected_openai_compatible@0.4.0",
+      "semantic_support_evaluator": "injected_independent_verifier@0.4.0"
+    },
+    "integrations": {
+      "config_version": "a5-upstream-adapters-v0.3.0",
+      "status": "branch_contracts_reviewed_not_main_integrated",
+      "a1": {
+        "contract_version": "question-v0.2+safety-v0.2+agent-termination-v0.2",
+        "source_ref": "commit-b3e1ea6",
+        "status": "reviewed_branch_contract"
+      },
+      "a2": {
+        "contract_version": "a2-evidence-v1+mcp-tools-v1",
+        "source_ref": "commit-881025a",
+        "status": "reviewed_branch_contract"
+      },
+      "a3": {
+        "contract_version": "a3-compat-v0.3",
+        "source_ref": "commit-91a9180",
+        "status": "reviewed_branch_contract"
+      },
+      "a4": {
+        "contract_version": "a4-search-result-21ad3a0",
+        "source_ref": "commit-21ad3a0",
+        "status": "reviewed_branch_contract_blocked_on_rerank_evidence"
+      },
+      "embedding_capability": {
+        "owner": "A3",
+        "enabled": false,
+        "status": "pending_real_dev_recall_at_50_latency_and_reproducibility",
+        "model": "BAAI/bge-m3",
+        "required_dev_metrics": [
+          "Recall@50",
+          "latency_ms",
+          "index_rebuild_reproducibility"
+        ]
+      },
+      "cross_encoder_capability": {
+        "owner": "A4",
+        "enabled": false,
+        "status": "pending_real_dev_ablation_calibration_and_latency",
+        "model": null,
+        "required_dev_metrics": [
+          "nDCG@10_delta_R2_vs_R1",
+          "latency_ms",
+          "score_calibration"
+        ]
+      },
+      "a2_tool_names": {
+        "pubmed": "search_pubmed",
+        "pubmed_review": "search_pubmed",
+        "pubmed_trial": "search_pubmed",
+        "systematic_review": "search_pubmed",
+        "primary_study": "search_pubmed",
+        "controlled_study": "search_pubmed",
+        "clinicaltrials": "search_trials",
+        "clinicaltrials_record": "search_trials",
+        "guideline": "search_guidelines",
+        "current_guideline": "search_guidelines",
+        "europe_pmc": "search_europe_pmc"
+      },
+      "a2_search_limit": 10,
+      "a2_gate1_required_fields": [
+        "id",
+        "source_type",
+        "published_at",
+        "url",
+        "fetched_at",
+        "content_hash"
+      ],
+      "a2_response_ok_field": "ok",
+      "a2_response_items_field": "evidence",
+      "a4_question_type_map": {
+        "stable_mechanism": "generic",
+        "guideline_treatment": "guideline",
+        "latest_research_trial": "latest_trial",
+        "insufficient_conflict_out_of_scope": "generic",
+        "treatment_evidence": "therapy",
+        "diagnostic_evidence": "diagnosis",
+        "general_evidence": "generic"
+      },
+      "a4_freshness_map": {
+        "stable_mechanism": "generic",
+        "guideline_treatment": "current",
+        "latest_research_trial": "latest",
+        "insufficient_conflict_out_of_scope": "generic",
+        "treatment_evidence": "current",
+        "diagnostic_evidence": "current",
+        "general_evidence": "generic"
+      },
+      "a4_source_type_map": {
+        "pubmed": "pubmed",
+        "pubmed_review": "pubmed",
+        "pubmed_trial": "pubmed",
+        "systematic_review": "pubmed",
+        "primary_study": "pubmed",
+        "controlled_study": "pubmed",
+        "clinicaltrials": "clinical_trials",
+        "clinicaltrials_record": "clinical_trials",
+        "guideline": "guideline",
+        "current_guideline": "guideline",
+        "europe_pmc": "europe_pmc"
+      },
+      "a4_topic_map": {
+        "stable_mechanism": "generic",
+        "guideline_treatment": "therapy",
+        "latest_research_trial": "therapy",
+        "insufficient_conflict_out_of_scope": "generic",
+        "treatment_evidence": "therapy",
+        "diagnostic_evidence": "diagnosis",
+        "general_evidence": "generic"
+      }
     }
   },
-  "started_at": "2026-08-11T16:39:19.380134Z",
-  "finished_at": "2026-08-11T16:39:19.381067Z",
-  "latency_ms": 0.933,
+  "started_at": "2026-08-11T22:48:22.667731Z",
+  "finished_at": "2026-08-11T22:48:22.672743Z",
+  "latency_ms": 5.012,
   "error": null
 }

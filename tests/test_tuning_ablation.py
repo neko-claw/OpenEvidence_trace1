@@ -15,12 +15,13 @@ def _chunk(chunk_id: str, text: str, **changes: object) -> EvidenceChunk:
     values: dict[str, object] = {
         "chunk_id": chunk_id,
         "evidence_id": f"evidence-{chunk_id}",
-        "stable_id": f"PMID:{chunk_id}",
+        "stable_id": f"upstream:MOCK-A4-{chunk_id}",
         "text": text,
         "source_type": "pubmed",
         "evidence_level": "rct",
         "index_version": "idx-t",
         "corpus_version": "corpus-t",
+        "mock": True,
     }
     values.update(changes)
     return EvidenceChunk(**values)  # type: ignore[arg-type]
@@ -102,7 +103,9 @@ class FakeCrossEncoder:
 
 
 def test_run_ablation_produces_r0_r1_r2_r3_rows_and_decisions() -> None:
-    scorer = CrossEncoderScorer(model_factory=lambda name: FakeCrossEncoder())
+    scorer = CrossEncoderScorer(
+        model_factory=lambda name: FakeCrossEncoder(), score_semantics="probability"
+    )
     rows = run_ablation(
         QUESTIONS,
         CHUNKS,
@@ -112,6 +115,12 @@ def test_run_ablation_produces_r0_r1_r2_r3_rows_and_decisions() -> None:
 
     conditions = [row.condition for row in rows]
     assert conditions == ["R0", "R1", "R2", "R3"]
+    assert len({row.initial_pool_hashes for row in rows}) == 1
+    assert "feature_rerank" not in rows[0].stage_trace
+    assert "mmr" not in rows[0].stage_trace
+    assert "feature_rerank" in rows[1].stage_trace
+    assert "cross_encoder" in rows[2].stage_trace
+    assert "claim_evidence_support_gate" in rows[3].stage_trace
     assert all(0.0 <= row.recall_at_k0 <= 1.0 for row in rows)
     assert rows[-1].context_tokens >= 0
 

@@ -12,10 +12,11 @@ def _chunk(chunk_id: str, **changes: object) -> EvidenceChunk:
     values: dict[str, object] = {
         "chunk_id": chunk_id,
         "evidence_id": f"evidence-{chunk_id}",
-        "stable_id": f"PMID:{chunk_id}",
+        "stable_id": f"upstream:MOCK-A4-{chunk_id}",
         "text": "Clinical evidence snippet.",
         "source_type": "pubmed",
         "evidence_level": "rct",
+        "mock": True,
     }
     values.update(changes)
     return EvidenceChunk(**values)  # type: ignore[arg-type]

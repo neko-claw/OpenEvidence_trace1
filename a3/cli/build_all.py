@@ -8,7 +8,7 @@ from a3.cli.common import DEFAULT_CONFIG, DeterministicSmokeEmbedding, load_json
 from a3.config import ConfigLoader
 from a3.indexing.bm25 import BM25Index
 from a3.indexing.chunking import ChunkPolicy, chunk_evidence
-from a3.indexing.embeddings import BgeM3EmbeddingProvider
+from a3.indexing.embeddings import BgeM3EmbeddingProvider, EmbeddingProvider
 from a3.indexing.vector import ChromaVectorIndex
 from a3.indexing.versions import create_manifest
 from a3.storage.sqlite_store import SQLiteEvidenceStore
@@ -17,24 +17,27 @@ from a3.wiki.builder import DeterministicOfflineWikiGenerator, build_wiki
 
 def build(input_path: str | Path | None = None, *, real_embedding: bool = True,
           config_path: str | Path = DEFAULT_CONFIG,
-          project_root: str | Path | None = None) -> dict[str, object]:
+          project_root: str | Path | None = None,
+          provider_override: EmbeddingProvider | None = None) -> dict[str, object]:
     loaded = ConfigLoader.load(config_path, project_root=project_root)
     cfg = loaded.config
     fixture = Path(input_path) if input_path is not None else loaded.fixture_path
     imported = load_jsonl(fixture)
     if real_embedding:
-        provider = BgeM3EmbeddingProvider(cfg.embedding.model, cfg.embedding.revision,
+        provider = provider_override or BgeM3EmbeddingProvider(cfg.embedding.model, cfg.embedding.revision,
             local_path_env=cfg.embedding.local_path_env, normalize=cfg.embedding.normalize)
         provider_name = cfg.embedding.provider
     else:
-        provider = DeterministicSmokeEmbedding()
+        provider = provider_override or DeterministicSmokeEmbedding()
         provider_name = "offline-smoke"
+    source_kind = provider.source_kind
     policy = ChunkPolicy(version=cfg.chunk_policy.version, max_chars=cfg.chunk_policy.max_chars,
         overlap_chars=cfg.chunk_policy.overlap_chars,
         natural_boundary_ratio=cfg.chunk_policy.natural_boundary_ratio)
-    effective = loaded.effective_config()
-    if input_path is not None:
-        effective["mock_fixture"] = str(fixture)
+    requested = loaded.requested_config()
+    effective = loaded.runtime_effective_config(embedding_provider=provider_name,
+        embedding_model=provider.model_id, embedding_revision=provider.revision,
+        embedding_source_kind=source_kind, fixture_path=fixture if input_path is not None else None)
 
     with SQLiteEvidenceStore(loaded.database_path) as store:
         for item in imported:
@@ -48,17 +51,18 @@ def build(input_path: str | Path | None = None, *, real_embedding: bool = True,
         manifest = create_manifest(evidence=evidence, chunk_policy_version=policy.version,
             chunk_policy=policy.as_dict(), embedding_provider=provider_name,
             embedding_model=provider.model_id, embedding_revision=provider.revision,
+            embedding_source_kind=source_kind,
             embedding_mode=cfg.embedding.mode, vector_distance=cfg.vector.distance,
             bm25_tokenizer_version=cfg.bm25.tokenizer_version,
             wiki_builder_version=cfg.wiki.builder_version,
-            config_schema_version=cfg.schema_version, effective_config=effective)
+            config_schema_version=cfg.schema_version, requested_config=requested,
+            runtime_effective_config=effective)
         pages, wiki_documents = build_wiki(loaded.wiki_root, evidence, spans, manifest,
             cfg.wiki.topics, DeterministicOfflineWikiGenerator(cfg.wiki.builder_version))
-        bm25 = BM25Index.build(evidence, chunks, manifest.index_version,
-            cfg.bm25.tokenizer_version, wiki_documents)
+        bm25 = BM25Index.build(evidence, chunks, spans, manifest, wiki_documents)
         bm25.save(loaded.bm25_root)
-        vector = ChromaVectorIndex(loaded.vector_root, manifest.index_version, provider)
-        vector_count = vector.sync(evidence, chunks)
+        vector = ChromaVectorIndex(loaded.vector_root, manifest, provider)
+        vector_count = vector.sync(evidence, chunks, spans)
         store.record_index(manifest)
         report: dict[str, object] = {
             "evidence_count": len(evidence), "chunk_count": len(chunks), "span_count": len(spans),
@@ -68,7 +72,7 @@ def build(input_path: str | Path | None = None, *, real_embedding: bool = True,
             "vector_document_count": vector_count, "corpus_version": manifest.corpus_version,
             "index_version": manifest.index_version, "embedding_provider": manifest.embedding_provider,
             "embedding_model": manifest.embedding_model, "embedding_revision": manifest.embedding_revision,
-            "embedding_source": getattr(provider, "source_kind", "offline-fixture"),
+            "embedding_source": provider.source_kind,
             "wiki_pages": [path.name for path in pages],
             "manifest": manifest.model_dump(mode="json")}
         print(json.dumps(report, indent=2, sort_keys=True))

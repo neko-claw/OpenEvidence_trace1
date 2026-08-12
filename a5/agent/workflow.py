@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from datetime import date
 from time import perf_counter
 
 from a5.agent.budget import ToolBudgetManager
@@ -7,6 +8,7 @@ from a5.agent.router import SkillRouter
 from a5.agent.state import AgentStateMachine
 from a5.domain.enums import (
     Decision,
+    EvidenceIntegrityStatus,
     EventType,
     RecommendedAction,
     SafetyDecision,
@@ -15,6 +17,7 @@ from a5.domain.enums import (
 )
 from a5.domain.models import (
     AgentRun,
+    AtomicClaimPlan,
     CitationAuditReport,
     Question,
     RetrievalRequest,
@@ -23,11 +26,14 @@ from a5.domain.models import (
     utc_now,
 )
 from a5.gates.evidence_sufficiency import EvidenceSufficiencyGate
+from a5.gates.evidence_integrity import EvidenceIntegrityGate
+from a5.gates.generation_constraints import EvidenceConstrainedGenerationGate
 from a5.gates.release import ReleaseGate
 from a5.generation.finalizer import Finalizer
 from a5.ports.claim_generator import ClaimGenerator
 from a5.ports.claim_verifier import ClaimVerifier
 from a5.ports.evidence_retriever import EvidenceRetriever
+from a5.ports.evidence_integrity import EvidenceIntegrityEvaluator
 from a5.ports.safety_policy import SafetyPolicy
 from a5.runtime_config import RuntimeConfig, load_runtime_config
 from a5.skills.citation_audit import CitationAuditSkill
@@ -45,6 +51,7 @@ class A5Workflow:
         claim_verifier: ClaimVerifier,
         safety_policy: SafetyPolicy,
         runtime_config: RuntimeConfig | None = None,
+        evidence_integrity: EvidenceIntegrityEvaluator | None = None,
         research_skill: EvidenceResearchSkill | None = None,
         finalizer: Finalizer | None = None,
     ) -> None:
@@ -55,12 +62,20 @@ class A5Workflow:
         self._research_skill = research_skill or EvidenceResearchSkill(self._config)
         self._audit_skill = CitationAuditSkill(claim_verifier, self._config)
         self._router = SkillRouter(self._config)
+        self._gate1: EvidenceIntegrityEvaluator = evidence_integrity or EvidenceIntegrityGate(
+            self._config.gates.gate1
+        )
         self._gate2 = EvidenceSufficiencyGate(self._config.gates.gate2)
+        self._gate4 = EvidenceConstrainedGenerationGate()
         self._gate6 = ReleaseGate(self._config.gates.gate6)
         self._finalizer = finalizer or Finalizer()
 
     def answer(self, question: Question | str) -> AgentRun:
         normalized = Question(text=question) if isinstance(question, str) else question
+        if "as_of_date" not in normalized.metadata:
+            normalized = normalized.model_copy(
+                update={"metadata": {**normalized.metadata, "as_of_date": utc_now().date().isoformat()}}
+            )
         run = AgentRun(
             question=normalized,
             agent_version=self._config.agent.agent_version,
@@ -75,6 +90,7 @@ class A5Workflow:
         machine = AgentStateMachine(run)
         audit: CitationAuditReport | None = None
         refusal_reason: str | None = None
+        as_of_date = self._as_of_date(normalized)
         self._trace(run, WorkflowState.START, EventType.STATE, perf_counter())
         try:
             machine.transition(WorkflowState.GATE0)
@@ -93,6 +109,7 @@ class A5Workflow:
                 machine.transition(WorkflowState.GATE6)
                 run.decision, reasons = self._gate6.decide(
                     safety=run.safety_assessment,
+                    integrity=None,
                     sufficiency=None,
                     claims=[],
                     results=[],
@@ -170,12 +187,44 @@ class A5Workflow:
                     evidence_ids=[record.id for record in result.evidence],
                     details={"diagnostics": result.diagnostics},
                 )
+                machine.transition(WorkflowState.GATE1)
+                started = perf_counter()
+                run.evidence_integrity = self._gate1.evaluate(run.retrieved_evidence)
+                eligible_ids = set(run.evidence_integrity.eligible_evidence_ids)
+                self._trace(
+                    run,
+                    WorkflowState.GATE1,
+                    EventType.GATE,
+                    started,
+                    gate=f"Gate1@{self._config.gates.gate1_version}",
+                    tool_budget_remaining=budget.remaining_tool_calls,
+                    evidence_ids=[record.id for record in run.retrieved_evidence],
+                    decision=run.evidence_integrity.status.value,
+                    details=run.evidence_integrity.model_dump(mode="json"),
+                )
+                if run.evidence_integrity.status is EvidenceIntegrityStatus.REJECTED:
+                    machine.transition(WorkflowState.GATE6)
+                    run.decision, reasons = self._gate6.decide(
+                        safety=run.safety_assessment,
+                        integrity=run.evidence_integrity,
+                        sufficiency=None,
+                        claims=[],
+                        results=[],
+                    )
+                    refusal_reason = "; ".join(reasons)
+                    self._trace_gate6(run, reasons)
+                    self._finalize(run, machine, None, refusal_reason)
+                    return self._finish(run)
+                run.retrieved_evidence = [
+                    record for record in run.retrieved_evidence if record.id in eligible_ids
+                ]
                 machine.transition(WorkflowState.GATE2)
                 started = perf_counter()
                 run.evidence_sufficiency = self._gate2.evaluate(
                     run.retrieved_evidence,
                     freshness_required=run.agent_plan.search_plan.freshness_required,
                     budget_remaining=budget.remaining_tool_calls,
+                    as_of_date=as_of_date,
                 )
                 self._trace(
                     run,
@@ -197,6 +246,7 @@ class A5Workflow:
                 machine.transition(WorkflowState.GATE6)
                 run.decision, reasons = self._gate6.decide(
                     safety=run.safety_assessment,
+                    integrity=run.evidence_integrity,
                     sufficiency=run.evidence_sufficiency,
                     claims=[],
                     results=[],
@@ -210,6 +260,7 @@ class A5Workflow:
             run.evidence_summary = self._research_skill.summarize(
                 run.retrieved_evidence,
                 freshness_required=run.agent_plan.search_plan.freshness_required,
+                as_of_date=as_of_date,
             )
             run.agent_plan.evidence_summary = run.evidence_summary
             self._trace(
@@ -223,27 +274,65 @@ class A5Workflow:
                 details=run.evidence_summary.model_dump(mode="json"),
             )
 
-            machine.transition(WorkflowState.GENERATE_CLAIMS)
+            machine.transition(WorkflowState.GATE3)
+            started = perf_counter()
+            run.atomic_claim_plan = AtomicClaimPlan(
+                question_id=run.question.question_id,
+                allowed_evidence_ids=[record.id for record in run.retrieved_evidence],
+                allowed_span_ids=[
+                    span.span_id for record in run.retrieved_evidence for span in record.spans
+                ],
+                prompt_version=run.prompt_versions["claim_generation"],
+                constraints=[
+                    "one_verifiable_fact_per_claim",
+                    "evidence_id_whitelist",
+                    "evidence_span_id_whitelist",
+                    "no_external_reference_generation",
+                ],
+            )
+            self._trace(
+                run,
+                WorkflowState.GATE3,
+                EventType.GATE,
+                started,
+                gate=f"Gate3@{self._config.gates.gate3_version}",
+                skill=f"claim_generation@{run.prompt_versions['claim_generation']}",
+                details=run.atomic_claim_plan.model_dump(mode="json"),
+            )
+
+            machine.transition(WorkflowState.GATE4)
             started = perf_counter()
             candidates = self._claim_generator.generate(
                 run.question, run.retrieved_evidence, run.agent_plan, run.run_id
+            )
+            run.claims = self._audit_skill.split_claims(candidates)
+            run.generation_constraints = self._gate4.evaluate(
+                run.claims, run.retrieved_evidence, run_id=run.run_id
+            )
+            self._trace(
+                run,
+                WorkflowState.GATE4,
+                EventType.GENERATION,
+                started,
+                gate=f"Gate4@{self._config.gates.gate4_version}",
+                skill=f"claim_generation@{run.prompt_versions['claim_generation']}",
+                claim_ids=[claim.claim_id for claim in run.claims],
+                output_count=len(run.claims),
+                decision=run.generation_constraints.status.value,
+                details=run.generation_constraints.model_dump(mode="json"),
             )
             self._trace(
                 run,
                 WorkflowState.GENERATE_CLAIMS,
                 EventType.GENERATION,
                 started,
-                skill=f"claim_generation@{run.prompt_versions['claim_generation']}",
                 claim_ids=[claim.claim_id for claim in candidates],
                 output_count=len(candidates),
+                details={"compatibility_alias_for": "Gate4"},
             )
-
-            machine.transition(WorkflowState.CLAIM_SPLITTER)
-            started = perf_counter()
             audit_identifier = self._router.route(WorkflowState.CLAIM_SPLITTER, question_type)
             run.selected_skill = audit_identifier
             run.selected_skills.append(audit_identifier)
-            run.claims = self._audit_skill.split_claims(candidates)
             self._trace(
                 run,
                 WorkflowState.CLAIM_SPLITTER,
@@ -260,7 +349,10 @@ class A5Workflow:
             audit = self._audit_skill.audit(
                 run.claims,
                 run.retrieved_evidence,
-                VerificationContext(freshness_required=run.agent_plan.search_plan.freshness_required),
+                VerificationContext(
+                    freshness_required=run.agent_plan.search_plan.freshness_required,
+                    run_date=as_of_date,
+                ),
             )
             self._trace(
                 run,
@@ -310,9 +402,11 @@ class A5Workflow:
             machine.transition(WorkflowState.GATE6)
             run.decision, release_reasons = self._gate6.decide(
                 safety=run.safety_assessment,
+                integrity=run.evidence_integrity,
                 sufficiency=run.evidence_sufficiency,
                 claims=run.claims,
                 results=run.verification_results,
+                generation=run.generation_constraints,
             )
             audit = audit.model_copy(
                 update={
@@ -384,6 +478,18 @@ class A5Workflow:
                 details={"run_latency_ms": run.latency_ms},
             )
         return run
+
+    @staticmethod
+    def _as_of_date(question: Question) -> date:
+        raw = question.metadata.get("as_of_date")
+        if isinstance(raw, date):
+            return raw
+        if isinstance(raw, str):
+            try:
+                return date.fromisoformat(raw)
+            except ValueError:
+                pass
+        return utc_now().date()
 
     @staticmethod
     def _trace(

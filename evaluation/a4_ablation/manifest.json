@@ -1,0 +1,15 @@
+{
+  "manifest_version": "1",
+  "dataset_id": "a4-calibration-ablation-pending",
+  "purpose": "Cross-query quality calibration and same-pool R0-R3 ablation",
+  "mock": false,
+  "questions_path": null,
+  "qrels_path": null,
+  "gold_path": null,
+  "source": null,
+  "license_or_permission": null,
+  "annotation_method": null,
+  "adjudication_status": "PENDING",
+  "threshold_status": "PENDING_APPROVAL",
+  "approved_thresholds": {}
+}

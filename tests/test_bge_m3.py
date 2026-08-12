@@ -1,7 +1,6 @@
 """Behavioral tests for the BGE-M3 dense embedding integration.
 
-Tests inject a fake SentenceTransformer factory: no network access and no
-model download ever happens during the test run.
+Tests inject an A3-style provider: A4 cannot construct or download a model.
 """
 
 from __future__ import annotations
@@ -20,66 +19,84 @@ from retrieval.service import RetrievalService
 from retrieval.vector import InMemoryVectorSearch
 
 
-class FakeModel:
-    """Deterministic stand-in for ``SentenceTransformer.encode``."""
+class FakeProvider:
+    """Deterministic stand-in for A3 ``EmbeddingProvider``."""
 
     def __init__(self, vectors: Sequence[Sequence[float]] | Callable[[list[str]], list[Sequence[float]]]) -> None:
         self._vectors = vectors
-        self.encode_calls: list[tuple[list[str], bool]] = []
+        self.query_calls: list[list[str]] = []
+        self.document_calls: list[list[str]] = []
 
-    def encode(self, texts: object, normalize_embeddings: bool = False) -> list[list[float]]:
+    @property
+    def model_id(self) -> str:
+        return "upstream:MOCK-A3-EMBEDDING"
+
+    @property
+    def revision(self) -> str | None:
+        return "fixture-v1"
+
+    @property
+    def source_kind(self) -> str:
+        return "fixture"
+
+    def _encode(self, texts: object) -> list[list[float]]:
         items = list(texts)  # type: ignore[arg-type]
-        self.encode_calls.append((items, bool(normalize_embeddings)))
         if callable(self._vectors):
             return [list(row) for row in self._vectors(items)]
         return [list(self._vectors[index % len(self._vectors)]) for index in range(len(items))]
+
+    def encode_queries(self, texts: object) -> list[list[float]]:
+        items = list(texts)  # type: ignore[arg-type]
+        self.query_calls.append(items)
+        return self._encode(items)
+
+    def encode_documents(self, texts: object) -> list[list[float]]:
+        items = list(texts)  # type: ignore[arg-type]
+        self.document_calls.append(items)
+        return self._encode(items)
 
 
 def _chunk(chunk_id: str, *, title: str = "", text: str = "Clinical evidence snippet.") -> EvidenceChunk:
     return EvidenceChunk(
         chunk_id=chunk_id,
         evidence_id=f"evidence-{chunk_id}",
-        stable_id=f"PMID:{chunk_id}",
+        stable_id=f"upstream:MOCK-A4-{chunk_id}",
         title=title,
         text=text,
         source_type="pubmed",
         evidence_level="rct",
         index_version="index-20260811",
         corpus_version="corpus-20260811",
+        mock=True,
     )
 
 
-def _embedder(fake: FakeModel, model_name: str = "fake-model") -> BgeM3Embedder:
-    return BgeM3Embedder(model_name=model_name, model_factory=lambda name: fake)
+def _embedder(fake: FakeProvider) -> BgeM3Embedder:
+    return BgeM3Embedder(fake, capability_enabled=True)
 
 
-def test_bge_m3_embedder_loads_model_lazily() -> None:
-    factory_calls: list[str] = []
+def test_bge_m3_adapter_is_pending_by_default_and_never_loads_a_model() -> None:
+    provider = FakeProvider([(1.0, 0.0)])
+    embedder = BgeM3Embedder(provider)
 
-    def factory(model_name: str) -> FakeModel:
-        factory_calls.append(model_name)
-        return FakeModel([(1.0, 0.0)])
+    with pytest.raises(BgeM3EmbeddingError, match="PENDING"):
+        embedder.encode_query(Query(query_id="q1", text="氨氯地平"))
 
-    embedder = BgeM3Embedder(model_name="BAAI/bge-m3", model_factory=factory)
-    assert factory_calls == []
-
-    embedder.encode_query(Query(query_id="q1", text="氨氯地平"))
-
-    assert factory_calls == ["BAAI/bge-m3"]
+    assert provider.query_calls == []
 
 
 def test_bge_m3_encode_query_requests_normalized_encoding_of_query_text() -> None:
-    fake = FakeModel([(3.0, 4.0)])
+    fake = FakeProvider([(3.0, 4.0)])
     embedder = _embedder(fake)
 
     vector = embedder.encode_query(Query(query_id="q1", text="老年高血压的一线降压治疗"))
 
-    assert fake.encode_calls == [(["老年高血压的一线降压治疗"], True)]
+    assert fake.query_calls == [["老年高血压的一线降压治疗"]]
     assert vector == (3.0, 4.0)
 
 
 def test_bge_m3_build_vector_search_encodes_title_plus_text_with_normalization() -> None:
-    fake = FakeModel([(1.0, 0.0)])
+    fake = FakeProvider([(1.0, 0.0)])
     embedder = _embedder(fake)
     chunks = (
         _chunk("c1", title="Amlodipine for hypertension", text="A randomized trial."),
@@ -89,13 +106,13 @@ def test_bge_m3_build_vector_search_encodes_title_plus_text_with_normalization()
     search = embedder.build_vector_search(chunks)
 
     assert isinstance(search, InMemoryVectorSearch)
-    assert fake.encode_calls == [
-        (["Amlodipine for hypertension A randomized trial.", "Chinese evidence."], True)
+    assert fake.document_calls == [
+        ["Amlodipine for hypertension A randomized trial.", "Chinese evidence."]
     ]
 
 
 def test_bge_m3_built_search_ranks_semantically_closer_chunk_first() -> None:
-    embedder = _embedder(FakeModel([(1.0, 0.0), (0.0, 1.0)]))
+    embedder = _embedder(FakeProvider([(1.0, 0.0), (0.0, 1.0)]))
     search = embedder.build_vector_search((_chunk("c-drug"), _chunk("c-other")))
 
     results = search.search((0.9, 0.1), k=2)
@@ -104,22 +121,12 @@ def test_bge_m3_built_search_ranks_semantically_closer_chunk_first() -> None:
     assert results[0].stage == "vector"
 
 
-def test_bge_m3_model_load_failure_raises_stable_error() -> None:
-    def factory(_model_name: str) -> FakeModel:
-        raise RuntimeError("download failed")
-
-    embedder = BgeM3Embedder(model_name="BAAI/bge-m3", model_factory=factory)
-
-    with pytest.raises(BgeM3EmbeddingError, match="bge_m3"):
-        embedder.encode_query(Query(query_id="q1", text="x"))
-
-
 def test_bge_m3_encoding_failure_raises_stable_error() -> None:
-    class ExplodingModel(FakeModel):
-        def encode(self, texts: object, normalize_embeddings: bool = False) -> list[list[float]]:
+    class ExplodingProvider(FakeProvider):
+        def encode_queries(self, texts: object) -> list[list[float]]:
             raise ValueError("provider exploded")
 
-    embedder = _embedder(ExplodingModel([]))
+    embedder = _embedder(ExplodingProvider([]))
 
     with pytest.raises(BgeM3EmbeddingError, match="bge_m3"):
         embedder.encode_query(Query(query_id="q1", text="x"))
@@ -131,7 +138,7 @@ def test_bge_m3_build_rejects_dimension_mismatch() -> None:
             return [[1.0, 0.0]]
         return [[0.0, 1.0, 0.0], [1.0, 0.0]]
 
-    embedder = _embedder(FakeModel(vectors))
+    embedder = _embedder(FakeProvider(vectors))
 
     with pytest.raises(BgeM3EmbeddingError, match="dimension"):
         embedder.build_vector_search((_chunk("c1"), _chunk("c2")))
@@ -141,7 +148,7 @@ def test_bge_m3_build_rejects_count_mismatch() -> None:
     def always_one_row(_texts: list[str]) -> list[Sequence[float]]:
         return [[1.0, 0.0]]
 
-    embedder = _embedder(FakeModel(always_one_row))
+    embedder = _embedder(FakeProvider(always_one_row))
 
     with pytest.raises(BgeM3EmbeddingError, match="count"):
         embedder.build_vector_search((_chunk("c1"), _chunk("c2")))
@@ -149,31 +156,31 @@ def test_bge_m3_build_rejects_count_mismatch() -> None:
 
 @pytest.mark.parametrize("vector", [(math.inf, 0.0), (0.0, math.nan)])
 def test_bge_m3_build_rejects_nonfinite_outputs(vector: tuple[float, float]) -> None:
-    embedder = _embedder(FakeModel([vector]))
+    embedder = _embedder(FakeProvider([vector]))
 
     with pytest.raises(BgeM3EmbeddingError, match="finite"):
         embedder.build_vector_search((_chunk("c1"),))
 
 
 def test_bge_m3_encode_query_rejects_nonfinite_output() -> None:
-    embedder = _embedder(FakeModel([(math.nan, 1.0)]))
+    embedder = _embedder(FakeProvider([(math.nan, 1.0)]))
 
     with pytest.raises(BgeM3EmbeddingError, match="finite"):
         embedder.encode_query(Query(query_id="q1", text="x"))
 
 
 def test_bge_m3_empty_corpus_builds_empty_search_without_encoding() -> None:
-    fake = FakeModel([(1.0, 0.0)])
+    fake = FakeProvider([(1.0, 0.0)])
     embedder = _embedder(fake)
 
     search = embedder.build_vector_search(())
 
     assert search.search((1.0, 0.0), k=5) == []
-    assert fake.encode_calls == []
+    assert fake.document_calls == []
 
 
 def test_bge_m3_built_search_ignores_zero_norm_corpus_vectors() -> None:
-    embedder = _embedder(FakeModel([(0.0, 0.0), (1.0, 0.0)]))
+    embedder = _embedder(FakeProvider([(0.0, 0.0), (1.0, 0.0)]))
     search = embedder.build_vector_search((_chunk("c-zero"), _chunk("c-drug")))
 
     results = search.search((0.9, 0.1), k=2)

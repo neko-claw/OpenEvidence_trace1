@@ -1,19 +1,18 @@
-"""Local BGE-M3 dense embedding integration for A4 vector retrieval.
+"""Compatibility adapter from A3's EmbeddingProvider into A4 retrieval.
 
-``BgeM3Embedder`` is the only component aware of ``sentence-transformers``.
-It lazily loads ``BAAI/bge-m3``, batch-encodes ``title + text`` into L2
-normalized dense vectors, and builds records consumable by the existing
-``InMemoryVectorSearch``.  A model factory may be injected to pin cache
-directory, device, or offline behavior in deployment; tests inject a fake
-factory so no model is ever downloaded during the test run.
+A4 deliberately does not load BGE-M3 (or any other embedding model).  Model
+selection, revision pinning, indexing, and DEV Recall@50 validation belong to
+A3.  This module only consumes an already-constructed A3 provider when the
+versioned capability switch is explicitly enabled.
 """
 
 from __future__ import annotations
 
-from collections.abc import Callable, Iterable, Sequence
+from collections.abc import Iterable
 from math import isfinite
 from numbers import Real
-from typing import Any
+
+from a3.indexing.embeddings import EmbeddingProvider
 
 from .models import EvidenceChunk, Query
 from .vector import InMemoryVectorSearch
@@ -28,21 +27,23 @@ class BgeM3EmbeddingError(Exception):
     """
 
 
-class BgeM3Embedder:
-    """Lazy, dependency-isolated dense embedder over SentenceTransformer BGE-M3."""
+class A3EmbeddingAdapter:
+    """Consume A3's provider without constructing or downloading a model."""
 
     def __init__(
         self,
-        model_name: str = "BAAI/bge-m3",
-        model_factory: Callable[[str], Any] | None = None,
+        provider: EmbeddingProvider,
+        *,
+        capability_enabled: bool = False,
     ) -> None:
-        if not isinstance(model_name, str) or not model_name.strip():
-            raise ValueError("model_name must be a nonblank string")
-        if model_factory is not None and not callable(model_factory):
-            raise ValueError("model_factory must be callable or None")
-        self._model_name = model_name
-        self._model_factory = model_factory
-        self._model: Any = None
+        if not callable(getattr(provider, "encode_queries", None)) or not callable(
+            getattr(provider, "encode_documents", None)
+        ):
+            raise ValueError("provider must implement the A3 EmbeddingProvider contract")
+        if not isinstance(capability_enabled, bool):
+            raise ValueError("capability_enabled must be bool")
+        self._provider = provider
+        self._capability_enabled = capability_enabled
 
     def encode_query(self, query: Query) -> tuple[float, ...]:
         """Encode one query's text into a finite dense vector.
@@ -53,9 +54,9 @@ class BgeM3Embedder:
         """
         if not isinstance(query, Query):
             raise ValueError("query must be a Query")
-        model = self._ensure_model()
+        self._require_enabled()
         try:
-            rows = _as_vector_rows(model.encode([query.text], normalize_embeddings=True))
+            rows = _as_vector_rows(self._provider.encode_queries([query.text]))
             _validate_rows(rows, expected=1, label="query")
         except BgeM3EmbeddingError:
             raise
@@ -79,10 +80,10 @@ class BgeM3Embedder:
         if not normalized:
             return InMemoryVectorSearch({})
 
-        model = self._ensure_model()
+        self._require_enabled()
         texts = [f"{chunk.title} {chunk.text}".strip() for chunk in normalized]
         try:
-            rows = _as_vector_rows(model.encode(texts, normalize_embeddings=True))
+            rows = _as_vector_rows(self._provider.encode_documents(texts))
             _validate_rows(rows, expected=len(normalized), label="corpus")
         except BgeM3EmbeddingError:
             raise
@@ -93,22 +94,15 @@ class BgeM3Embedder:
             (chunk.chunk_id, chunk, rows[index]) for index, chunk in enumerate(normalized)
         )
 
-    def _ensure_model(self) -> Any:
-        if self._model is None:
-            factory = self._model_factory if self._model_factory is not None else _default_model_factory
-            try:
-                self._model = factory(self._model_name)
-            except Exception as error:
-                raise BgeM3EmbeddingError(
-                    f"bge_m3 model could not be loaded: {type(error).__name__}"
-                ) from error
-        return self._model
+    def _require_enabled(self) -> None:
+        if not self._capability_enabled:
+            raise BgeM3EmbeddingError(
+                "bge_m3 capability PENDING: enable only after A3 DEV Recall@50, latency, and rebuild validation"
+            )
 
 
-def _default_model_factory(model_name: str) -> Any:
-    from sentence_transformers import SentenceTransformer
-
-    return SentenceTransformer(model_name)
+class BgeM3Embedder(A3EmbeddingAdapter):
+    """Backward-compatible name; implementation is the A3 provider adapter."""
 
 
 def _as_vector_rows(encoded: object) -> list[list[float]]:

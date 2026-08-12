@@ -31,3 +31,13 @@ def test_workflow_dependencies_are_typed_as_ports() -> None:
     assert "self._retriever: EvidenceRetriever" in source
     assert "self._claim_generator: ClaimGenerator" in source
     assert "self._safety_policy: SafetyPolicy" in source
+    assert "self._gate1: EvidenceIntegrityEvaluator" in source
+
+
+def test_provisional_adapters_do_not_import_upstream_concretes() -> None:
+    root = Path(__file__).parents[1] / "a5/adapters/provisional"
+    source = "\n".join(path.read_text(encoding="utf-8") for path in root.glob("*.py"))
+    assert "from retrieval" not in source
+    assert "from core.models" not in source
+    assert "from mcp" not in source
+    assert "MockEvidenceRetriever" not in source

@@ -10,12 +10,18 @@ from a5.domain.enums import (
     ClaimCriticality,
     Decision,
     EventType,
+    EvidenceIntegrityStatus,
     FreshnessState,
+    GenerationConstraintStatus,
     MatchStatus,
     RecommendedAction,
+    RetrievalScoreKind,
+    RetrievalScoreScope,
     SafetyDecision,
+    SemanticSupportStatus,
     SufficiencyStatus,
     UncertaintyLevel,
+    UIReasonCode,
     VerificationStatus,
     WorkflowState,
 )
@@ -56,7 +62,16 @@ class EvidenceSpan(StrictModel):
     text: str = Field(min_length=1)
     chunk_id: str | None = None
     page: int | None = Field(default=None, ge=1)
+    raw_page: str | None = None
     section: str | None = None
+    char_start: int | None = Field(default=None, ge=0)
+    char_end: int | None = Field(default=None, ge=0)
+    offset_scope: str | None = None
+    document_char_start: int | None = Field(default=None, ge=0)
+    document_char_end: int | None = Field(default=None, ge=0)
+    span_content_hash: str | None = None
+    chunk_content_hash: str | None = None
+    evidence_content_hash: str | None = None
 
 
 class EvidenceRecord(StrictModel):
@@ -78,6 +93,9 @@ class EvidenceRecord(StrictModel):
     outcome: str | None = None
     published_at: datetime | None = None
     retrieval_score: float | None = Field(default=None, ge=0.0, le=1.0)
+    retrieval_score_kind: RetrievalScoreKind = RetrievalScoreKind.UNKNOWN
+    retrieval_score_scope: RetrievalScoreScope = RetrievalScoreScope.UNKNOWN
+    retrieval_score_calibrated: bool | None = None
     evidence_level: str | None = None
     spans: list[EvidenceSpan] = Field(default_factory=list)
     conflicts_with_ids: list[str] = Field(default_factory=list)
@@ -147,6 +165,56 @@ class Claim(StrictModel):
         return value
 
 
+class ClaimGenerationPayload(StrictModel):
+    """Model-facing Gate3 contract; verification fields are system-owned."""
+
+    claim_id: str = Field(min_length=1)
+    text: str = Field(min_length=1)
+    criticality: ClaimCriticality
+    evidence_ids: list[str] = Field(min_length=1)
+    evidence_span_ids: list[str] = Field(min_length=1)
+    uncertainty: UncertaintyLevel = UncertaintyLevel.UNKNOWN
+    population: str | None = None
+    intervention: str | None = None
+    comparator: str | None = None
+    outcome: str | None = None
+    as_of_date: date | None = None
+
+    @field_validator("evidence_ids", "evidence_span_ids")
+    @classmethod
+    def payload_ids_are_unique(cls, value: list[str]) -> list[str]:
+        if len(value) != len(set(value)):
+            raise ValueError("identifier lists must contain unique values")
+        return value
+
+
+class ClaimGenerationOutput(StrictModel):
+    claims: list[ClaimGenerationPayload] = Field(default_factory=list)
+
+
+class SemanticVerificationOutput(StrictModel):
+    status: SemanticSupportStatus
+    entailment_score: float | None = Field(default=None, ge=0.0, le=1.0)
+    used_span_ids: list[str] = Field(default_factory=list)
+    reason: str = Field(min_length=1)
+
+
+class AtomicClaimPlan(StrictModel):
+    question_id: str
+    allowed_evidence_ids: list[str]
+    allowed_span_ids: list[str]
+    prompt_version: str
+    output_contract: str = "ClaimGenerationOutput"
+    constraints: list[str] = Field(default_factory=list)
+
+
+class GenerationConstraintResult(StrictModel):
+    status: GenerationConstraintStatus
+    accepted_claim_ids: list[str] = Field(default_factory=list)
+    rejected_claim_ids: list[str] = Field(default_factory=list)
+    reasons: list[str] = Field(default_factory=list)
+
+
 class VerificationContext(StrictModel):
     freshness_required: bool = False
     run_date: date = Field(default_factory=lambda: utc_now().date())
@@ -174,6 +242,8 @@ class VerificationResult(StrictModel):
     comparator_match: MatchStatus = MatchStatus.UNKNOWN
     outcome_match: MatchStatus = MatchStatus.UNKNOWN
     time_match: MatchStatus = MatchStatus.UNKNOWN
+    numeric_match: MatchStatus = MatchStatus.UNKNOWN
+    unit_match: MatchStatus = MatchStatus.UNKNOWN
     entailment_score: float | None = Field(default=None, ge=0.0, le=1.0)
     conflict_ids: list[str] = Field(default_factory=list)
     uncertainty: UncertaintyLevel = UncertaintyLevel.UNKNOWN
@@ -214,6 +284,8 @@ class RetrievalResult(StrictModel):
 class EvidenceSufficiencyMetrics(StrictModel):
     candidate_count: int = Field(ge=0)
     top_score: float | None = Field(default=None, ge=0.0, le=1.0)
+    top_ranking_score: float | None = Field(default=None, ge=0.0, le=1.0)
+    usable_quality_score_count: int = Field(default=0, ge=0)
     source_type_count: int = Field(ge=0)
     source_diversity: float | None = Field(default=None, ge=0.0, le=1.0)
     strongest_evidence_level: str | None = None
@@ -226,6 +298,21 @@ class EvidenceSufficiencyResult(StrictModel):
     reasons: list[str] = Field(default_factory=list)
     metrics: EvidenceSufficiencyMetrics
     recommended_action: RecommendedAction
+
+
+class EvidenceIntegrityItem(StrictModel):
+    evidence_id: str
+    status: EvidenceIntegrityStatus
+    reason_codes: list[str] = Field(default_factory=list)
+
+
+class EvidenceIntegrityResult(StrictModel):
+    status: EvidenceIntegrityStatus
+    eligible_evidence_ids: list[str] = Field(default_factory=list)
+    rejected_evidence_ids: list[str] = Field(default_factory=list)
+    unknown_evidence_ids: list[str] = Field(default_factory=list)
+    items: list[EvidenceIntegrityItem] = Field(default_factory=list)
+    reasons: list[str] = Field(default_factory=list)
 
 
 class ToolBudgetSnapshot(StrictModel):
@@ -289,6 +376,7 @@ class RuntimeConfigSnapshot(StrictModel):
     gates: dict[str, Any]
     skills: dict[str, Any]
     models: dict[str, Any]
+    integrations: dict[str, Any] = Field(default_factory=dict)
 
 
 class AgentRun(StrictModel):
@@ -299,8 +387,11 @@ class AgentRun(StrictModel):
     selected_skills: list[str] = Field(default_factory=list)
     agent_plan: AgentPlan | None = None
     safety_assessment: SafetyAssessment | None = None
+    evidence_integrity: EvidenceIntegrityResult | None = None
     evidence_sufficiency: EvidenceSufficiencyResult | None = None
     evidence_summary: EvidenceSummary | None = None
+    atomic_claim_plan: AtomicClaimPlan | None = None
+    generation_constraints: GenerationConstraintResult | None = None
     retrieved_evidence: list[EvidenceRecord] = Field(default_factory=list)
     claims: list[Claim] = Field(default_factory=list)
     verification_results: list[VerificationResult] = Field(default_factory=list)
@@ -341,3 +432,31 @@ class CitationAuditInput(StrictModel):
 class CitationAuditOutput(StrictModel):
     atomic_claims: list[Claim]
     report: CitationAuditReport
+
+
+class EvidenceCardView(StrictModel):
+    evidence_id: str
+    title: str
+    source_type: str
+    published_at: datetime | None = None
+    url: str | None = None
+    page: int | None = None
+    section: str | None = None
+    evidence_level: str | None = None
+    mock: bool
+
+
+class AgentRunView(StrictModel):
+    """A6-safe projection; candidate claims and internal exceptions stay private."""
+
+    run_id: str
+    decision: Decision
+    answer_text: str
+    included_claim_ids: list[str] = Field(default_factory=list)
+    reason_codes: list[UIReasonCode] = Field(default_factory=list)
+    warnings: list[str] = Field(default_factory=list)
+    limitations: list[str] = Field(default_factory=list)
+    evidence_cards: list[EvidenceCardView] = Field(default_factory=list)
+    trace: list[ToolTrace] = Field(default_factory=list)
+    error_code: UIReasonCode | None = None
+    error_message: str | None = None

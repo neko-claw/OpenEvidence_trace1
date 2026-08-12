@@ -21,10 +21,16 @@ def test_stable_id_and_content_hash_are_deterministic_and_ignore_fetch_time():
 
 
 def test_real_identifier_priority():
-    item = Evidence(id="E", source_type="study", title="T", abstract_or_chunk="X", pmid="42")
-    assert item.stable_id == "pmid:42"
+    item = Evidence(
+        id="PMID:31452104",
+        source_type="study",
+        title="Molegro Virtual Docker for Docking.",
+        abstract_or_chunk="Molegro Virtual Docker is a protein-ligand docking simulation program.",
+        pmid="31452104",
+    )
+    assert item.stable_id == "pmid:31452104"
 
 
 def test_mock_guard_rejects_identifiers():
     with pytest.raises(ValidationError):
-        evidence(pmid="fake")
+        evidence(pmid="31452104")

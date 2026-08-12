@@ -147,6 +147,11 @@ class RuleBasedClaimVerifier:
 
         textual = self._textual_support.evaluate(claim, cited)
         reasons.append(textual.reason)
+        numeric_match, unit_match = self._numeric_unit_match(claim, cited)
+        if numeric_match is MatchStatus.MISMATCH:
+            reasons.append("numeric_mismatch: claim value is absent from cited spans")
+        if unit_match is MatchStatus.MISMATCH:
+            reasons.append("unit_mismatch: claim unit is absent from cited spans")
         pico_blocked = self.config.require_pico_when_claim_specified and any(
             getattr(claim, field) is not None and match is not MatchStatus.MATCH
             for field, match in matches.items()
@@ -161,6 +166,9 @@ class RuleBasedClaimVerifier:
             textual.entailment_score is None
             or textual.entailment_score < self.config.supported_entailment_threshold
         )
+        numeric_blocked = self.config.require_numeric_consistency and (
+            numeric_match is MatchStatus.MISMATCH or unit_match is MatchStatus.MISMATCH
+        )
         if conflicts or textual.status is VerificationStatus.CONTRADICTED:
             status = VerificationStatus.CONTRADICTED
         elif (
@@ -169,6 +177,7 @@ class RuleBasedClaimVerifier:
             or pico_blocked
             or time_blocked
             or entailment_blocked
+            or numeric_blocked
             or textual.status is not VerificationStatus.SUPPORTED
         ):
             status = VerificationStatus.INSUFFICIENT
@@ -189,12 +198,53 @@ class RuleBasedClaimVerifier:
             comparator_match=matches["comparator"],
             outcome_match=matches["outcome"],
             time_match=time_match,
+            numeric_match=numeric_match,
+            unit_match=unit_match,
             entailment_score=textual.entailment_score,
             conflict_ids=conflicts,
             uncertainty=claim.uncertainty,
             verification_method=textual.method,
             reasons=list(dict.fromkeys(reasons)),
         )
+
+    @staticmethod
+    def _numeric_unit_match(
+        claim: Claim, evidence: Sequence[EvidenceRecord]
+    ) -> tuple[MatchStatus, MatchStatus]:
+        claim_numbers = set(re.findall(r"(?<!\w)\d+(?:\.\d+)?", claim.text))
+        claim_units = {
+            unit.casefold()
+            for unit in re.findall(
+                r"(?<=\d)\s*(%|[a-zA-Zµμ]+(?:/[a-zA-Z]+)?)", claim.text
+            )
+            if unit.strip()
+        }
+        if not claim_numbers and not claim_units:
+            return MatchStatus.UNKNOWN, MatchStatus.UNKNOWN
+        allowed_span_ids = set(claim.evidence_span_ids)
+        cited_text = " ".join(
+            span.text
+            for record in evidence
+            for span in record.spans
+            if span.span_id in allowed_span_ids
+        )
+        if not cited_text:
+            return MatchStatus.UNKNOWN, MatchStatus.UNKNOWN
+        evidence_numbers = set(re.findall(r"(?<!\w)\d+(?:\.\d+)?", cited_text))
+        evidence_units = {
+            unit.casefold()
+            for unit in re.findall(
+                r"(?<=\d)\s*(%|[a-zA-Zµμ]+(?:/[a-zA-Z]+)?)", cited_text
+            )
+            if unit.strip()
+        }
+        numeric = (
+            MatchStatus.MATCH if claim_numbers <= evidence_numbers else MatchStatus.MISMATCH
+        ) if claim_numbers else MatchStatus.UNKNOWN
+        unit = (
+            MatchStatus.MATCH if claim_units <= evidence_units else MatchStatus.MISMATCH
+        ) if claim_units else MatchStatus.UNKNOWN
+        return numeric, unit
 
     @staticmethod
     def _match_metadata(

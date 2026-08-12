@@ -42,6 +42,18 @@ Base commit for A4 integration: `15c4f9b` (A4 branch fixes) incrementally ported
 - 合并 origin/main（含 A3 v0.2 提交 604d4ee 等）后全量 pytest 再次通过
 - 本机未安装 pixi（无 pixi.toml 环境），以 `python -m pytest` 与 `python main.py` 执行等价命令；CI 可运行 `pixi run test` / `pixi run demo` 复核
 
+## rerank round2/round3 修复同步（2026-08-12）
+
+`all_A12345_try` 快照恢复的 `retrieval/` 为 round2/round3 修复前的旧口径，已按 main
+（bea6304 / a4850e2）回补三处 P1，详见
+`docs/superpowers/reviews/2026-08-11-a4-rerank-round2-fixes.md` 的 backport 记录：
+
+1. `_weighted_score` 加权槽位改回 `source_quality` 表驱动（规划 §4.2/§4.5 w6*source_quality）。
+2. `_classify_query` 契约 `question_type` 优先于原文推导（round2 P1）。
+3. `_is_freshness_requested` 仅在明确时效需求时激活（round3 P1），恢复“旧但权威”反例。
+
+移植 5 条契约/回归测试（含索引版本不一致 fail-closed 拆分），重生成 smoke 评测 artifacts；全量 `540 passed, 3 skipped`。
+
 ## 仍待上游（P1，不阻塞 Adapter/Mock/contract tests）
 
 - A1：正式 question type、freshness/source policy、冻结 dev/test split、正式范围门禁（Gate0 数据）

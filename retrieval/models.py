@@ -90,6 +90,15 @@ class SearchStatus(str, Enum):
     FAILED = "failed"
 
 
+class RetrievalCondition(str, Enum):
+    """Frozen Track-3 ablation conditions from planning section 4.6."""
+
+    R0 = "R0"
+    R1 = "R1"
+    R2 = "R2"
+    R3 = "R3"
+
+
 class ReasonCode(str, Enum):
     """Structured degradation/decision codes (stable machine contract).
 
@@ -105,9 +114,9 @@ class ReasonCode(str, Enum):
     PIPELINE_FAILED = "pipeline_failed"
     EXCLUDED_INVALID = "excluded_invalid"
     NO_CANDIDATES = "no_candidates"
-    INDEX_VERSION_MISMATCH = "index_version_mismatch"
     PROVENANCE_UNKNOWN = "provenance_unknown"
     SPAN_UNAVAILABLE = "span_unavailable_a3_pending"
+    INDEX_VERSION_MISMATCH = "index_version_mismatch"
 
 
 @dataclass(frozen=True, slots=True)
@@ -169,6 +178,7 @@ class EvidenceChunk:
     content_hash: str = ""
     page: str = ""
     section: str = ""
+    span_refs: tuple[Mapping[str, object], ...] | Iterable[Mapping[str, object]] = ()
     token_count: int = 0
     # --- Gate1 source-provenance contract (5.7) ---
     # Structured stable identifiers; ``stable_id`` keeps the canonical
@@ -219,6 +229,11 @@ class EvidenceChunk:
             raise ValueError("is_tombstoned must be a bool")
         if not isinstance(self.page, str) or not isinstance(self.section, str):
             raise ValueError("page and section must be strings")
+        try:
+            span_refs = tuple(dict(item) for item in self.span_refs)
+        except (TypeError, ValueError) as error:
+            raise ValueError("span_refs must be an iterable of mappings") from error
+        object.__setattr__(self, "span_refs", tuple(MappingProxyType(item) for item in span_refs))
         if not isinstance(self.token_count, int) or isinstance(self.token_count, bool) or self.token_count < 0:
             raise ValueError("token_count must be a nonnegative integer")
         if not isinstance(self.content_hash, str):
@@ -234,6 +249,10 @@ class EvidenceChunk:
                 raise ValueError(f"{field_name} must be a string")
         if not isinstance(self.mock, bool):
             raise ValueError("mock must be a bool")
+        if self.mock and any((self.url, self.pmid, self.doi, self.nct_id, self.guideline_name)):
+            raise ValueError(
+                "mock evidence cannot carry real-world identifiers, URLs, or guideline IDs"
+            )
         if not isinstance(self.content_hash_mismatch, bool):
             raise ValueError("content_hash_mismatch must be a bool")
         # A3 chunk hash is upstream identity: a caller-supplied nonempty value
@@ -461,6 +480,51 @@ class RankLog:
 
 
 @dataclass(frozen=True, slots=True)
+class InitialCandidatePool:
+    """Immutable BM25/vector/RRF pool shared by R0--R3 for one query.
+
+    This is the fairness boundary for Track 3: downstream conditions may rank
+    or filter this pool, but may not retrieve additional evidence.
+    """
+
+    query_id: str
+    index_version: str
+    corpus_version: str
+    bm25_candidates: tuple[ScoredChunk, ...] | Iterable[ScoredChunk] = ()
+    vector_candidates: tuple[ScoredChunk, ...] | Iterable[ScoredChunk] = ()
+    fused_candidates: tuple[Candidate, ...] | Iterable[Candidate] = ()
+    degradation_reasons: tuple[str, ...] | Iterable[str] = ()
+    bm25_operational: bool = True
+    vector_operational: bool = True
+    stage_latency_ms: Mapping[str, int] = field(default_factory=dict)
+    pool_hash: str = ""
+
+    def __post_init__(self) -> None:
+        _require_nonblank(self.query_id, "query_id")
+        _require_nonblank(self.index_version, "index_version")
+        _require_nonblank(self.corpus_version, "corpus_version")
+        for field_name, expected_type in (
+            ("bm25_candidates", ScoredChunk),
+            ("vector_candidates", ScoredChunk),
+            ("fused_candidates", Candidate),
+        ):
+            object.__setattr__(
+                self,
+                field_name,
+                _normalize_typed_collection(getattr(self, field_name), expected_type, field_name),
+            )
+        object.__setattr__(
+            self,
+            "degradation_reasons",
+            _normalize_terms(self.degradation_reasons, "degradation_reasons"),
+        )
+        if not isinstance(self.bm25_operational, bool) or not isinstance(self.vector_operational, bool):
+            raise ValueError("channel operational flags must be bool")
+        object.__setattr__(self, "stage_latency_ms", _normalize_latency_map(self.stage_latency_ms))
+        _require_nonblank(self.pool_hash, "pool_hash")
+
+
+@dataclass(frozen=True, slots=True)
 class SearchResult:
     """The A4 hand-off payload for A5 answer generation and citation checks."""
 
@@ -480,6 +544,16 @@ class SearchResult:
     conflicts: tuple[tuple[str, str, str], ...] | Iterable[tuple[str, str, str]] = ()
     run_hash: str = ""
     reason_code_version: str = ""
+    condition: RetrievalCondition = RetrievalCondition.R1
+    initial_candidate_pool_hash: str = ""
+    stage_trace: tuple[str, ...] | Iterable[str] = ()
+    ranking_score_kind: str = "RANKING"
+    ranking_score_scope: str = "QUERY_LOCAL"
+    ranking_score_calibrated: bool = False
+    quality_scores: Mapping[str, float] = field(default_factory=dict)
+    quality_score_kind: str = "UNKNOWN"
+    quality_score_scope: str = "UNKNOWN"
+    quality_score_calibrated: bool = False
 
     def __post_init__(self) -> None:
         _require_nonblank(self.query_id, "query_id")
@@ -519,6 +593,34 @@ class SearchResult:
             raise ValueError("run_hash must be a string")
         if not isinstance(self.reason_code_version, str):
             raise ValueError("reason_code_version must be a string")
+        if not isinstance(self.condition, RetrievalCondition):
+            raise ValueError("condition must be a RetrievalCondition")
+        if not isinstance(self.initial_candidate_pool_hash, str):
+            raise ValueError("initial_candidate_pool_hash must be a string")
+        object.__setattr__(self, "stage_trace", _normalize_terms(self.stage_trace, "stage_trace"))
+        if self.ranking_score_kind != "RANKING" or self.ranking_score_scope != "QUERY_LOCAL":
+            raise ValueError("A4 relevance scores must remain query-local ranking scores")
+        if self.ranking_score_calibrated is not False:
+            raise ValueError("A4 ranking scores must not be marked calibrated")
+        quality_scores = dict(self.quality_scores)
+        for chunk_id, score in quality_scores.items():
+            _require_nonblank(chunk_id, "quality_scores key")
+            if not _is_float_representable_finite(score) or not 0.0 <= float(score) <= 1.0:
+                raise ValueError("quality_scores values must be finite probabilities in [0, 1]")
+        object.__setattr__(self, "quality_scores", MappingProxyType(quality_scores))
+        if quality_scores:
+            if (
+                self.quality_score_kind != "QUALITY"
+                or self.quality_score_scope != "CROSS_QUERY"
+                or self.quality_score_calibrated is not True
+            ):
+                raise ValueError("quality scores require explicit calibrated cross-query semantics")
+        elif (
+            self.quality_score_kind != "UNKNOWN"
+            or self.quality_score_scope != "UNKNOWN"
+            or self.quality_score_calibrated is not False
+        ):
+            raise ValueError("missing quality scores must remain UNKNOWN and uncalibrated")
 
 
 def _normalize_latency_map(value: Mapping[str, int]) -> Mapping[str, int]:

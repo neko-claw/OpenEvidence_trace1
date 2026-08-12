@@ -1,9 +1,13 @@
 from __future__ import annotations
 
 from collections.abc import Sequence
-from datetime import datetime, timezone
+from datetime import date
 
-from a5.domain.enums import FreshnessState, RecommendedAction, SufficiencyStatus
+from a5.domain.enums import (
+    FreshnessState,
+    RecommendedAction,
+    SufficiencyStatus,
+)
 from a5.domain.models import (
     EvidenceRecord,
     EvidenceSufficiencyMetrics,
@@ -24,10 +28,29 @@ class EvidenceSufficiencyGate:
         *,
         freshness_required: bool,
         budget_remaining: int,
+        as_of_date: date,
     ) -> EvidenceSufficiencyResult:
         candidate_count = len(evidence)
-        scores = [record.retrieval_score for record in evidence if record.retrieval_score is not None]
-        top_score = max(scores) if scores else None
+        ranking_scores = [
+            score
+            for record in evidence
+            if (score := record.source_metadata.get("ranking_score")) is not None
+            and isinstance(score, (int, float))
+            and not isinstance(score, bool)
+            and 0.0 <= float(score) <= 1.0
+        ]
+        quality_scores = [
+            record.retrieval_score
+            for record in evidence
+            if record.retrieval_score is not None
+            and record.retrieval_score_kind is self.config.required_score_kind
+            and record.retrieval_score_scope is self.config.required_score_scope
+            and (
+                not self.config.require_calibrated_score
+                or record.retrieval_score_calibrated is True
+            )
+        ]
+        top_score = max(quality_scores) if quality_scores else None
         source_types = {record.source_type for record in evidence}
         source_diversity = len(source_types) / candidate_count if candidate_count else None
         strongest_level = next(
@@ -44,10 +67,12 @@ class EvidenceSufficiencyGate:
             for other_id in record.conflicts_with_ids
             if any(other.id == other_id for other in evidence)
         }
-        freshness = self._freshness(evidence, freshness_required)
+        freshness = self._freshness(evidence, freshness_required, as_of_date)
         metrics = EvidenceSufficiencyMetrics(
             candidate_count=candidate_count,
             top_score=top_score,
+            top_ranking_score=max(ranking_scores) if ranking_scores else None,
+            usable_quality_score_count=len(quality_scores),
             source_type_count=len(source_types),
             source_diversity=source_diversity,
             strongest_evidence_level=strongest_level,
@@ -58,7 +83,7 @@ class EvidenceSufficiencyGate:
         if candidate_count < self.config.min_candidates:
             reasons.append("retrieval_insufficient: candidate_count below threshold")
         if top_score is None:
-            reasons.append("retrieval_insufficient: top_score UNKNOWN")
+            reasons.append("retrieval_insufficient: calibrated cross-query quality score UNKNOWN")
         elif top_score < self.config.min_top_score:
             reasons.append("retrieval_insufficient: top_score below threshold")
         if len(source_types) < self.config.min_source_types:
@@ -96,14 +121,16 @@ class EvidenceSufficiencyGate:
         self,
         evidence: Sequence[EvidenceRecord],
         required: bool,
+        as_of_date: date,
     ) -> FreshnessState:
         if not required:
             return FreshnessState.NOT_REQUIRED
         if not evidence or any(record.published_at is None for record in evidence):
             return FreshnessState.UNKNOWN
-        now = datetime.now(timezone.utc)
+        if any(record.published_at.date() > as_of_date for record in evidence if record.published_at):
+            return FreshnessState.STALE
         fresh = sum(
-            (now - record.published_at).days <= self.config.max_age_days
+            (as_of_date - record.published_at.date()).days <= self.config.max_age_days
             for record in evidence
             if record.published_at is not None
         )

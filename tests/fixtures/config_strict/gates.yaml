@@ -2,9 +2,16 @@
   "config_version": "test-strict-0.2.0",
   "threshold_status": "development_default_not_clinically_validated",
   "gate0_version": "0.2.0",
+  "gate1_version": "0.3.0",
   "gate2_version": "0.2.0",
+  "gate3_version": "0.4.0",
+  "gate4_version": "0.4.0",
   "gate5_version": "0.2.0",
   "gate6_version": "0.2.0",
+  "gate1": {
+    "required_source_metadata": ["stable_id", "url", "fetched_at", "content_hash"],
+    "accepted_integrity_markers": ["a2_mcp_normalized", "a3_provenance_validated", "a4_a3_provenance_validated"]
+  },
   "gate2": {
     "min_candidates": 2,
     "min_top_score": 0.95,
@@ -13,13 +20,17 @@
     "accepted_evidence_levels": ["guideline", "systematic_review", "controlled_study"],
     "max_age_days": 1825,
     "min_fresh_fraction": 0.50,
-    "max_conflicts": 0
+    "max_conflicts": 0,
+    "required_score_kind": "QUALITY",
+    "required_score_scope": "CROSS_QUERY",
+    "require_calibrated_score": true
   },
   "gate5": {
     "require_span": true,
     "require_pico_when_claim_specified": true,
     "require_time_when_fresh": true,
-    "supported_entailment_threshold": 1.0
+    "supported_entailment_threshold": 1.0,
+    "require_numeric_consistency": true
   },
   "gate6": {"critical_allowed_uncertainty": ["LOW", "MEDIUM"]}
 }

@@ -10,12 +10,14 @@ def _chunk(**changes: object) -> EvidenceChunk:
     values: dict[str, object] = {
         "chunk_id": "c1",
         "evidence_id": "e1",
-        "stable_id": "PMID:100001",
-        "text": "A randomized trial result.",
+        "stable_id": "PMID:31452104",
+        "text": "Molegro Virtual Docker is a protein-ligand docking simulation program.",
         "source_type": "pubmed",
-        "url": "https://pubmed.ncbi.nlm.nih.gov/100001/",
-        "published_at": "2024-01-15",
+        "url": "https://pubmed.ncbi.nlm.nih.gov/31452104/",
+        "pmid": "31452104",
+        "published_at": "2019-01-01",
         "fetched_at": "2026-08-10T09:00:00Z",
+        "mock": False,
     }
     values.update(changes)
     return EvidenceChunk(**values)  # type: ignore[arg-type]
@@ -53,8 +55,15 @@ def test_missing_published_at_fails_gate_for_non_guideline() -> None:
 def test_guideline_with_versioned_name_passes_without_date() -> None:
     chunk = _chunk(
         source_type="guideline",
-        stable_id="GUIDELINE:CN-Hypertension-2024",
-        guideline_name="中国高血压防治指南（2024年修订版）",
+        stable_id="PMID:40811497",
+        title=(
+            "2025 AHA/ACC/AANP/AAPA/ABC/ACCP/ACPM/AGS/AMA/ASPC/NMA/PCNA/SGIM "
+            "Guideline for High Blood Pressure in Adults"
+        ),
+        text="The guideline updates prevention, detection, evaluation and management of high blood pressure.",
+        url="https://pubmed.ncbi.nlm.nih.gov/40811497/",
+        pmid="40811497",
+        guideline_name="2025 AHA/ACC High Blood Pressure Guideline",
         published_at=None,
     )
 

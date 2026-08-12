@@ -26,10 +26,11 @@ def _chunk(chunk_id: str) -> EvidenceChunk:
     return EvidenceChunk(
         chunk_id=chunk_id,
         evidence_id=f"evidence-{chunk_id}",
-        stable_id=f"PMID:{chunk_id}",
+        stable_id=f"upstream:MOCK-A4-{chunk_id}",
         text="Clinical evidence snippet.",
         source_type="pubmed",
         evidence_level="rct",
+        mock=True,
     )
 
 
@@ -50,19 +51,25 @@ def test_cross_encoder_loads_lazily_and_blends_scores() -> None:
         calls.append(name)
         return FakeCrossEncoder([0.9, 0.5])
 
-    scorer = CrossEncoderScorer(model_name="reranker", model_factory=factory)
+    scorer = CrossEncoderScorer(
+        model_name="reranker", model_factory=factory, score_semantics="probability"
+    )
     assert calls == []
 
     candidates = scorer.score(_query(), [_candidate("c1", 0.6), _candidate("c2", 0.6)])
 
     assert calls == ["reranker"]
-    assert candidates[0].feature_scores["cross_encoder_score"] == pytest.approx(0.9)
+    assert candidates[0].feature_scores["cross_encoder_raw_score"] == pytest.approx(0.9)
+    assert candidates[0].feature_scores["cross_encoder_calibrated_score"] == pytest.approx(0.9)
     assert candidates[0].feature_scores["s_final"] == pytest.approx(0.5 * 0.9 + 0.5 * 0.6)
     assert candidates[0].feature_scores["s_final"] > candidates[1].feature_scores["s_final"]
 
 
 def test_cross_encoder_orders_by_blended_score() -> None:
-    scorer = CrossEncoderScorer(model_factory=lambda name: FakeCrossEncoder([0.2, 0.95]))
+    scorer = CrossEncoderScorer(
+        model_factory=lambda name: FakeCrossEncoder([0.2, 0.95]),
+        score_semantics="probability",
+    )
 
     ranked = scorer.score(_query(), [_candidate("a", 0.9), _candidate("b", 0.5)])
 
@@ -73,17 +80,39 @@ def test_cross_encoder_raises_stable_error_on_load_failure() -> None:
     def factory(name: str) -> FakeCrossEncoder:
         raise RuntimeError("no weights")
 
-    scorer = CrossEncoderScorer(model_factory=factory)
+    scorer = CrossEncoderScorer(model_factory=factory, score_semantics="probability")
 
     with pytest.raises(CrossEncoderError, match="cross_encoder"):
         scorer.score(_query(), [_candidate("c1", 0.5)])
 
 
 def test_cross_encoder_rejects_nonfinite_scores() -> None:
-    scorer = CrossEncoderScorer(model_factory=lambda name: FakeCrossEncoder([math.nan]))
+    scorer = CrossEncoderScorer(
+        model_factory=lambda name: FakeCrossEncoder([math.nan]), score_semantics="probability"
+    )
 
     with pytest.raises(CrossEncoderError, match="finite"):
         scorer.score(_query(), [_candidate("c1", 0.5)])
+
+
+def test_cross_encoder_raw_logits_are_pending_without_calibration() -> None:
+    scorer = CrossEncoderScorer(model_factory=lambda name: FakeCrossEncoder([4.2]))
+
+    with pytest.raises(CrossEncoderError, match="PENDING"):
+        scorer.score(_query(), [_candidate("c1", 0.5)])
+
+
+def test_cross_encoder_applies_explicit_calibration_before_blending() -> None:
+    scorer = CrossEncoderScorer(
+        model_factory=lambda name: FakeCrossEncoder([4.0]),
+        score_transform=lambda raw: 0.8 if raw == 4.0 else 0.0,
+    )
+
+    result = scorer.score(_query(), [_candidate("c1", 0.6)])[0]
+
+    assert result.feature_scores["cross_encoder_raw_score"] == 4.0
+    assert result.feature_scores["cross_encoder_calibrated_score"] == 0.8
+    assert result.feature_scores["s_final"] == pytest.approx(0.7)
 
 
 def test_adapt_k_shrinks_for_precise_guideline_questions() -> None:
@@ -117,5 +146,4 @@ def test_adapt_k_keeps_defaults_for_generic_questions() -> None:
     query = _query(question_type="generic", freshness="generic", text="一般问题")
     k1, k2, actions = adapt_k(query, RetrievalConfig())
 
-    # selection_top_k 默认 8，与冻结 config/retrieval-p0-v1.yaml 一致（round2 P2 修复）。
     assert (k1, k2) == (25, 8)

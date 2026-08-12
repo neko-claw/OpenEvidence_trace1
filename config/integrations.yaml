@@ -1,0 +1,102 @@
+{
+  "config_version": "a5-upstream-adapters-v0.3.0",
+  "status": "branch_contracts_reviewed_not_main_integrated",
+  "a1": {
+    "contract_version": "question-v0.2+safety-v0.2+agent-termination-v0.2",
+    "source_ref": "commit-b3e1ea6",
+    "status": "reviewed_branch_contract"
+  },
+  "a2": {
+    "contract_version": "a2-evidence-v1+mcp-tools-v1",
+    "source_ref": "commit-881025a",
+    "status": "reviewed_branch_contract"
+  },
+  "a3": {
+    "contract_version": "a3-compat-v0.3",
+    "source_ref": "commit-91a9180",
+    "status": "reviewed_branch_contract"
+  },
+  "a4": {
+    "contract_version": "a4-search-result-21ad3a0",
+    "source_ref": "commit-21ad3a0",
+    "status": "reviewed_branch_contract_blocked_on_rerank_evidence"
+  },
+  "embedding_capability": {
+    "owner": "A3",
+    "enabled": false,
+    "status": "pending_real_dev_recall_at_50_latency_and_reproducibility",
+    "model": "BAAI/bge-m3",
+    "required_dev_metrics": ["Recall@50", "latency_ms", "index_rebuild_reproducibility"]
+  },
+  "cross_encoder_capability": {
+    "owner": "A4",
+    "enabled": false,
+    "status": "pending_real_dev_ablation_calibration_and_latency",
+    "model": null,
+    "required_dev_metrics": ["nDCG@10_delta_R2_vs_R1", "latency_ms", "score_calibration"]
+  },
+  "a2_tool_names": {
+    "pubmed": "search_pubmed",
+    "pubmed_review": "search_pubmed",
+    "pubmed_trial": "search_pubmed",
+    "systematic_review": "search_pubmed",
+    "primary_study": "search_pubmed",
+    "controlled_study": "search_pubmed",
+    "clinicaltrials": "search_trials",
+    "clinicaltrials_record": "search_trials",
+    "guideline": "search_guidelines",
+    "current_guideline": "search_guidelines",
+    "europe_pmc": "search_europe_pmc"
+  },
+  "a2_search_limit": 10,
+  "a2_gate1_required_fields": [
+    "id",
+    "source_type",
+    "published_at",
+    "url",
+    "fetched_at",
+    "content_hash"
+  ],
+  "a2_response_ok_field": "ok",
+  "a2_response_items_field": "evidence",
+  "a4_question_type_map": {
+    "stable_mechanism": "generic",
+    "guideline_treatment": "guideline",
+    "latest_research_trial": "latest_trial",
+    "insufficient_conflict_out_of_scope": "generic",
+    "treatment_evidence": "therapy",
+    "diagnostic_evidence": "diagnosis",
+    "general_evidence": "generic"
+  },
+  "a4_freshness_map": {
+    "stable_mechanism": "generic",
+    "guideline_treatment": "current",
+    "latest_research_trial": "latest",
+    "insufficient_conflict_out_of_scope": "generic",
+    "treatment_evidence": "current",
+    "diagnostic_evidence": "current",
+    "general_evidence": "generic"
+  },
+  "a4_source_type_map": {
+    "pubmed": "pubmed",
+    "pubmed_review": "pubmed",
+    "pubmed_trial": "pubmed",
+    "systematic_review": "pubmed",
+    "primary_study": "pubmed",
+    "controlled_study": "pubmed",
+    "clinicaltrials": "clinical_trials",
+    "clinicaltrials_record": "clinical_trials",
+    "guideline": "guideline",
+    "current_guideline": "guideline",
+    "europe_pmc": "europe_pmc"
+  },
+  "a4_topic_map": {
+    "stable_mechanism": "generic",
+    "guideline_treatment": "therapy",
+    "latest_research_trial": "therapy",
+    "insufficient_conflict_out_of_scope": "generic",
+    "treatment_evidence": "therapy",
+    "diagnostic_evidence": "diagnosis",
+    "general_evidence": "generic"
+  }
+}

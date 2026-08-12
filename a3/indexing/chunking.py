@@ -18,7 +18,7 @@ class ChunkPolicy:
 
 
 _BOUNDARY = re.compile(r"[。！？；.!?;\n]")
-_SENTENCE = re.compile(r".+?(?:[。！？；.!?;]+(?=\s|$)|\n+|$)", re.S)
+_SENTENCE = re.compile(r".+?(?:[。！？；]+|[.!?;]+(?=\s|$)|\n+|$)", re.S)
 
 
 def _page_locator(raw_page: str | None) -> tuple[int | None, str | None]:

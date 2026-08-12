@@ -1,19 +1,39 @@
 {
-  "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "title": "EvidenceResearchInput",
-  "type": "object",
+  "$defs": {
+    "Question": {
+      "additionalProperties": false,
+      "properties": {
+        "question_id": {
+          "title": "Question Id",
+          "type": "string"
+        },
+        "text": {
+          "minLength": 1,
+          "title": "Text",
+          "type": "string"
+        },
+        "metadata": {
+          "additionalProperties": true,
+          "title": "Metadata",
+          "type": "object"
+        }
+      },
+      "required": [
+        "text"
+      ],
+      "title": "Question",
+      "type": "object"
+    }
+  },
   "additionalProperties": false,
-  "required": ["question"],
   "properties": {
     "question": {
-      "type": "object",
-      "additionalProperties": false,
-      "required": ["text"],
-      "properties": {
-        "question_id": {"type": "string"},
-        "text": {"type": "string", "minLength": 1},
-        "metadata": {"type": "object"}
-      }
+      "$ref": "#/$defs/Question"
     }
-  }
+  },
+  "required": [
+    "question"
+  ],
+  "title": "EvidenceResearchInput",
+  "type": "object"
 }

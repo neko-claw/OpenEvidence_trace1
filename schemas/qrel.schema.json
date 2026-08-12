@@ -1,0 +1,48 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://openevidence.local/schemas/qrel.schema.json",
+  "title": "OpenEvidence Qrel v0.1",
+  "description": "按《实施规划 v0.5》§3.1 冻结的七类数据契约之一。主责为 B2，A1 提供本 schema 与 atomic_point_id 命名基础（取 questions.jsonl 的 critical_answer_points 序号）。A1 阶段 qrels 数据为空，B2 完成 A2 摄入后人工标注。",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "question_id",
+    "atomic_point_id",
+    "evidence_id",
+    "evidence_span_id",
+    "relevance_grade",
+    "stance",
+    "valid_from",
+    "valid_to",
+    "reviewer",
+    "adjudication"
+  ],
+  "properties": {
+    "question_id": {
+      "type": "string",
+      "pattern": "^(DEV|TEST|STRESS|EXTERNAL|RESERVE)-(HTN|LIP)-[0-9]{2,3}$"
+    },
+    "atomic_point_id": {
+      "type": "string",
+      "description": "对应 questions.jsonl 中 critical_answer_points 的原子评分点，格式 <question_id>-P<NN>，由 A1 提供命名约定。"
+    },
+    "evidence_id": { "type": "string", "description": "A2 摄入后生成的 Evidence ID；A1 阶段不得填充。" },
+    "evidence_span_id": { "type": "string", "description": "Evidence 内可定位 span ID；由 A3 分块产生。" },
+    "relevance_grade": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 3,
+      "description": "0=不相关，1=相关但不足，2=支持性证据，3=gold 级支持。阈值由 B2 冻结。"
+    },
+    "stance": {
+      "enum": ["support", "contradict", "neutral", "not_applicable"]
+    },
+    "valid_from": { "type": "string", "format": "date", "description": "证据时点有效期的起点。" },
+    "valid_to": { "type": ["string", "null"], "format": "date", "description": "证据时点有效期终点；null 表示当前仍有效（如未撤稿）。" },
+    "reviewer": { "type": "string", "description": "B2 人工核验者标识。" },
+    "adjudication": {
+      "enum": ["unreviewed", "accepted", "disputed", "rejected"],
+      "description": "A1 阶段一律为 unreviewed。"
+    }
+  }
+}

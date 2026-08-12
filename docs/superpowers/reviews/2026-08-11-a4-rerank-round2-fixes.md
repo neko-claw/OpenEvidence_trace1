@@ -90,3 +90,33 @@ python -m scripts.run_dev_eval   # 冻结配置 smoke 评测（指标口径不�
 - **遗留口径**："最新指南"类问题（含时效词 + 指南）仍启用时效特征，与
   纯指南类行为的差异是刻意的；如需为指南类设置更缓的衰减窗口（而非禁用），
   列为 P1 增强项，须在开发集上验证。
+
+## 【round3 P1】时效特征激活范围过宽 — 已修复（2026-08-12）
+
+round2 契约优先改动把 `_is_freshness_requested` 激活范围扩大到所有
+`freshness=current` 查询；`query_plan` 将纯指南类问题映射为
+`freshness=current`，导致 0.10 的 freshness 权重把 2015 权威指南压到
+2024 RCT 之后（0.882 < 0.909）。
+
+修正：仅在 `freshness=latest` / `question_type=latest_trial` / 原文含时效词时
+激活衰减；纯指南类问题恢复证据等级主导（规划 §4.2“旧但权威”反例要求）。
+新增回归测试
+`tests/test_rerank.py::test_old_authoritative_guideline_keeps_lead_over_recent_rct`；
+同步重生成 smoke 评测 artifacts。385 tests passed（main 侧）。
+
+## 【backport 记录】all_A12345_try 快照恢复缺失 round2/round3 修复 — 已同步
+
+`all_A12345_try` 分支是工作区迁移后的 A1-A5 整合快照，其 `retrieval/` 恢复的是
+round2/round3 修复前的旧口径代码。本轮按 main（a4850e2）口径回补三处 P1：
+
+1. `_weighted_score` 加权槽位从 `source_reliability`（provenance 完整性）改回
+   `source_quality`（`source_quality_table` 表驱动），与规划 §4.2/§4.5 公式
+   w6*source_quality 一致；`test_rank_reallocates_unavailable_pico_weight_*`
+   断言同步更新。
+2. `_classify_query` 契约 `question_type` 优先于原文关键词推导（round2 P1）。
+3. `_is_freshness_requested` 仅在明确时效需求（契约 latest/latest_trial 或原文
+   时效词）时激活（round3 P1）。
+
+同时移植 5 条契约/回归测试（索引版本不一致 fail-closed 测试拆分，见
+`tests/test_service.py::test_search_fails_closed_on_index_version_mismatch`）并重生成
+smoke 评测 artifacts。验证：全量 `540 passed, 3 skipped`（3 项为 live API 跳过）。

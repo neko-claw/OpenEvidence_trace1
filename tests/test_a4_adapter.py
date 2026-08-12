@@ -21,16 +21,17 @@ def _chunk(chunk_id: str, **changes: object) -> EvidenceChunk:
     values: dict[str, object] = {
         "chunk_id": chunk_id,
         "evidence_id": f"evidence-{chunk_id}",
-        "stable_id": f"PMID:{chunk_id}",
+        "stable_id": f"upstream:MOCK-A4-{chunk_id}",
         "text": f"Clinical evidence about {chunk_id} for hypertension treatment.",
         "title": f"Study of {chunk_id}",
         "source_type": "pubmed",
-        "url": "https://example.invalid/source",
+        "url": "",
         "evidence_level": "rct",
         "topic": "hypertension",
         "published_at": "2024-01-15",
         "evidence_content_hash": "upstream-evidence-hash",
         "content_hash": "upstream-chunk-hash",
+        "mock": True,
         "index_version": "idx-bridge",
         "corpus_version": "corpus-bridge",
     }
@@ -87,7 +88,9 @@ def _question(**changes: object) -> Question:
     return Question(**values)  # type: ignore[arg-type]
 
 
-def _ok_result(chunks: tuple[EvidenceChunk, ...]) -> SearchResult:
+def _ok_result(
+    chunks: tuple[EvidenceChunk, ...], *, calibrated_quality: float | None = None
+) -> SearchResult:
     from retrieval.models import RankLog, ScoredChunk, Candidate
 
     candidates = [
@@ -125,6 +128,14 @@ def _ok_result(chunks: tuple[EvidenceChunk, ...]) -> SearchResult:
         stage_latency_ms={"total": 12},
         run_hash="run-hash-abc",
         reason_code_version="reason-codes-v1",
+        quality_scores=(
+            {chunk.chunk_id: calibrated_quality for chunk in chunks}
+            if calibrated_quality is not None
+            else {}
+        ),
+        quality_score_kind="QUALITY" if calibrated_quality is not None else "UNKNOWN",
+        quality_score_scope="CROSS_QUERY" if calibrated_quality is not None else "UNKNOWN",
+        quality_score_calibrated=calibrated_quality is not None,
     )
 
 
@@ -215,15 +226,33 @@ def test_selected_chunks_map_to_evidence_records() -> None:
     assert record.id == "evidence-c1::c1"  # 冻结的 citation_id_rule
     assert record.content == chunk.text
     assert record.source_type == "pubmed"
-    assert record.retrieval_score == pytest.approx(0.9)
+    assert record.retrieval_score is None
+    assert record.source_metadata["ranking_score"] == pytest.approx(0.9)
     assert record.published_at is not None
     assert record.population == "older adults"
     assert record.intervention == "amlodipine"
     assert record.outcome == "blood pressure"
-    assert record.mock is False
+    assert record.mock is True
     assert record.source_metadata["evidence_content_hash"] == "upstream-evidence-hash"
     assert record.source_metadata["chunk_content_hash"] == "upstream-chunk-hash"
     assert record.source_metadata["provenance_unknown"] is False
+
+
+def test_only_explicit_calibrated_quality_enters_gate2_score_contract() -> None:
+    chunk = _chunk("quality")
+    adapter = A4EvidenceRetrieverAdapter(
+        FakeService(_ok_result((chunk,), calibrated_quality=0.82)), _config()
+    )
+
+    payload = adapter.retrieve(
+        _question(), _plan(), RetrievalRequest(source_type="pubmed", tool_call_index=1)
+    )
+
+    record = payload.evidence[0]
+    assert record.retrieval_score == pytest.approx(0.82)
+    assert record.retrieval_score_kind.value == "QUALITY"
+    assert record.retrieval_score_scope.value == "CROSS_QUERY"
+    assert record.retrieval_score_calibrated is True
 
 
 def test_spans_stay_empty_and_never_synthesized() -> None:

@@ -14,9 +14,10 @@ def _chunk(chunk_id: str, **changes: object) -> EvidenceChunk:
     values: dict[str, object] = {
         "chunk_id": chunk_id,
         "evidence_id": f"evidence-{chunk_id}",
-        "stable_id": f"PMID:{chunk_id}",
+        "stable_id": f"upstream:MOCK-A4-{chunk_id}",
         "text": "Clinical evidence snippet.",
         "source_type": "pubmed",
+        "mock": True,
     }
     values.update(changes)
     return EvidenceChunk(**values)  # type: ignore[arg-type]
@@ -89,8 +90,8 @@ def test_select_mmr_never_rewards_an_anti_correlated_vector() -> None:
 
 def test_select_mmr_enforces_document_and_source_caps() -> None:
     logs = (
-        _rank_log("doc-first", score=0.95, rank=1, evidence_id="same-document", stable_id="PMID:shared", source_type="pubmed"),
-        _rank_log("doc-second", score=0.94, rank=2, evidence_id="same-document", stable_id="PMID:shared", source_type="pubmed"),
+        _rank_log("doc-first", score=0.95, rank=1, evidence_id="same-document", stable_id="upstream:MOCK-A4-SHARED", source_type="pubmed"),
+        _rank_log("doc-second", score=0.94, rank=2, evidence_id="same-document", stable_id="upstream:MOCK-A4-SHARED", source_type="pubmed"),
         _rank_log("pubmed-second", score=0.93, rank=3, source_type="PubMed"),
         _rank_log("pubmed-third", score=0.92, rank=4, source_type="pubmed"),
         _rank_log("guideline", score=0.91, rank=5, source_type="guideline"),
@@ -107,9 +108,9 @@ def test_select_mmr_enforces_document_and_source_caps() -> None:
 
 def test_select_mmr_document_cap_uses_stable_id_across_distinct_evidence_records() -> None:
     logs = (
-        _rank_log("first-source", score=0.95, rank=1, evidence_id="evidence-a", stable_id="PMID:shared", source_type="pubmed"),
-        _rank_log("second-source", score=0.94, rank=2, evidence_id="evidence-b", stable_id="PMID:shared", source_type="guideline"),
-        _rank_log("independent", score=0.93, rank=3, evidence_id="evidence-c", stable_id="PMID:independent", source_type="guideline"),
+        _rank_log("first-source", score=0.95, rank=1, evidence_id="evidence-a", stable_id="upstream:MOCK-A4-SHARED", source_type="pubmed"),
+        _rank_log("second-source", score=0.94, rank=2, evidence_id="evidence-b", stable_id="upstream:MOCK-A4-SHARED", source_type="guideline"),
+        _rank_log("independent", score=0.93, rank=3, evidence_id="evidence-c", stable_id="upstream:MOCK-A4-INDEPENDENT", source_type="guideline"),
     )
 
     selected = select_mmr(

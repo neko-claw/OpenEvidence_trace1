@@ -1,0 +1,12 @@
+{
+  "status": "BLOCKED_EXTERNAL",
+  "eligible_for_formal_claims": false,
+  "dataset_id": "a5-independent-verification-gold-pending",
+  "blockers": [
+    "MISSING_SOURCE",
+    "MISSING_LICENSE_OR_PERMISSION",
+    "MISSING_ANNOTATION_METHOD",
+    "GOLD_OR_QREL_NOT_REVIEWED",
+    "MISSING_DATA_PATH"
+  ]
+}

@@ -44,6 +44,7 @@ from a5.domain.models import (
     RetrievalResult,
     SearchPlan,
 )
+from a5.domain.enums import RetrievalScoreKind, RetrievalScoreScope
 from a5.ports.evidence_retriever import EvidenceRetriever
 
 from retrieval.config import RetrievalConfig
@@ -146,8 +147,12 @@ class A4EvidenceRetrieverAdapter:
     ) -> RetrievalResult:
         evidence = [
             record
-            for chunk, score in self._selected_with_scores(result)
-            if (record := self._to_evidence_record(chunk, score, result)) is not None
+            for chunk, quality_score, ranking_score in self._selected_with_scores(result)
+            if (
+                record := self._to_evidence_record(
+                    chunk, quality_score, ranking_score, result
+                )
+            ) is not None
         ]
         diagnostics = self._build_diagnostics(question, plan, request, result, query)
         return RetrievalResult(
@@ -156,9 +161,15 @@ class A4EvidenceRetrieverAdapter:
             diagnostics=diagnostics,
         )
 
-    def _selected_with_scores(self, result: SearchResult) -> list[tuple[Any, float | None]]:
-        """Selected chunks with their rerank score from the rank log (0..1)."""
-        score_by_id: dict[str, float] = {}
+    def _selected_with_scores(
+        self, result: SearchResult
+    ) -> list[tuple[Any, float | None, float | None]]:
+        """Return separate calibrated quality and query-local ranking scores.
+
+        A4 ranking values are diagnostic only.  They must never be clamped or
+        relabeled as Gate2 evidence-quality probabilities.
+        """
+        ranking_by_id: dict[str, float] = {}
         for log in result.rank_log:
             if log.candidate is None or log.candidate.chunk.chunk_id not in {
                 chunk.chunk_id for chunk in result.selected_chunks
@@ -166,9 +177,20 @@ class A4EvidenceRetrieverAdapter:
                 continue
             score = log.candidate.rerank_score
             if score is not None:
-                score_by_id[log.candidate.chunk.chunk_id] = max(0.0, min(1.0, float(score)))
+                ranking_by_id[log.candidate.chunk.chunk_id] = float(score)
+        quality_by_id = (
+            dict(result.quality_scores)
+            if result.quality_score_kind == "QUALITY"
+            and result.quality_score_scope == "CROSS_QUERY"
+            and result.quality_score_calibrated is True
+            else {}
+        )
         return [
-            (chunk, score_by_id.get(chunk.chunk_id))
+            (
+                chunk,
+                quality_by_id.get(chunk.chunk_id),
+                ranking_by_id.get(chunk.chunk_id),
+            )
             for chunk in result.selected_chunks
         ]
 
@@ -186,7 +208,8 @@ class A4EvidenceRetrieverAdapter:
     def _to_evidence_record(
         self,
         chunk: Any,
-        score: float | None,
+        quality_score: float | None,
+        ranking_score: float | None,
         result: SearchResult,
     ) -> EvidenceRecord:
         """Map one A4 chunk onto the narrow A5 ``EvidenceRecord`` view."""
@@ -225,13 +248,28 @@ class A4EvidenceRetrieverAdapter:
                 "provenance_unknown": not chunk.provenance_complete,
                 "page": chunk.page,
                 "section": chunk.section,
+                "ranking_score": ranking_score,
+                "ranking_score_kind": result.ranking_score_kind,
+                "ranking_score_scope": result.ranking_score_scope,
+                "ranking_score_calibrated": result.ranking_score_calibrated,
             },
             population=", ".join(chunk.pico_population) or None,
             intervention=", ".join(chunk.pico_intervention) or None,
             comparator=", ".join(chunk.pico_comparator) or None,
             outcome=", ".join(chunk.pico_outcome) or None,
             published_at=published_at,
-            retrieval_score=score,
+            retrieval_score=quality_score,
+            retrieval_score_kind=(
+                RetrievalScoreKind.QUALITY
+                if quality_score is not None
+                else RetrievalScoreKind.UNKNOWN
+            ),
+            retrieval_score_scope=(
+                RetrievalScoreScope.CROSS_QUERY
+                if quality_score is not None
+                else RetrievalScoreScope.UNKNOWN
+            ),
+            retrieval_score_calibrated=True if quality_score is not None else None,
             evidence_level=chunk.evidence_level,
             spans=spans,
             conflicts_with_ids=conflicts,
@@ -288,6 +326,17 @@ class A4EvidenceRetrieverAdapter:
                 "corpus_version": result.corpus_version,
                 "rerank_config_version": result.rerank_config_version,
                 "reason_code_version": result.reason_code_version,
+            },
+            "ranking_score_semantics": {
+                "kind": result.ranking_score_kind,
+                "scope": result.ranking_score_scope,
+                "calibrated": result.ranking_score_calibrated,
+            },
+            "quality_score_semantics": {
+                "kind": result.quality_score_kind,
+                "scope": result.quality_score_scope,
+                "calibrated": result.quality_score_calibrated,
+                "count": len(result.quality_scores),
             },
             "run_hash": result.run_hash,
             "config_snapshot": self._config_snapshot(),

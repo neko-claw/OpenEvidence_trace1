@@ -27,7 +27,7 @@ def test_bm25_matches_contiguous_chinese_terms(evidence_chunks: tuple[EvidenceCh
 
 def test_bm25_matches_overlapping_chinese_phrases() -> None:
     index = BM25Index(
-        (EvidenceChunk("chunk-chinese-overlap", "e-chinese-overlap", "GUIDELINE:4", "老年高血压患者用药建议"),)
+        (EvidenceChunk("chunk-chinese-overlap", "e-chinese-overlap", "upstream:MOCK-A4-4", "老年高血压患者用药建议", mock=True),)
     )
 
     results = index.search("老年高血压", k=1)
@@ -36,13 +36,13 @@ def test_bm25_matches_overlapping_chinese_phrases() -> None:
 
 
 def test_bm25_does_not_match_reordered_chinese_characters() -> None:
-    index = BM25Index((EvidenceChunk("chunk-reordered", "e-reordered", "GUIDELINE:5", "压血高年老"),))
+    index = BM25Index((EvidenceChunk("chunk-reordered", "e-reordered", "upstream:MOCK-A4-5", "压血高年老", mock=True),))
 
     assert index.search("老年高血压", k=1) == []
 
 
 def test_bm25_does_not_match_a_single_chinese_character() -> None:
-    index = BM25Index((EvidenceChunk("chunk-single-cjk", "e-single-cjk", "GUIDELINE:6", "年"),))
+    index = BM25Index((EvidenceChunk("chunk-single-cjk", "e-single-cjk", "upstream:MOCK-A4-6", "年", mock=True),))
 
     assert index.search("年", k=1) == []
 
@@ -50,8 +50,8 @@ def test_bm25_does_not_match_a_single_chinese_character() -> None:
 def test_bm25_orders_equal_scores_by_chunk_id() -> None:
     index = BM25Index(
         (
-            EvidenceChunk("chunk-b", "e-b", "PMID:2", "hypertension"),
-            EvidenceChunk("chunk-a", "e-a", "PMID:1", "hypertension"),
+            EvidenceChunk("chunk-b", "e-b", "upstream:MOCK-A4-B", "hypertension", mock=True),
+            EvidenceChunk("chunk-a", "e-a", "upstream:MOCK-A4-A", "hypertension", mock=True),
         )
     )
 
@@ -61,14 +61,14 @@ def test_bm25_orders_equal_scores_by_chunk_id() -> None:
 
 
 def test_bm25_returns_no_match_safely_and_handles_documents_with_no_tokens() -> None:
-    index = BM25Index((EvidenceChunk("chunk-symbols", "e-symbols", "PMID:3", "!!!"),))
+    index = BM25Index((EvidenceChunk("chunk-symbols", "e-symbols", "upstream:MOCK-A4-SYMBOLS", "!!!", mock=True),))
 
     assert index.search("unseen", k=5) == []
     assert index.search("!!!", k=5) == []
 
 
 def test_bm25_counts_document_frequency_once_per_document() -> None:
-    index = BM25Index((EvidenceChunk("chunk-aspirin", "e-aspirin", "PMID:7", "aspirin aspirin"),))
+    index = BM25Index((EvidenceChunk("chunk-aspirin", "e-aspirin", "upstream:MOCK-A4-ASPIRIN", "aspirin aspirin", mock=True),))
 
     results = index.search("aspirin", k=1)
 
@@ -85,7 +85,7 @@ def test_bm25_rejects_blank_queries_and_nonpositive_k(query: str, k: int) -> Non
 
 
 def test_bm25_rejects_duplicate_chunk_ids(evidence_chunks: tuple[EvidenceChunk, ...]) -> None:
-    duplicate = EvidenceChunk("chunk-amlodipine", "e-other", "PMID:other", "other text")
+    duplicate = EvidenceChunk("chunk-amlodipine", "e-other", "upstream:MOCK-A4-OTHER", "other text", mock=True)
 
     with pytest.raises(ValueError, match="duplicate"):
         BM25Index((*evidence_chunks, duplicate))

@@ -1,0 +1,429 @@
+{
+  "$defs": {
+    "SearchSpanRef": {
+      "additionalProperties": false,
+      "properties": {
+        "char_end": {
+          "minimum": 0,
+          "title": "Char End",
+          "type": "integer"
+        },
+        "char_start": {
+          "minimum": 0,
+          "title": "Char Start",
+          "type": "integer"
+        },
+        "chunk_content_hash": {
+          "title": "Chunk Content Hash",
+          "type": "string"
+        },
+        "chunk_id": {
+          "title": "Chunk Id",
+          "type": "string"
+        },
+        "document_char_end": {
+          "minimum": 0,
+          "title": "Document Char End",
+          "type": "integer"
+        },
+        "document_char_start": {
+          "minimum": 0,
+          "title": "Document Char Start",
+          "type": "integer"
+        },
+        "evidence_content_hash": {
+          "title": "Evidence Content Hash",
+          "type": "string"
+        },
+        "offset_scope": {
+          "const": "chunk",
+          "default": "chunk",
+          "title": "Offset Scope",
+          "type": "string"
+        },
+        "page": {
+          "anyOf": [
+            {
+              "minimum": 1,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Page"
+        },
+        "raw_page": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Raw Page"
+        },
+        "section": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Section"
+        },
+        "span_content_hash": {
+          "title": "Span Content Hash",
+          "type": "string"
+        },
+        "span_id": {
+          "title": "Span Id",
+          "type": "string"
+        },
+        "text": {
+          "title": "Text",
+          "type": "string"
+        }
+      },
+      "required": [
+        "span_id",
+        "chunk_id",
+        "text",
+        "char_start",
+        "char_end",
+        "document_char_start",
+        "document_char_end",
+        "span_content_hash",
+        "chunk_content_hash",
+        "evidence_content_hash"
+      ],
+      "title": "SearchSpanRef",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "bm25_tokenizer_version": {
+      "title": "Bm25 Tokenizer Version",
+      "type": "string"
+    },
+    "channel": {
+      "enum": [
+        "lexical",
+        "vector"
+      ],
+      "title": "Channel",
+      "type": "string"
+    },
+    "chunk_content_hash": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "title": "Chunk Content Hash"
+    },
+    "chunk_id": {
+      "title": "Chunk Id",
+      "type": "string"
+    },
+    "chunk_policy_version": {
+      "title": "Chunk Policy Version",
+      "type": "string"
+    },
+    "comparator": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Comparator"
+    },
+    "config_schema_version": {
+      "title": "Config Schema Version",
+      "type": "string"
+    },
+    "corpus_version": {
+      "title": "Corpus Version",
+      "type": "string"
+    },
+    "distance": {
+      "anyOf": [
+        {
+          "type": "number"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Distance"
+    },
+    "document_kind": {
+      "default": "evidence",
+      "enum": [
+        "evidence",
+        "wiki_navigation"
+      ],
+      "title": "Document Kind",
+      "type": "string"
+    },
+    "embedding_model": {
+      "title": "Embedding Model",
+      "type": "string"
+    },
+    "embedding_provider": {
+      "title": "Embedding Provider",
+      "type": "string"
+    },
+    "embedding_revision": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "title": "Embedding Revision"
+    },
+    "embedding_source_kind": {
+      "title": "Embedding Source Kind",
+      "type": "string"
+    },
+    "evidence_content_hash": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "title": "Evidence Content Hash"
+    },
+    "evidence_id": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "title": "Evidence Id"
+    },
+    "evidence_level": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Evidence Level"
+    },
+    "index_version": {
+      "title": "Index Version",
+      "type": "string"
+    },
+    "intervention": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Intervention"
+    },
+    "live_state": {
+      "enum": [
+        "live",
+        "tombstoned",
+        "navigation_only",
+        "UNKNOWN"
+      ],
+      "title": "Live State",
+      "type": "string"
+    },
+    "metadata": {
+      "additionalProperties": true,
+      "title": "Metadata",
+      "type": "object"
+    },
+    "mock": {
+      "title": "Mock",
+      "type": "boolean"
+    },
+    "outcome": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Outcome"
+    },
+    "page": {
+      "anyOf": [
+        {
+          "minimum": 1,
+          "type": "integer"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Page"
+    },
+    "population": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Population"
+    },
+    "published_at": {
+      "anyOf": [
+        {
+          "format": "date-time",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Published At"
+    },
+    "rank": {
+      "minimum": 1,
+      "title": "Rank",
+      "type": "integer"
+    },
+    "raw_page": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Raw Page"
+    },
+    "raw_score": {
+      "anyOf": [
+        {
+          "type": "number"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Raw Score"
+    },
+    "section": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Section"
+    },
+    "source_type": {
+      "title": "Source Type",
+      "type": "string"
+    },
+    "span_refs": {
+      "items": {
+        "$ref": "#/$defs/SearchSpanRef"
+      },
+      "title": "Span Refs",
+      "type": "array"
+    },
+    "text": {
+      "title": "Text",
+      "type": "string"
+    },
+    "title": {
+      "title": "Title",
+      "type": "string"
+    },
+    "tombstone": {
+      "anyOf": [
+        {
+          "type": "boolean"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "title": "Tombstone"
+    },
+    "wiki_builder_version": {
+      "title": "Wiki Builder Version",
+      "type": "string"
+    }
+  },
+  "required": [
+    "channel",
+    "rank",
+    "chunk_id",
+    "evidence_id",
+    "title",
+    "text",
+    "source_type",
+    "mock",
+    "tombstone",
+    "live_state",
+    "chunk_content_hash",
+    "evidence_content_hash",
+    "span_refs",
+    "corpus_version",
+    "index_version",
+    "chunk_policy_version",
+    "bm25_tokenizer_version",
+    "embedding_provider",
+    "embedding_model",
+    "embedding_revision",
+    "embedding_source_kind",
+    "wiki_builder_version",
+    "config_schema_version"
+  ],
+  "title": "SearchHit",
+  "type": "object"
+}

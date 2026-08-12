@@ -9,8 +9,9 @@ def evidence_chunk(**changes: object) -> EvidenceChunk:
     values: dict[str, object] = {
         "chunk_id": "chunk-001",
         "evidence_id": "evidence-001",
-        "stable_id": "PMID:123456",
+        "stable_id": "upstream:MOCK-A4-EVIDENCE-001",
         "text": "A randomized clinical trial found a clinically meaningful outcome.",
+        "mock": True,
     }
     values.update(changes)
     return EvidenceChunk(**values)  # type: ignore[arg-type]
@@ -51,7 +52,7 @@ def test_default_config_is_valid_and_uses_p0_defaults() -> None:
         config.fusion_top_k,
         config.rerank_top_k,
         config.selection_top_k,
-    ) == (50, 50, 80, 25, 8)  # selection_top_k 与冻结 YAML 一致（round2 P2 修复）
+    ) == (50, 50, 80, 25, 8)
     assert config.rrf_k == 60
     assert config.max_chunks_per_document == 2
     assert config.max_chunks_per_source == 4
@@ -266,20 +267,25 @@ def test_score_and_rank_contracts_reject_non_float_representable_integers(factor
 
 def test_evidence_chunk_carries_gate1_provenance_fields() -> None:
     chunk = evidence_chunk(
-        pmid="33000020",
-        doi="10.1000/example",
-        nct_id="NCT05500001",
-        authors=("Wang H", "Li Y"),
-        guideline_name="中国高血压防治指南（2024年修订版）",
+        stable_id="PMID:31452104",
+        title="Molegro Virtual Docker for Docking.",
+        url="https://pubmed.ncbi.nlm.nih.gov/31452104/",
+        pmid="31452104",
+        doi="10.1007/978-1-4939-9752-7_10",
+        authors=("Gabriela Bitencourt-Ferreira", "Walter Filgueira de Azevedo"),
         fetched_at="2026-08-10T09:00:00Z",
+        mock=False,
     )
 
-    assert chunk.pmid == "33000020"
-    assert chunk.doi == "10.1000/example"
-    assert chunk.nct_id == "NCT05500001"
-    assert chunk.authors == ("Wang H", "Li Y")
-    assert chunk.guideline_name == "中国高血压防治指南（2024年修订版）"
+    assert chunk.pmid == "31452104"
+    assert chunk.doi == "10.1007/978-1-4939-9752-7_10"
+    assert chunk.authors == ("Gabriela Bitencourt-Ferreira", "Walter Filgueira de Azevedo")
     assert chunk.fetched_at == "2026-08-10T09:00:00Z"
+
+
+def test_mock_evidence_chunk_rejects_external_identity() -> None:
+    with pytest.raises(ValueError, match="mock evidence cannot carry"):
+        evidence_chunk(pmid="31452104")
 
 
 def test_evidence_chunk_validates_provenance_fields() -> None:

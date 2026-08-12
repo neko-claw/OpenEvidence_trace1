@@ -1,10 +1,12 @@
 """Contracts for the A4 clinical-evidence retrieval pipeline."""
 
 from .adaptive import adapt_k
-from .bge_m3 import BgeM3Embedder, BgeM3EmbeddingError
+from .bge_m3 import A3EmbeddingAdapter, BgeM3Embedder, BgeM3EmbeddingError
 from .config import FeatureWeights, RetrievalConfig
 from .config_io import ConfigYamlError, config_matches_yaml, load_config_yaml, write_config_yaml
 from .cross_encoder import CrossEncoderError, CrossEncoderScorer
+from .a3_pool_adapter import build_initial_pool_from_a3_hits
+from .ports import CalibratedQualityScorer, ClaimEvidenceSupportGate, SupportGateResult
 from .evaluation import (
     aggregate_chunk_qrels,
     citation_proxy_coverage,
@@ -49,9 +51,11 @@ from .tuning import (
 from .models import (
     Candidate,
     EvidenceChunk,
+    InitialCandidatePool,
     Query,
     RankLog,
     ReasonCode,
+    RetrievalCondition,
     RetrievalAlignmentHint,
     ScoredChunk,
     SearchResult,
@@ -60,8 +64,15 @@ from .models import (
 
 __all__ = [
     "BgeM3Embedder",
+    "A3EmbeddingAdapter",
     "BgeM3EmbeddingError",
     "Candidate",
+    "InitialCandidatePool",
+    "RetrievalCondition",
+    "build_initial_pool_from_a3_hits",
+    "CalibratedQualityScorer",
+    "ClaimEvidenceSupportGate",
+    "SupportGateResult",
     "RetrievalAlignmentHint",
     "ConfigYamlError",
     "config_matches_yaml",

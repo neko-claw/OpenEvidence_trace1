@@ -1,0 +1,41 @@
+{
+  "additionalProperties": false,
+  "properties": {
+    "evidence_sufficient": {
+      "anyOf": [
+        {
+          "type": "boolean"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "title": "Evidence Sufficient"
+    },
+    "tool_budget_exhausted": {
+      "title": "Tool Budget Exhausted",
+      "type": "boolean"
+    },
+    "evidence_present": {
+      "title": "Evidence Present",
+      "type": "boolean"
+    },
+    "required_source_type_missing": {
+      "default": false,
+      "title": "Required Source Type Missing",
+      "type": "boolean"
+    },
+    "unresolved_conflict": {
+      "default": false,
+      "title": "Unresolved Conflict",
+      "type": "boolean"
+    }
+  },
+  "required": [
+    "evidence_sufficient",
+    "tool_budget_exhausted",
+    "evidence_present"
+  ],
+  "title": "RetrievalTerminationInput",
+  "type": "object"
+}

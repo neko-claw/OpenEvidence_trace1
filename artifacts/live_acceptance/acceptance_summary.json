@@ -1,0 +1,30 @@
+{
+  "generated_at": "2026-08-12",
+  "overall_status": "BLOCKED_EXTERNAL",
+  "claims": {
+    "a1_a5_engineering_ready_for_a6_live_integration": false,
+    "medically_validated": false,
+    "a6_replay_contract_ready": true
+  },
+  "tests": {
+    "offline": {"passed": 534, "skipped_live_opt_in": 3},
+    "a2_live": {"passed": 3, "sources": ["pubmed", "europe_pmc", "clinical_trials"]},
+    "live_readiness_and_backend": {"passed": 6},
+    "demo": ["PASS", "WARN", "REFUSE"],
+    "backend_demo": "PASS",
+    "compileall": "PASS",
+    "schema_drift": "PASS",
+    "git_diff_check": "PASS"
+  },
+  "smoke_metrics_not_formal": {
+    "recall_at_50": 1.0,
+    "ndcg_at_8": 0.75,
+    "span_proxy_recall_at_8": 1.0,
+    "claim_chunk_coverage_at_8": 1.0
+  },
+  "formal_preflights": {
+    "a3": "BLOCKED_EXTERNAL",
+    "a4": "BLOCKED_EXTERNAL",
+    "a5": "BLOCKED_EXTERNAL"
+  }
+}

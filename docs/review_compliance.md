@@ -1,101 +1,141 @@
-# A5 Review Compliance Matrix
+# Review compliance matrix
 
-This matrix tracks the blocking review for PR #1. A blocker is marked `PASS`
-only after its implementation and behavior-specific tests pass. Upstream A1–A4
-dependencies remain behind A5 ports/adapters and are never counted as an A5
-implementation.
+Date: 2026-08-12
 
-Baseline: 2026-08-11, branch `agent/a5-trustworthy-generation`, 30 legacy tests
-passed before remediation.
+Scope: A5 B1–B5 blockers plus the A1→A5 Track-1 composition required before
+A6/B4 integration. `PASS` means executable code and behavior-specific tests,
+not clinical validation.
 
-## B1 — Skill delivery
+## B1 — versioned Skill delivery
 
-- Status: PASS
-- Problem: Skills lack versioned manifests, prompt/schema assets, reusable
-  fixtures, evidence summary, and atomic claim splitting.
-- Implementation: Both Skills are loadable versioned asset packages. Pydantic
-  contracts, JSON Schema, prompts, manifests, fixtures, EvidenceSummary, and a
-  deterministic ClaimSplitter are implemented. Missing evidence metrics remain
-  UNKNOWN/null.
-- Files: `a5/skills/loader.py`, `a5/skills/evidence_research/`,
-  `a5/skills/citation_audit/`, `prompts/`, `a5/domain/models.py`.
-- Tests: `tests/test_skill_assets.py`, `tests/test_skill_logic_v2.py`.
-- Demo Evidence: `artifacts/demo_trace.json` records both Skill versions,
-  EvidenceSummary, generated/atomic claim IDs and Gate5 results.
-- Remaining Upstream Dependency: Final A1 question taxonomy and A2/A3 evidence
-  schemas; A5 will consume them through configuration/adapters.
+- Status: **PASS**
+- Problem: Python-only Skills lacked manifests, prompts, schemas, fixtures,
+  EvidenceSummary and atomic Claim splitting.
+- Implementation: both Skills are versioned asset packages loadable by
+  name/version. Pydantic contracts match checked-in JSON Schema; fixtures
+  validate; evidence research returns structured summary; citation audit uses
+  `ClaimSplitter` before per-Claim verification.
+- Files: `a5/skills/`, `prompts/`, `a5/domain/models.py`.
+- Tests: `test_skill_assets.py`, `test_skill_logic_v2.py`,
+  `test_a5_backend_contract.py`.
+- Demo Evidence: both Skill versions and split Claim IDs appear in
+  `artifacts/demo_trace.json` and `artifacts/backend_demo_trace.json`.
+- Remaining Upstream Dependency: final A1 taxonomy may replace routing config;
+  no workflow rewrite is required.
 
-## B2 — Restricted Agent orchestration
+## B2 — restricted orchestration
 
-- Status: PASS
-- Problem: Tool budget and corrective retry are not enforced; routing is fixed;
-  evidence sufficiency cannot stop or retry retrieval.
-- Implementation: State-aware SkillRouter, ToolBudgetManager, corrective Gate2
-  retry, source-by-source calls, early stop, budget exhaustion and explicit
-  termination transitions are enforced.
-- Files: `a5/agent/router.py`, `a5/agent/budget.py`,
-  `a5/agent/state.py`, `a5/agent/workflow.py`.
-- Tests: `tests/test_workflow.py`, `tests/test_state_machine.py`.
-- Demo Evidence: `artifacts/demo_trace.json` shows call #1 insufficient, call #2
-  sufficient, and one remaining call not spent.
-- Remaining Upstream Dependency: A4 retrieval implementation and result adapter.
+- Status: **PASS**
+- Problem: declared tool budget was not enforced; routing/retrieval were fixed;
+  no quality-driven retry or early stop existed.
+- Implementation: `SkillRouter` and `ToolBudgetManager` execute inside the FSM.
+  Each retrieval checks remaining budget; Gate2 chooses continue/retry/refuse;
+  sufficient evidence stops early and exhaustion prohibits call N+1.
+- Files: `a5/agent/router.py`, `budget.py`, `state.py`, `workflow.py`,
+  `backend/source.py`.
+- Tests: `test_workflow.py`, `test_state_machine.py`,
+  `test_backend_source.py`, `test_backend_integration.py`.
+- Demo Evidence: the backend trace makes calls 1 and 2, reaches SUFFICIENT with
+  one call remaining, and does not call a third source.
+- Remaining Upstream Dependency: production source availability affects
+  results, not enforcement.
 
-## B3 — Gate2 and Gate5 trustworthy generation
+## B3 — Gate2/Gate5 trustworthy generation
 
-- Status: PASS
-- Problem: Retrieval quality metrics and claim-level whitelist/span/PICO/time/
-  textual-support checks are absent; the current verifier reads fixture gold
-  labels and ignores uncertainty.
-- Implementation: Gate2 reports candidate count, top score, source count/
-  diversity, strongest evidence level, freshness and conflict count. Gate5
-  enforces Evidence/Span whitelists, PICO/time consistency, conflicts, exact
-  span support and nullable entailment through an injectable evaluator. Fixture
-  support labels are ignored. Gate6 enforces uncertainty and publishes only
-  supported claims.
-- Files: `a5/gates/evidence_sufficiency.py`, `a5/gates/release.py`,
-  `a5/adapters/rule_based_claim_verifier.py`, `a5/ports/textual_support.py`.
-- Tests: `tests/test_gate_edges.py`, `tests/test_workflow.py`,
-  `tests/test_config_versioning.py`.
-- Demo Evidence: `artifacts/demo_trace.json` contains structured Gate2 metrics
-  and per-claim Gate5 results with spans/matches/entailment method.
-- Remaining Upstream Dependency: A3 frozen span/PICO/evidence-level schema and
-  optional future medical NLI/LLM verifier.
+- Status: **PASS**
+- Problem: retrieval sufficiency and Claim support gates were incomplete;
+  fixture labels could masquerade as verification; uncertainty was unused.
+- Implementation: Gate2 evaluates count, calibrated quality, source coverage/
+  diversity, evidence level, freshness and conflicts. A4 ranking is separately
+  typed and cannot satisfy the quality threshold. Gate3 plans atomic claims;
+  Gate4 enforces structured output and ID/span whitelists; Gate5 checks span,
+  PICO, time, numeric/unit consistency, conflicts and an independent textual
+  support Port. Unknown entailment remains INSUFFICIENT. Gate6 applies
+  criticality and uncertainty.
+- Files: `a5/gates/`, `a5/adapters/rule_based_claim_verifier.py`,
+  `openai_compatible_claim_generator.py`, `semantic_claim_verifier.py`,
+  `retrieval/models.py`, `retrieval/service.py`.
+- Tests: `test_gate_edges.py`, `test_workflow.py`,
+  `test_a5_backend_contract.py`, `test_a3_gate5_integration.py`,
+  `test_a3_a4_retrieval_integration.py`.
+- Demo Evidence: Gate2→Gate3→Gate4→ClaimSplitter→Gate5→Gate6 is present in
+  both trace formats.
+- Remaining Upstream Dependency: an independently validated medical semantic
+  verifier and calibrated A4 quality scorer are still deployment/evaluation
+  dependencies; exact-span P0 is not presented as medical NLI.
 
 ## B4 — Gate0 fail-closed safety
 
-- Status: PASS
-- Problem: Temporary policy defaults to allow and Gate0 is not an explicit
-  pre-retrieval tripwire.
-- Implementation: Gate0 executes before classification/retrieval/generation.
-  DefaultFailClosedSafetyPolicy returns UNKNOWN, and both UNKNOWN/DENY trip the
-  release gate. Fixture ALLOW is an explicit offline adapter, not an A1 policy.
-- Files: `a5/adapters/default_safety_policy.py`, `a5/agent/workflow.py`.
-- Tests: `tests/test_gate_edges.py`, `tests/test_workflow.py`.
-- Demo Evidence: First post-START event in `artifacts/demo_trace.json` is Gate0;
-  separate tests prove UNKNOWN/DENY cause zero retriever calls.
-- Remaining Upstream Dependency: A1 safety/scope/refusal policy adapter.
+- Status: **PASS**
+- Problem: default safety allowed processing and Gate0 was not a pre-tool
+  tripwire.
+- Implementation: Gate0 runs first. `A1SafetyPolicyAdapter` accepts only a
+  complete explicit verdict; absent classifier/signals, exception or malformed
+  output produces UNKNOWN and REFUSE before retrieval/generation.
+- Files: `a1/ports/safety_classifier.py`, `a1/adapters/a5_safety.py`,
+  `a5/agent/workflow.py`.
+- Tests: `test_a1_a2_backend_contracts.py`, `test_gate_edges.py`,
+  `test_workflow.py`.
+- Demo Evidence: Gate0 is the first post-START event in both traces.
+- Remaining Upstream Dependency: production A1 free-text classifier/final
+  medical policy must be injected.
 
 ## B5 — Prompt/config/versioning
 
-- Status: PASS
-- Problem: Prompts are absent; versions and thresholds are hardcoded; run
-  configuration is not snapshotted.
-- Implementation: Versioned Prompt assets and JSON-compatible YAML config drive
-  agent/Skill/Prompt/Gate versions, model adapter identifiers, tool budget,
-  thresholds and uncertainty policy. Every AgentRun stores the effective
-  RuntimeConfigSnapshot.
-- Files: `prompts/`, `config/`, `a5/runtime_config.py`,
-  `a5/skills/loader.py`, `a5/domain/models.py`.
-- Tests: `tests/test_skill_assets.py`, `tests/test_config_versioning.py`,
-  `tests/test_workflow.py`.
-- Demo Evidence: `artifacts/demo_trace.json` includes agent/Skill/Prompt/Gate
-  versions and the complete effective config snapshot.
-- Remaining Upstream Dependency: Final A1 policy versions and production model
-  selection; both remain replaceable configuration.
+- Status: **PASS**
+- Problem: prompts, versions and thresholds were hardcoded or not recorded.
+- Implementation: Prompt/Skill assets and Gate/Agent/model settings are loaded
+  from versioned files. Every `AgentRun` records effective versions and runtime
+  config. `config/backend.yaml` snapshots composition routing/chunk policy.
+- Files: `config/`, `prompts/`, `a5/runtime_config.py`, `backend/config.py`,
+  `contracts/a5/v0.4.0/`.
+- Tests: `test_config_versioning.py`, `test_skill_assets.py`,
+  `test_backend_source.py`, `test_a5_backend_contract.py`.
+- Demo Evidence: JSON traces contain Skill/Prompt/Gate/Agent versions and the
+  runtime snapshot.
+- Remaining Upstream Dependency: production versions replace config values via
+  injection; the FSM remains stable.
 
-## Merge state
+## I1 — A2/A3/A4 composition and provenance
 
-**MERGE READY** — B1–B5 are PASS; `pixi run test` reports 50 passed, the demo
-artifacts cover Gate0 through Gate6, and the final self-review found no
-production shortcut or upstream-boundary violation. See
-`docs/merge_readiness_report.md`.
+- Status: **PASS**
+- Problem: module-level tests did not prove the planned ownership chain worked
+  as one backend.
+- Implementation: `CoordinatedEvidenceRetriever` invokes one A2 MCP tool,
+  normalizes to A3, creates A3 Chunk/Span/index provenance, builds one frozen A4
+  candidate pool and adapts its SearchResult to A5. Errors/empty results remain
+  structured and fail closed.
+- Files: `backend/`, `a2/adapters/a3_evidence.py`,
+  `retrieval/a3_pool_adapter.py`, `a5/adapters/a4_evidence_retriever.py`.
+- Tests: `test_backend_source.py`, `test_backend_retriever.py`,
+  `test_backend_integration.py`.
+- Demo Evidence: `artifacts/backend_demo_trace.*`.
+- Remaining Upstream Dependency: live connector/model injection only.
+
+## I2 — rerank and BGE-M3 risk controls
+
+- Status: **PASS**
+- Problem: query-local rerank values could be misused as evidence quality, and
+  A4 could accidentally own/load a second BGE-M3 stack.
+- Implementation: ranking and quality have distinct kind/scope/calibration
+  fields. Only `CalibratedQualityScorer` output reaches Gate2. R2/R3 require
+  explicit ready capabilities. `retrieval.bge_m3` is an A3 provider adapter,
+  disabled by default; A4 does not load or download models.
+- Files: `retrieval/models.py`, `ports.py`, `service.py`, `cross_encoder.py`,
+  `bge_m3.py`, `a5/adapters/a4_evidence_retriever.py`.
+- Tests: `test_a3_a4_retrieval_integration.py`, `test_bge_m3.py`,
+  `test_adaptive_cross_encoder.py`, `test_a4_adapter.py`.
+- Demo Evidence: backend R1 trace records ranking diagnostics and explicit
+  fixture-only quality semantics separately.
+- Remaining Upstream Dependency: A3 embedding DEV metrics and optional A4
+  calibrated P1 ablation.
+
+## Verification state
+
+- `pixi run test`: **505 passed, 3 skipped**.
+- `pixi run demo`: PASS/WARN/REFUSE and A5 traces generated.
+- `pixi run backend-demo`: PASS; A1→A2 MCP→A3→A4→A5 trace generated.
+
+**All B1–B5 and integration blockers are PASS for backend architecture/A6
+contract integration. Clinical validation and live-production capability are
+explicitly not claimed.**

@@ -21,6 +21,8 @@ from .evaluation import (
     evaluate_ranking,
 )
 from .models import EvidenceChunk, Query
+from .models import InitialCandidatePool, RetrievalCondition
+from .ports import SupportGateResult
 from .service import RetrievalService
 from .support_check import check_alignment, detect_conflicts
 from .vector import InMemoryVectorSearch, VectorSearch
@@ -43,6 +45,8 @@ class AblationRow:
     context_tokens: int
     estimated_cost_usd: float
     latency_ms: float
+    initial_pool_hashes: tuple[str, ...] = ()
+    stage_trace: tuple[str, ...] = ()
 
 
 def run_ablation(
@@ -55,25 +59,14 @@ def run_ablation(
 ) -> list[AblationRow]:
     """Run R0 (RRF baseline), R1 (P0 main), R2 (+Cross-Encoder), R3 (+gate).
 
-    R3 applies the rule-based Claim-Evidence gate: claims without support are
-    reported and gated rows keep only supported evidence, matching the A5
-    interface without duplicating its NLI verifier.
+    Every condition consumes the same immutable initial candidate pool per
+    question.  R3 uses an explicitly labelled token-overlap *proxy* gate for
+    offline ablation only; it is not A5's medical support verifier.
     """
     if not questions:
         raise ValueError("questions must not be empty")
     base = config if config is not None else RetrievalConfig()
     rows: list[AblationRow] = []
-
-    # R0: BM25 + vector + RRF, take top-K2 directly without feature rerank/MMR.
-    r0_config = replace(base, rerank_top_k=base.selection_top_k, mmr_lambda=1.0)
-    r0_rows = _run_condition(questions, chunks, "R0", r0_config, query_vectors, cross_encoder=None, gate=False)
-    rows.append(_aggregate(r0_rows, "R0"))
-
-    # R1: full P0 pipeline (feature rerank + MMR).
-    r1_rows = _run_condition(questions, chunks, "R1", base, query_vectors, cross_encoder=None, gate=False)
-    rows.append(_aggregate(r1_rows, "R1"))
-
-    # R2: R1 + Cross-Encoder blend on the rerank input.
     if cross_encoder is not None:
         r2_scorer = (
             cross_encoder
@@ -82,14 +75,43 @@ def run_ablation(
                 model_name=cross_encoder.model_name,
                 model_factory=cross_encoder.model_factory,
                 alpha=base.cross_encoder_alpha,
+                score_semantics=cross_encoder.score_semantics,
+                score_transform=cross_encoder.score_transform,
             )
         )
-        r2_rows = _run_condition(questions, chunks, "R2", base, query_vectors, cross_encoder=r2_scorer, gate=False)
-        rows.append(_aggregate(r2_rows, "R2"))
+    else:
+        r2_scorer = None
 
-    # R3: R1 + Claim-Evidence gate (drop unsupported selections).
-    r3_rows = _run_condition(questions, chunks, "R3", base, query_vectors, cross_encoder=None, gate=True)
-    rows.append(_aggregate(r3_rows, "R3"))
+    index = BM25Index(chunks)
+    vector_search: VectorSearch | None = (
+        InMemoryVectorSearch({chunk.chunk_id: (chunk, chunk.content_vector) for chunk in chunks if chunk.content_vector})
+        if query_vectors is not None else None
+    )
+
+    def provider(query: Query) -> Sequence[float]:
+        assert query_vectors is not None
+        return query_vectors[query.query_id]
+
+    service = RetrievalService(
+        bm25_index=index,
+        vector_search=vector_search,
+        query_vector_provider=provider if query_vectors is not None else None,
+        config=base,
+        cross_encoder=r2_scorer,
+        support_gate=_AlignmentProxyGate(base),
+    )
+    pools = {
+        query.query_id: service.retrieve_initial_pool(query)
+        for query, _qrels in questions
+    }
+
+    for condition in (RetrievalCondition.R0, RetrievalCondition.R1):
+        collected = _run_condition(questions, service, pools, condition)
+        rows.append(_aggregate(collected, condition.value))
+    if r2_scorer is not None:
+        for condition in (RetrievalCondition.R2, RetrievalCondition.R3):
+            collected = _run_condition(questions, service, pools, condition)
+            rows.append(_aggregate(collected, condition.value))
 
     return rows
 
@@ -137,47 +159,23 @@ def decide(rows: Sequence[AblationRow]) -> dict[str, str]:
 
 def _run_condition(
     questions: Sequence[tuple[Query, Mapping[str, float]]],
-    chunks: Sequence[EvidenceChunk],
-    condition: str,
-    config: RetrievalConfig,
-    query_vectors: QueryVectors | None,
-    cross_encoder: CrossEncoderScorer | None,
-    gate: bool,
+    service: RetrievalService,
+    pools: Mapping[str, InitialCandidatePool],
+    condition: RetrievalCondition,
 ) -> list[tuple[Query, Mapping[str, float], object]]:
     """Return (query, qrels, per-question summary) triples for one condition."""
-    index = BM25Index(chunks)
-    vector_search: VectorSearch | None = (
-        InMemoryVectorSearch({chunk.chunk_id: (chunk, chunk.content_vector) for chunk in chunks if chunk.content_vector})
-        if query_vectors is not None
-        else None
-    )
-
-    def provider(query: Query) -> Sequence[float]:
-        assert query_vectors is not None
-        return query_vectors[query.query_id]
-
-    service = RetrievalService(
-        bm25_index=index,
-        vector_search=vector_search,
-        query_vector_provider=provider if query_vectors is not None else None,
-        config=config,
-    )
-
     collected: list[tuple[Query, Mapping[str, float], object]] = []
     for query, qrels in questions:
-        result = service.search(query)
+        result = service.search_from_pool(query, pools[query.query_id], condition)
         selected = list(result.selected_chunks)
-        if gate and query.atomic_claims and selected:
-            hints = check_alignment(query, query.atomic_claims, selected, config)
-            aligned_ids = {evidence_id for hint in hints for evidence_id in hint.evidence_ids}
-            gated = [chunk for chunk in selected if chunk.evidence_id in aligned_ids]
-            selected = gated or selected[:1]  # never empty silently; keep best if gate strips all
         summary = {
             "selected": selected,
             "qrels": qrels,
-            "alignment_hints": check_alignment(query, query.atomic_claims, selected, config) if query.atomic_claims else (),
+            "alignment_hints": result.alignment_hints,
             "conflicts": detect_conflicts(selected),
             "latency_ms": result.latency_ms,
+            "pool_hash": result.initial_candidate_pool_hash,
+            "stage_trace": result.stage_trace,
             "reranked_ids": [
                 log.candidate.chunk.chunk_id for log in result.rank_log if log.candidate is not None
             ],
@@ -231,4 +229,30 @@ def _aggregate(collected: Sequence[tuple[Query, Mapping[str, float], object]], c
         context_tokens=total_tokens,
         estimated_cost_usd=round(total_cost, 6),
         latency_ms=mean(latencies) if latencies else 0.0,
+        initial_pool_hashes=tuple(data["pool_hash"] for _, _, data in collected),
+        stage_trace=tuple(dict.fromkeys(stage for _, _, data in collected for stage in data["stage_trace"])),
     )
+
+
+class _AlignmentProxyGate:
+    """Offline R3 proxy; A5 Gate5 remains the publication authority."""
+
+    def __init__(self, config: RetrievalConfig) -> None:
+        self._config = config
+
+    def filter(self, query: Query, candidates: Sequence[object]) -> SupportGateResult:
+        chunks = [candidate.chunk for candidate in candidates]
+        if not query.atomic_claims:
+            return SupportGateResult((), ("r3_proxy_no_atomic_claims",))
+        hints = check_alignment(query, query.atomic_claims, chunks, self._config)
+        aligned_evidence_ids = {
+            evidence_id
+            for hint in hints
+            if hint.decision == "ALIGNED"
+            for evidence_id in hint.evidence_ids
+        }
+        retained = tuple(
+            chunk.chunk_id for chunk in chunks if chunk.evidence_id in aligned_evidence_ids
+        )
+        reasons = () if retained else ("r3_proxy_removed_all_unsupported_candidates",)
+        return SupportGateResult(retained, reasons)

@@ -5,7 +5,7 @@ from dataclasses import replace
 
 from retrieval.bm25 import BM25Index
 from retrieval.config import RetrievalConfig
-from retrieval.models import EvidenceChunk, Query, ReasonCode, ScoredChunk, SearchStatus
+from retrieval.models import EvidenceChunk, Query, ScoredChunk, SearchStatus
 from retrieval.service import RetrievalService
 from retrieval.vector import InMemoryVectorSearch
 
@@ -83,12 +83,13 @@ def test_search_appends_only_explicit_english_terms_to_bm25_query_and_preserves_
     english_evidence = EvidenceChunk(
         chunk_id="english-guideline",
         evidence_id="e-english-guideline",
-        stable_id="PMID:english-guideline",
+        stable_id="upstream:MOCK-A4-ENGLISH",
         text="Amlodipine treatment for hypertension in older adults.",
         source_type="pubmed",
         evidence_level="rct",
         index_version="index-20260811",
         corpus_version="corpus-20260811",
+        mock=True,
     )
     received_queries: list[Query] = []
     original_query = Query(
@@ -113,15 +114,16 @@ def test_search_current_keeps_undated_candidates_and_scores_freshness_in_rerank(
     base = EvidenceChunk(
         chunk_id="recent",
         evidence_id="e-recent",
-        stable_id="PMID:recent",
+        stable_id="upstream:MOCK-A4-RECENT",
         text="Recent hypertension evidence.",
         source_type="pubmed",
         published_at="2024-08-12",
         index_version="index-20260811",
         corpus_version="corpus-20260811",
+        mock=True,
     )
-    old = replace(base, chunk_id="old", evidence_id="e-old", stable_id="PMID:old", published_at="2010-01-01")
-    undated = replace(base, chunk_id="undated", evidence_id="e-undated", stable_id="PMID:undated", published_at=None)
+    old = replace(base, chunk_id="old", evidence_id="e-old", stable_id="upstream:MOCK-A4-OLD", published_at="2010-01-01")
+    undated = replace(base, chunk_id="undated", evidence_id="e-undated", stable_id="upstream:MOCK-A4-UNDATED", published_at=None)
     lexical = _StaticSearch(
         [
             ScoredChunk(chunk=old, score=0.9, rank=1, stage="bm25"),
@@ -146,15 +148,16 @@ def test_search_latest_filters_undated_or_stale_candidates() -> None:
     base = EvidenceChunk(
         chunk_id="recent",
         evidence_id="e-recent",
-        stable_id="PMID:recent",
+        stable_id="upstream:MOCK-A4-RECENT",
         text="Recent hypertension evidence.",
         source_type="pubmed",
         published_at="2024-08-12",
         index_version="index-20260811",
         corpus_version="corpus-20260811",
+        mock=True,
     )
-    old = replace(base, chunk_id="old", evidence_id="e-old", stable_id="PMID:old", published_at="2010-01-01")
-    undated = replace(base, chunk_id="undated", evidence_id="e-undated", stable_id="PMID:undated", published_at=None)
+    old = replace(base, chunk_id="old", evidence_id="e-old", stable_id="upstream:MOCK-A4-OLD", published_at="2010-01-01")
+    undated = replace(base, chunk_id="undated", evidence_id="e-undated", stable_id="upstream:MOCK-A4-UNDATED", published_at=None)
     lexical = _StaticSearch(
         [
             ScoredChunk(chunk=old, score=0.9, rank=1, stage="bm25"),
@@ -179,12 +182,13 @@ def test_search_does_not_apply_latest_window_to_generic_queries() -> None:
     old = EvidenceChunk(
         chunk_id="old-generic",
         evidence_id="e-old-generic",
-        stable_id="PMID:old-generic",
+        stable_id="upstream:MOCK-A4-OLD-GENERIC",
         text="Older hypertension evidence.",
         source_type="pubmed",
         published_at="2010-01-01",
         index_version="index-20260811",
         corpus_version="corpus-20260811",
+        mock=True,
     )
     service = RetrievalService(
         _StaticSearch([ScoredChunk(chunk=old, score=0.9, rank=1, stage="bm25")]), None, None, _config()
@@ -298,11 +302,13 @@ def test_search_excludes_tombstoned_candidates_and_keeps_partial(evidence_chunks
 
 
 def test_search_fails_closed_on_index_version_mismatch(evidence_chunks: tuple[EvidenceChunk, ...]) -> None:
-    """设计 §9：索引版本不一致 → failed（round2 P1 修复）。
+    """设计 spec §9：索引版本不一致 → failed（round2 P1 修复）。
 
     任一通道返回非冻结索引版本的候选即 fail-closed：整库过期时下游不得把
     结果误解为部分可用（AGENTS.md fail-closed 原则）。
     """
+    from retrieval.models import ReasonCode
+
     live = _indexed_chunks(evidence_chunks)[0]
     wrong_version = replace(live, chunk_id="wrong-version", index_version="other")
     vector = _StaticSearch(
@@ -319,6 +325,29 @@ def test_search_fails_closed_on_index_version_mismatch(evidence_chunks: tuple[Ev
     assert result.selected_chunks == ()
     assert result.degradation_codes == (ReasonCode.INDEX_VERSION_MISMATCH.value,)
     assert any("index_version mismatch" in reason for reason in result.degradation_reasons)
+
+
+def test_initial_pool_fails_closed_on_index_version_mismatch(evidence_chunks: tuple[EvidenceChunk, ...]) -> None:
+    """池路径（backend/R0-R3）同样 fail-closed：版本不一致不得降级为部分可用。"""
+    from retrieval.models import ReasonCode, RetrievalCondition
+
+    live = _indexed_chunks(evidence_chunks)[0]
+    wrong_version = replace(live, chunk_id="wrong-version", index_version="other")
+    vector = _StaticSearch(
+        [
+            ScoredChunk(chunk=live, score=0.9, rank=1, stage="vector"),
+            ScoredChunk(chunk=wrong_version, score=0.7, rank=2, stage="vector"),
+        ]
+    )
+    service = RetrievalService(_FailingSearch(), vector, lambda _query: (1.0, 0.0), _config())
+    query = Query(query_id="q-version-mismatch-pool", text="amlodipine")
+
+    pool = service.retrieve_initial_pool(query)
+    result = service.search_from_pool(query, pool, RetrievalCondition.R1)
+
+    assert pool.degradation_reasons == ("index_version_mismatch",)
+    assert result.status is SearchStatus.FAILED
+    assert result.degradation_codes == (ReasonCode.INDEX_VERSION_MISMATCH.value,)
 
 
 def test_search_excludes_a_candidate_mutated_after_contract_validation(
@@ -385,9 +414,9 @@ def test_search_orders_selected_audit_rows_by_mmr_selection_rank(
 ) -> None:
     base = _indexed_chunks(evidence_chunks)[0]
     chunks = (
-        replace(base, chunk_id="a", evidence_id="e-a", stable_id="PMID:a", content_vector=(1.0, 0.0)),
-        replace(base, chunk_id="b", evidence_id="e-b", stable_id="PMID:b", content_vector=(0.99, 0.01)),
-        replace(base, chunk_id="c", evidence_id="e-c", stable_id="PMID:c", content_vector=(0.0, 1.0)),
+        replace(base, chunk_id="a", evidence_id="e-a", stable_id="upstream:MOCK-A4-A", content_vector=(1.0, 0.0)),
+        replace(base, chunk_id="b", evidence_id="e-b", stable_id="upstream:MOCK-A4-B", content_vector=(0.99, 0.01)),
+        replace(base, chunk_id="c", evidence_id="e-c", stable_id="upstream:MOCK-A4-C", content_vector=(0.0, 1.0)),
     )
     vector = _StaticSearch(
         [

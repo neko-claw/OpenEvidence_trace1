@@ -13,10 +13,11 @@ def _chunk(chunk_id: str, **changes: object) -> EvidenceChunk:
     values: dict[str, object] = {
         "chunk_id": chunk_id,
         "evidence_id": f"evidence-{chunk_id}",
-        "stable_id": f"PMID:{chunk_id}",
+        "stable_id": f"upstream:MOCK-A4-{chunk_id}",
         "text": "Clinical evidence snippet.",
         "source_type": "pubmed",
-        "url": f"https://pubmed.ncbi.nlm.nih.gov/{chunk_id}/",
+        "url": "",
+        "mock": True,
     }
     values.update(changes)
     return EvidenceChunk(**values)  # type: ignore[arg-type]
@@ -73,8 +74,13 @@ def test_rank_reallocates_unavailable_pico_weight_instead_of_penalizing_candidat
     assert ranks[1].candidate.feature_scores["pico_match"] is None
     # Available weights are semantic + lexical + evidence + source = 0.75;
     # the unavailable PICO and freshness weights are redistributed, not scored as zero.
-    # source_quality: pubmed 表值 0.9（规划 §4.2 w6*source_quality，round2 P1 修复）。
-    assert ranks[0].candidate.rerank_score == pytest.approx((0.30 + 0.20 + 0.15 * 0.20 + 0.10 * 0.9) / 0.75)
+    # 加权槽位 w6*source_quality（round2 P1）：pubmed 在 source_quality_table 中为 0.9，
+    # provenance 完整性（source_reliability）仅留档不参与加权（规划 §4.2/§4.5）。
+    assert ranks[0].candidate.feature_scores["source_quality"] == pytest.approx(0.9)
+    assert ranks[0].candidate.feature_scores["source_reliability"] == pytest.approx(2 / 3)
+    assert ranks[0].candidate.rerank_score == pytest.approx(
+        (0.30 + 0.20 + 0.15 * 0.20 + 0.10 * 0.9) / 0.75
+    )
     assert ranks[0].candidate.rerank_score > ranks[1].candidate.rerank_score
 
 
@@ -176,7 +182,7 @@ def test_source_reliability_measures_provenance_completeness_not_evidence_level(
     )
 
     by_id = {log.candidate.chunk.chunk_id: log for log in ranks}
-    assert by_id["guideline"].candidate.feature_scores["source_reliability"] == 1.0
+    assert by_id["guideline"].candidate.feature_scores["source_reliability"] == pytest.approx(2 / 3)
     assert by_id["guideline"].candidate.feature_scores["source_reliability"] == by_id["observational"].candidate.feature_scores["source_reliability"]
 
 

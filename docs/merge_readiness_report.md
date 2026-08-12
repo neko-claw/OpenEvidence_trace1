@@ -1,88 +1,82 @@
-# A5 Merge Readiness Report
+# Backend merge readiness report
 
-Date: 2026-08-11
+Date: 2026-08-12
 
-Branch: `agent/a5-trustworthy-generation`
+Branch: `feature/backend-integration`
 
-Scope: PR #1 blocking review remediation
+Planning baseline: `docs/OpenEvidence_MVP_赛道1与赛道3实施规划.md`
 
-## B1 — Skill delivery: PASS
+## Verdict
 
-- Modified Files: `a5/skills/loader.py`, both versioned Skill packages,
-  `prompts/`, Pydantic Skill contracts and fixtures.
-- Tests: `test_skill_assets.py`, `test_skill_logic_v2.py`, `test_skills.py`.
-- Actual Test Result: manifest/name+version load, implementation target, prompt,
-  Schema root consistency, fixture validation, EvidenceSummary and atomic split
-  tests all pass.
-- Demo Evidence: `artifacts/demo_trace.json` records both Skill versions,
-  EvidenceSummary and atomic claim IDs.
-- Remaining Upstream Dependency: A1 taxonomy and frozen A2/A3 schemas enter by
-  config/adapter; they do not block A5 Skill packaging.
+**MERGE READY — TRACK-1 BACKEND ARCHITECTURE AND A6/B4 CONTRACTS**
 
-## B2 — Restricted Agent orchestration: PASS
+This verdict means the A1→A5 ownership chain, fail-closed controls, adapters,
+offline acceptance path and downstream schemas are executable and tested. It
+does not mean the system is clinically validated or that live network/model
+dependencies have been deployed.
 
-- Modified Files: `a5/agent/budget.py`, `router.py`, `state.py`, `workflow.py`.
-- Tests: tool N+1 prohibition, budget exhaustion, Gate2 retry, sufficient early
-  stop, both Skill routes, explicit retry transition and replaceable retriever.
-- Actual Test Result: all orchestration tests pass.
-- Demo Evidence: tool call #1 leaves budget 2 and Gate2 is INSUFFICIENT; tool
-  call #2 leaves budget 1 and Gate2 is SUFFICIENT; call #3 is not made.
-- Remaining Upstream Dependency: A4 retriever implementation and diagnostics
-  are normalized through `EvidenceRetriever`/`RetrievalResult`.
+## Blocker result
 
-## B3 — Gate2/Gate5 trustworthy generation: PASS
+| Item | Status | Primary evidence |
+|---|---|---|
+| B1 Skill assets/splitting | PASS | `test_skill_assets.py`, `test_skill_logic_v2.py` |
+| B2 routing/budget/retry | PASS | `test_workflow.py`, `test_backend_integration.py` |
+| B3 Gate2/Gate5/Gate6 | PASS | `test_gate_edges.py`, `test_a5_backend_contract.py` |
+| B4 Gate0 fail-closed | PASS | `test_a1_a2_backend_contracts.py`, zero-call safety tests |
+| B5 Prompt/config/version | PASS | `test_config_versioning.py`, contract export tests |
+| A2→A3 normalization | PASS | `test_a1_a2_backend_contracts.py` |
+| A3→A4 one-pool retrieval | PASS | `test_a3_a4_retrieval_integration.py` |
+| A4 score semantics | PASS | explicit ranking/quality separation tests |
+| A1→A5 full composition | PASS | `test_backend_integration.py` |
+| A6/B4 schemas/replays | PASS | `test_a5_backend_contract.py`, `contracts/a5/v0.4.0/` |
 
-- Modified Files: `a5/gates/evidence_sufficiency.py`, `a5/gates/release.py`,
-  `a5/adapters/rule_based_claim_verifier.py`, verification contracts/port.
-- Tests: low count/score/source diversity, conflict, sufficient and UNKNOWN
-  Gate2 metrics; illegal Evidence ID, missing span, PICO/time mismatch,
-  contradiction, unknown entailment, fixture-label non-use, critical failure,
-  non-critical WARN and high-uncertainty critical REFUSE.
-- Actual Test Result: all Gate2/Gate5/Gate6 behavior tests pass.
-- Demo Evidence: structured Gate2 metrics and per-claim Gate5 results are in
-  `artifacts/demo_trace.json`.
-- Remaining Upstream Dependency: A3 final PICO/span/evidence-level mapping and
-  future medical LLM/NLI verifier plug into existing adapters/ports. Exact span
-  match is explicitly P0 and not claimed as medical semantic inference.
+## Actual verification
 
-## B4 — Gate0 fail-closed: PASS
+- `pixi run test`: **505 passed, 3 skipped in 4.57s**. The skipped tests are
+  opt-in live-network tests; all offline unit, contract and integration tests
+  passed.
+- `pixi run demo`: PASS/WARN/REFUSE completed and regenerated
+  `artifacts/demo_trace.json` / `.txt`.
+- `pixi run backend-demo`: PASS with two Evidence records and one publishable
+  atomic Claim; regenerated `artifacts/backend_demo_trace.json` / `.txt`.
+- A4 smoke evaluation: Recall@50 1.000, nDCG@8 0.750, span proxy recall 1.000,
+  Claim chunk coverage 1.000. These are pipeline smoke metrics over explicit
+  mock data, not medical-effect metrics.
 
-- Modified Files: `a5/adapters/default_safety_policy.py`, `a5/agent/workflow.py`.
-- Tests: UNKNOWN→REFUSE, DENY→REFUSE, explicit fixture ALLOW→continue, and zero
-  retrieval/generation calls for denied/unknown requests.
-- Actual Test Result: all Gate0 tests pass.
-- Demo Evidence: Gate0 is the first check after START in both trace artifacts.
-- Remaining Upstream Dependency: replace `DefaultFailClosedSafetyPolicy` with
-  an A1 `SafetyPolicy` adapter; absence of A1 remains UNKNOWN/refuse.
+## Rerank/embedding safeguards
 
-## B5 — Prompt/config/versioning: PASS
+- R0–R3 consume the same immutable candidate pool per question.
+- R1 uses feature rerank/MMR; R2/R3 remain unavailable unless calibrated
+  capabilities are injected.
+- Cross-Encoder raw logits cannot become probabilities without explicit
+  semantics/calibration.
+- A4 never constructs BGE-M3. It consumes an A3 `EmbeddingProvider`; capability
+  stays pending until A3 reports the required DEV recall, latency and rebuild
+  reproducibility.
+- Query-local ranking values never satisfy Gate2's calibrated cross-query
+  quality threshold.
 
-- Modified Files: `config/*.yaml`, `prompts/*.md`, `a5/runtime_config.py`,
-  SkillLoader and AgentRun version/config fields.
-- Tests: prompt/manifest version load, YAML threshold behavior change, Skill and
-  Prompt versions in Run, complete runtime snapshot, no Prompt drift.
-- Actual Test Result: all config/versioning tests pass.
-- Demo Evidence: artifacts contain agent/Skill/Prompt/Gate versions and the
-  effective config snapshot; thresholds are labeled
-  `development_default_not_clinically_validated`.
-- Remaining Upstream Dependency: final policy/model choices replace config
-  values without changing the workflow.
+## A6 handoff
 
-## Full verification
+- Safe UI model/schema: `AgentRunView` /
+  `contracts/a5/v0.4.0/schemas/AgentRunView.schema.json`.
+- Full B4 model/schema: `AgentRun` /
+  `contracts/a5/v0.4.0/schemas/AgentRun.schema.json`.
+- Replay fixtures: PASS, WARN, REFUSE and ERROR.
+- Entry points: `a5.facade.answer_text` and `a5.facade.to_ui_view`.
+- Live mode requires explicit `BackendDependencies`; mock leakage forces
+  REFUSE.
 
-- `pixi run test`: **50 passed in 0.29s**.
-- `python -m compileall -q a5 main.py`: PASS.
-- `pixi run demo`: PASS/WARN/REFUSE completed; artifacts regenerated.
-- `git diff --check`: PASS (Windows LF→CRLF informational warnings only).
-- Production shortcut audit: no support-label inference, fail-open safety,
-  Workflow Mock imports, or Workflow hardcoded semantic versions.
-- Mock evidence audit: E1–E5 are synthetic, `mock=true`, and contain no
-  fabricated PMID/DOI/NCT/guideline identifiers.
+## Remaining non-merge blockers for later production milestones
 
-## Final status
+- A1: validated free-text safety classifier and final reviewed policy.
+- A2: deployed live connectors, credentials/rate limits and source governance.
+- A3: approved embedding model/revision plus DEV Recall@50, latency and rebuild
+  report.
+- A4: optional Cross-Encoder/quality calibration and formal same-pool ablation.
+- A5: independent medical semantic verifier and formal medical evaluation.
+- A6/B4: UI deployment and batch runner implementation.
 
-**MERGE READY**
-
-All B1–B5 blocking items have implementation, behavior-specific tests and demo
-evidence. A1–A4 production functionality remains an explicit integration
-dependency rather than a fabricated A5 implementation.
+These items do not block A6 from implementing and testing the front end against
+the frozen replay/mock contracts. They do block clinical/live-production
+claims.

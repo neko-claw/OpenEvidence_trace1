@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 from collections.abc import Sequence
+import hashlib
+import json
 from pathlib import Path
 
 from a3.config import WikiTopicConfig
@@ -51,7 +53,7 @@ class DeterministicOfflineWikiGenerator:
 
     @staticmethod
     def _data_cutoff(manifest: IndexManifest) -> str:
-        cutoff = (manifest.effective_config or {}).get("corpus_cutoff")
+        cutoff = (manifest.runtime_effective_config or {}).get("corpus_cutoff")
         return str(cutoff) if cutoff else "UNKNOWN"
 
     def _topic_page(self, topic: WikiTopicConfig, evidence: Sequence[Evidence],
@@ -94,9 +96,41 @@ def build_wiki(output: str | Path, evidence: list[Evidence], spans: list[Evidenc
     root = Path(output); root.mkdir(parents=True, exist_ok=True)
     bundle = generator.generate(evidence=evidence, spans=spans, manifest=manifest, topics=topics)
     validate_wiki_pages(bundle.pages, evidence, spans)
+    ownership_path = root / ".a3-generated-pages.json"
+    previous = _read_owned_pages(ownership_path)
     paths: list[Path] = []
     for page in bundle.pages:
         path = root / f"{page.slug}.md"
         path.write_text(page.content, encoding="utf-8", newline="\n")
         paths.append(path)
+    current = {path.name: _file_hash(path) for path in paths}
+    for name, expected_hash in previous.items():
+        if name in current:
+            continue
+        stale = root / name
+        if stale.parent == root and stale.suffix == ".md" and stale.is_file() \
+                and _file_hash(stale) == expected_hash:
+            stale.unlink()
+    ownership_path.write_text(json.dumps({"format": "a3-generated-pages-v1", "pages": current},
+        indent=2, sort_keys=True) + "\n", encoding="utf-8", newline="\n")
     return paths, bundle.lexical_documents
+
+
+def _file_hash(path: Path) -> str:
+    return hashlib.sha256(path.read_bytes()).hexdigest()
+
+
+def _read_owned_pages(path: Path) -> dict[str, str]:
+    if not path.is_file():
+        return {}
+    try:
+        payload = json.loads(path.read_text(encoding="utf-8"))
+        pages = payload["pages"]
+        if payload.get("format") != "a3-generated-pages-v1" or not isinstance(pages, dict):
+            raise ValueError
+        if any(Path(name).name != name or Path(name).suffix != ".md"
+               or not isinstance(content_hash, str) for name, content_hash in pages.items()):
+            raise ValueError
+        return pages
+    except (KeyError, TypeError, ValueError, json.JSONDecodeError) as exc:
+        raise RuntimeError("invalid A3 Wiki generated-page ownership manifest") from exc

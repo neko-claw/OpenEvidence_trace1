@@ -1,0 +1,26 @@
+{
+  "schema_version": "a2-evidence-v1",
+  "id": "MOCK-A2-E1",
+  "source_type": "guideline",
+  "title": "[MOCK] Offline adapter evidence",
+  "abstract_or_chunk": "Synthetic content used only to exercise the A2 to A3 contract.",
+  "authors": [],
+  "published_at": null,
+  "url": null,
+  "pmid": null,
+  "doi": null,
+  "nct_id": null,
+  "guideline_name": null,
+  "page": null,
+  "evidence_level": null,
+  "population": null,
+  "intervention": null,
+  "comparator": null,
+  "outcome": null,
+  "fetched_at": "2026-08-11T00:00:00Z",
+  "content_hash": "0000000000000000000000000000000000000000000000000000000000000000",
+  "source_metadata": {
+    "fixture_purpose": "offline_contract_test"
+  },
+  "mock": true
+}

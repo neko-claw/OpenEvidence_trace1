@@ -1,0 +1,15 @@
+{
+  "name": "a5-agent-run-contract",
+  "version": "0.4.0",
+  "schemas": {
+    "agent_run": "schemas/AgentRun.schema.json",
+    "agent_run_view": "schemas/AgentRunView.schema.json"
+  },
+  "fixtures": {
+    "pass": "fixtures/pass.json",
+    "warn": "fixtures/warn.json",
+    "refuse": "fixtures/refuse.json",
+    "error": "fixtures/error.json"
+  },
+  "consumer_notes": "A6 renders AgentRunView; B4 persists the full AgentRun. Replay fixtures are mock-only and not medical evidence."
+}

@@ -14,10 +14,11 @@ def _chunk(chunk_id: str, **changes: object) -> EvidenceChunk:
     values: dict[str, object] = {
         "chunk_id": chunk_id,
         "evidence_id": f"evidence-{chunk_id}",
-        "stable_id": f"PMID:{chunk_id}",
+        "stable_id": f"upstream:MOCK-A4-{chunk_id}",
         "text": f"Clinical evidence snippet {chunk_id}.",
         "source_type": "pubmed",
         "evidence_level": "rct",
+        "mock": True,
     }
     values.update(changes)
     return EvidenceChunk(**values)  # type: ignore[arg-type]
@@ -74,11 +75,12 @@ def test_store_detects_content_change_via_derived_hash_not_stale_supplied_hash(t
     stale = EvidenceChunk(
         chunk_id="c1",
         evidence_id="evidence-c1",
-        stable_id="PMID:c1",
+        stable_id="upstream:MOCK-A4-c1",
         text="Completely different content now.",
         source_type="pubmed",
         evidence_level="rct",
         content_hash=_chunk("c1").content_hash,
+        mock=True,
     )
     stats = store.upsert_chunks((stale,))
 
@@ -93,8 +95,8 @@ def test_store_detects_content_change_via_derived_hash_not_stale_supplied_hash(t
 def test_store_skips_chunks_for_tombstoned_stable_ids(tmp_path) -> None:
     store = EvidenceStore(tmp_path / "evidence.db")
     store.upsert_chunks((_chunk("c1"),))
-    assert store.tombstone("PMID:c1") is True
-    assert store.tombstone("PMID:c1") is False  # already tombstoned
+    assert store.tombstone("upstream:MOCK-A4-c1") is True
+    assert store.tombstone("upstream:MOCK-A4-c1") is False  # already tombstoned
 
     stats = store.upsert_chunks((_chunk("c1"),))
 
@@ -182,25 +184,26 @@ def test_store_is_reopenable_and_persistent(tmp_path) -> None:
 def test_store_round_trips_gate1_provenance_fields(tmp_path) -> None:
     chunk = _chunk(
         "c-gate",
-        stable_id="PMID:33000020",
-        title="Amlodipine in older adults",
-        url="https://pubmed.ncbi.nlm.nih.gov/33000020/",
-        published_at="2024-06-01",
-        pmid="33000020",
-        doi="10.1000/example.2024.06.001",
+        stable_id="PMID:31452104",
+        title="Molegro Virtual Docker for Docking.",
+        url="https://pubmed.ncbi.nlm.nih.gov/31452104/",
+        published_at="2019-01-01",
+        pmid="31452104",
+        doi="10.1007/978-1-4939-9752-7_10",
         nct_id="",
-        authors=("Wang H", "Li Y", "Chen J"),
+        authors=("Gabriela Bitencourt-Ferreira", "Walter Filgueira de Azevedo"),
         guideline_name="",
         fetched_at="2026-08-10T09:00:00Z",
+        mock=False,
     )
     store = EvidenceStore(tmp_path / "gate.db")
 
     store.upsert_chunks((chunk,))
     loaded = store.load_chunks()[0]
 
-    assert loaded.pmid == "33000020"
-    assert loaded.doi == "10.1000/example.2024.06.001"
-    assert loaded.authors == ("Wang H", "Li Y", "Chen J")
+    assert loaded.pmid == "31452104"
+    assert loaded.doi == "10.1007/978-1-4939-9752-7_10"
+    assert loaded.authors == ("Gabriela Bitencourt-Ferreira", "Walter Filgueira de Azevedo")
     assert loaded.guideline_name == ""
     assert loaded.fetched_at == "2026-08-10T09:00:00Z"
 
@@ -208,9 +211,12 @@ def test_store_round_trips_gate1_provenance_fields(tmp_path) -> None:
 def test_store_enforces_source_gate_and_counts_skipped(tmp_path) -> None:
     complete = _chunk(
         "c-ok",
-        url="https://pubmed.ncbi.nlm.nih.gov/1/",
-        published_at="2024-01-01",
+        stable_id="PMID:31452104",
+        url="https://pubmed.ncbi.nlm.nih.gov/31452104/",
+        pmid="31452104",
+        published_at="2019-01-01",
         fetched_at="2026-08-10T09:00:00Z",
+        mock=False,
     )
     missing_fetched = replace(complete, chunk_id="c-no-fetch", fetched_at=None)
     missing_url = replace(complete, chunk_id="c-no-url", url="")
